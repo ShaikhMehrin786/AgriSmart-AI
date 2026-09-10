@@ -1,6 +1,6 @@
 # Offline Training & ONNX Export Dependencies (Python)
-torch>=2.2.0
-torchvision>=0.17.0
+torch==2.6.0
+torchvision==0.21.0
 timm>=0.9.12
 albumentations>=1.4.0
 opencv-python-headless>=4.9.0
