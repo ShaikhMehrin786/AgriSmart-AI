@@ -10,12 +10,45 @@
 ## 📌 Quick Overview
 
 The `ml-pipeline` directory contains the complete offline machine learning codebase for AgriSmart AI:
-- **Dataset discovery & field augmentations** (Albumentations 2.0+ with ImageNet normalization).
-- **Transfer learning model training loop** (timm backbone, AdamW, CosineAnnealingLR, Macro-F1 tracking).
-- **Evaluation pipeline** (Accuracy, Macro Precision/Recall/F1, Per-class metrics, Confusion Matrix plot).
-- **Single image inference CLI** (`predict.py`).
-- **Production ONNX exporter** (`export_onnx.py`).
-- **PyTorch vs ONNX Runtime numerical parity verifier** (`verify_onnx_parity.py`).
+- **Dataset Discovery, Splitting & Data Leakage Auditor** (`validate_dataset.py`, `prepare_splits.py`).
+- **Field-Oriented Augmentation Pipeline** (Albumentations 2.0+ with ImageNet normalization).
+- **Transfer Learning Training Loop** (timm backbone, AdamW, CosineAnnealingLR, Macro-F1 tracking).
+- **Evaluation Pipeline** (Accuracy, Macro Precision/Recall/F1, Per-Class CSV, Confusion Matrix PNG).
+- **Single Image Inference CLI** (`predict.py`).
+- **Production ONNX Exporter** (`export_onnx.py`).
+- **PyTorch vs ONNX Runtime Numerical Parity Verifier** (`verify_onnx_parity.py`).
+
+---
+
+## 🚨 SIH 2026 Dataset Protocol & Held-Out Test Policy
+
+1. **Training & Validation Data:** PlantVillage-style lab-condition leaf images are used for model training and local validation.
+2. **Held-Out Test Data:** PlantDoc-style real-world field-condition images are strictly reserved for held-out evaluation (`data/processed/test_field/`).
+3. **ZERO Data Leakage Policy:** Held-out field test images must **NEVER** be included in training DataLoaders, validation sets, or hyperparameter selection loops.
+4. **Shared SIH Class List:** The baseline configuration uses 38 PlantVillage classes for pipeline verification. When the organizers release the final ~15–20 shared SIH class list, replace `backend/src/models/class_labels.json` — the pipeline automatically adapts to any configurable class count without code changes.
+
+---
+
+## 📁 Dataset Directory Architecture
+
+```text
+ml-pipeline/data/
+├── raw/
+│   ├── plantvillage/             # Raw lab-condition images
+│   └── plantdoc/                 # Raw field-condition images
+├── processed/
+│   ├── train/                    # Lab training images (PlantVillage)
+│   │   ├── <class_1>/
+│   │   └── <class_2>/
+│   ├── val/                      # Lab validation images (PlantVillage)
+│   │   ├── <class_1>/
+│   │   └── <class_2>/
+│   └── test_field/               # Held-out field test images (PlantDoc)
+│       ├── <class_1>/
+│       └── <class_2>/
+├── dataset_summary.json          # Machine-readable summary report
+└── dataset_summary.csv           # Tabular dataset summary report
+```
 
 ---
 
@@ -44,38 +77,42 @@ python -m pip install -r requirements.txt
 
 ## 🚀 Usage Commands
 
-### 1. Validate Environment Installation
+### 1. Dataset Preparation & Reproducible Splitting
+
+Split raw laboratory images into an 80/20 train/validation set and isolate field test images:
 
 ```bash
-python -c "import torch, torchvision, timm, albumentations, cv2, onnx, onnxruntime; print('Torch:', torch.__version__); print('Device:', torch.device('cuda' if torch.cuda.is_available() else 'cpu'))"
+python src/datasets/prepare_splits.py \
+  --lab-data-dir ./data/raw/plantvillage \
+  --field-data-dir ./data/raw/plantdoc \
+  --output-processed-dir ./data/processed \
+  --class-labels ../backend/src/models/class_labels.json \
+  --seed 42
 ```
 
 ---
 
-### 2. Dataset Structure
+### 2. Dataset Validation & Leakage Audit
 
-Place your training images inside `ml-pipeline/data/` organized by class subdirectories matching `backend/src/models/class_labels.json`:
+Run strict dataset validation before training:
 
-```text
-ml-pipeline/data/
-├── Apple___Apple_scab/
-│   ├── img1.jpg
-│   └── img2.jpg
-├── Tomato___Early_blight/
-│   ├── img1.jpg
-│   └── img2.jpg
-└── ...
+```bash
+python src/datasets/validate_dataset.py \
+  --data-dir ./data/processed \
+  --class-labels ../backend/src/models/class_labels.json
 ```
+
+The validator automatically checks for corrupt images, missing/unexpected classes, class imbalance, and verifies **zero content hash leakage** between training and held-out test sets.
 
 ---
 
 ### 3. Model Training Command
 
-Run transfer learning model training across your local dataset:
+Run transfer learning model training across processed datasets:
 
 ```bash
 python src/train.py \
-  --data-dir ./data \
+  --data-dir ./data/processed/train \
   --class-labels ../backend/src/models/class_labels.json \
   --model efficientnet_b0 \
   --epochs 25 \
@@ -83,7 +120,7 @@ python src/train.py \
   --output-dir ./checkpoints
 ```
 
-> **Pipeline Smoke Test Mode:** If dataset is not yet present, verify the full training pipeline with synthetic mock data:
+> **Pipeline Smoke Test Mode:** Verify full pipeline execution using synthetic data when full datasets are not present:
 > ```bash
 > python src/train.py --smoke-test --epochs 2 --batch-size 8
 > ```
@@ -92,12 +129,12 @@ python src/train.py \
 
 ### 4. Model Evaluation Command
 
-Run evaluation report and confusion matrix generator:
+Run evaluation on local validation data or held-out field test set:
 
 ```bash
 python src/evaluate.py \
   --checkpoint ./checkpoints/best_model.pth \
-  --data-dir ./data \
+  --data-dir ./data/processed/test_field \
   --class-labels ../backend/src/models/class_labels.json \
   --output-dir ./evaluation_results
 ```
@@ -145,6 +182,8 @@ python src/verify_onnx_parity.py \
 
 ## 📄 Key Artifacts Produced
 
+- **Dataset Summary JSON:** `ml-pipeline/data/processed/dataset_summary.json`
+- **Dataset Summary CSV:** `ml-pipeline/data/processed/dataset_summary.csv`
 - **Checkpoint weights:** `ml-pipeline/checkpoints/best_model.pth`
 - **Training metadata:** `ml-pipeline/checkpoints/model_config.json` & `training_history.json`
 - **Evaluation report:** `ml-pipeline/evaluation_results/evaluation_report.json`
