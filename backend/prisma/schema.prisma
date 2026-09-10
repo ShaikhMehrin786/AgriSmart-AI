@@ -1,0 +1,121 @@
+// AgriSmart AI Prisma Schema
+// Database: PostgreSQL 15+
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  passwordHash  String         @map("password_hash")
+  phone         String?
+  locationName  String?        @map("location_name")
+  latitude      Float?
+  longitude     Float?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  predictions   Prediction[]
+  irrigationLogs IrrigationLog[]
+
+  @@map("users")
+}
+
+model Crop {
+  id                     String       @id @default(uuid())
+  name                   String       @unique
+  scientificName         String?      @map("scientific_name")
+  description            String?      @db.Text
+  waterRequirementLevel  String?      @map("water_requirement_level") // Low, Medium, High
+  createdAt              DateTime     @default(now()) @map("created_at")
+  diseases               Disease[]
+  predictions            Prediction[]
+
+  @@map("crops")
+}
+
+model Disease {
+  id                 String           @id @default(uuid())
+  cropId             String           @map("crop_id")
+  crop               Crop             @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  name               String
+  scientificName     String?          @map("scientific_name")
+  symptoms           String           @db.Text
+  severityDefault    String           @default("Moderate") @map("severity_default") // Low, Moderate, High, Critical
+  organicTreatment   String           @db.Text @map("organic_treatment")
+  chemicalTreatment  String?          @db.Text @map("chemical_treatment")
+  preventiveMeasures String           @db.Text @map("preventive_measures")
+  optimalTempMin     Float?           @map("optimal_temp_min")
+  optimalTempMax     Float?           @map("optimal_temp_max")
+  optimalHumidityMin Float?           @map("optimal_humidity_min")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  predictions        Prediction[]
+  recommendations    Recommendation[]
+
+  @@index([cropId], name: "idx_diseases_crop")
+  @@map("diseases")
+}
+
+model Prediction {
+  id                   String    @id @default(uuid())
+  userId               String    @map("user_id")
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cropId               String    @map("crop_id")
+  crop                 Crop      @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  diseaseId            String    @map("disease_id")
+  disease              Disease   @relation(fields: [diseaseId], references: [id], onDelete: Cascade)
+  imageUrl             String    @map("image_url")
+  heatmapUrl           String?   @map("heatmap_url")
+  confidence           Float
+  severity             String
+  modelVersion         String    @map("model_version")
+  rawProbabilities     Json?     @map("raw_probabilities")
+  farmerFeedbackRating Int?      @map("farmer_feedback_rating") // 1 to 5 stars or confirmation
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, createdAt(sort: Desc)], name: "idx_predictions_user_created")
+  @@map("predictions")
+}
+
+model Recommendation {
+  id               String   @id @default(uuid())
+  diseaseId        String   @map("disease_id")
+  disease          Disease  @relation(fields: [diseaseId], references: [id], onDelete: Cascade)
+  triggerCondition String?  @map("trigger_condition") // e.g., "Humidity > 80%", "Rain Expected"
+  actionText       String   @db.Text @map("action_text")
+  priorityLevel    String   @default("Recommended") @map("priority_level") // Urgent, Recommended, Preventative
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("recommendations")
+}
+
+model WeatherLog {
+  id              String   @id @default(uuid())
+  latitude        Float
+  longitude       Float
+  temperature     Float
+  humidity        Float
+  rainProbability Float    @map("rain_probability")
+  windSpeed       Float    @map("wind_speed")
+  recordedAt      DateTime @default(now()) @map("recorded_at")
+
+  @@index([latitude, longitude, recordedAt(sort: Desc)], name: "idx_weather_geo")
+  @@map("weather_logs")
+}
+
+model IrrigationLog {
+  id                   String   @id @default(uuid())
+  userId               String   @map("user_id")
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  soilMoisturePercent  Float    @map("soil_moisture_percent")
+  recommendationAction String   @map("recommendation_action") // "Delay Irrigation", "Water Urgently", "Maintain"
+  reason               String   @db.Text
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  @@map("irrigation_logs")
+}
