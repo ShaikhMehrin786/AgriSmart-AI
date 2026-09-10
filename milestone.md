@@ -78,12 +78,12 @@ Based on the 6-member team structure outlined in the technical specification:
 
 | Milestone | Phase Name | Priority Level | Target Metric / Deliverable | Status |
 |---|---|:---:|---|:---:|
-| **M1** | Project Infrastructure & Schema | P0 (Must Have) | Prisma DB migrations up, Express server live, monorepo configured | ✅ Complete |
-| **M2** | Core Zero-Python Disease Inference | P0 (Must Have) | ONNX model running in Node.js, $>90\%$ lab accuracy, $<200\text{ms}$ inference | ✅ Complete |
-| **M3** | Explainability & Weather Context | P1 (High Value) | Grad-CAM heatmap rendering on UI, OpenWeather API integration | ✅ Complete |
-| **M4** | Advisory Engines & Grounded GenAI | P1 (High Value) | Smart irrigation logic, Sustainability index (0-100), grounded chatbot | ✅ Complete |
-| **M5** | Prediction History & User Accounts | P2 (Important) | Farmer scan history, temporal progress tracking, JWT auth | ✅ Complete |
-| **M6** | Field Robustness & Hackathon Polish | P0 (Critical) | Benchmark on 20+ field photos, demo script rehearsed, pitch deck ready | ✅ Complete |
+| **M1** | Project Infrastructure & Schema | P0 (Must Have) | Prisma DB migrations up, Express server live, monorepo configured | 🔴 Incomplete |
+| **M2** | Core Zero-Python Disease Inference | P0 (Must Have) | ONNX model running in Node.js, $>90\%$ lab accuracy, $<200\text{ms}$ inference | 🔴 Incomplete |
+| **M3** | Explainability & Weather Context | P1 (High Value) | Grad-CAM heatmap rendering on UI, OpenWeather API integration | 🔴 Incomplete |
+| **M4** | Advisory Engines & Grounded GenAI | P1 (High Value) | Smart irrigation logic, Sustainability index (0-100), grounded chatbot | 🔴 Incomplete |
+| **M5** | Prediction History & User Accounts | P2 (Important) | Farmer scan history, temporal progress tracking, JWT auth | 🔴 Incomplete |
+| **M6** | Field Robustness & Hackathon Polish | P0 (Critical) | Benchmark on 20+ field photos, demo script rehearsed, pitch deck ready | 🔴 Incomplete |
 
 ---
 
