@@ -17,7 +17,10 @@ __pycache__/
 .coverage
 htmlcov/
 ml-pipeline/venv/
-ml-pipeline/data/
+ml-pipeline/data/raw/
+ml-pipeline/data/processed/
+ml-pipeline/data/*.zip
+ml-pipeline/data/*.tar.gz
 ml-pipeline/checkpoints/
 ml-pipeline/evaluation_results/
 

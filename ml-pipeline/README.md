@@ -10,6 +10,7 @@
 ## 📌 Quick Overview
 
 The `ml-pipeline` directory contains the complete offline machine learning codebase for AgriSmart AI:
+- **Public Benchmark Preparation & Class Intersection Pipeline** (`prepare_public_benchmark.py`).
 - **Dataset Discovery, Splitting & Data Leakage Auditor** (`validate_dataset.py`, `prepare_splits.py`).
 - **Field-Oriented Augmentation Pipeline** (Albumentations 2.0+ with ImageNet normalization).
 - **Transfer Learning Training Loop** (timm backbone, AdamW, CosineAnnealingLR, Macro-F1 tracking).
@@ -20,12 +21,35 @@ The `ml-pipeline` directory contains the complete offline machine learning codeb
 
 ---
 
-## 🚨 SIH 2026 Dataset Protocol & Held-Out Test Policy
+## 📚 Public Dataset Citations & Licenses
+
+AgriSmart AI utilizes two open-access agricultural datasets for development and benchmark evaluation:
+
+1. **PlantVillage (Laboratory Baseline):**
+   - **Repository:** [`spMohanty/PlantVillage-Dataset`](https://github.com/spMohanty/PlantVillage-Dataset)
+   - **Characteristics:** 54,306 laboratory-curated color images covering 14 crops and 26 disease categories.
+   - **License:** Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
+   - **Role in AgriSmart:** Primary source for transfer-learning feature extraction (`data/processed/train` & `data/processed/val`).
+
+2. **PlantDoc (Field-Condition Benchmark):**
+   - **Repository:** [`pratikkayal/PlantDoc-Dataset`](https://github.com/pratikkayal/PlantDoc-Dataset) (Singh et al., CoDS-COMAD 2020)
+   - **Characteristics:** 2,598 in-situ field photographs taken under natural agricultural sunlight, complex soil/foliage backgrounds, and variable smartphone sensors.
+   - **License:** MIT Open Source License.
+   - **Role in AgriSmart:** Isolated held-out field evaluation benchmark (`data/processed/test_field`).
+
+> [!NOTE]
+> This public dataset setup serves as our internal development and evaluation benchmark. It is distinct from any organizer-held-out judging evaluation dataset.
+
+---
+
+## 🚨 SIH 2026 Dataset Protocol & Zero Data Leakage Policy
 
 1. **Training & Validation Data:** PlantVillage-style lab-condition leaf images are used for model training and local validation.
 2. **Held-Out Test Data:** PlantDoc-style real-world field-condition images are strictly reserved for held-out evaluation (`data/processed/test_field/`).
 3. **ZERO Data Leakage Policy:** Held-out field test images must **NEVER** be included in training DataLoaders, validation sets, or hyperparameter selection loops.
-4. **Shared SIH Class List:** The baseline configuration uses 38 PlantVillage classes for pipeline verification. When the organizers release the final ~15–20 shared SIH class list, replace `backend/src/models/class_labels.json` — the pipeline automatically adapts to any configurable class count without code changes.
+4. **Canonical Class Mapping:**
+   - Baseline smoke-test configuration: [`backend/src/models/class_labels.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels.json) (38 classes).
+   - Public PlantVillage + PlantDoc shared benchmark: [`backend/src/models/class_labels_public.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels_public.json) (31 classes: 18 diseases + 13 healthy).
 
 ---
 
@@ -46,8 +70,9 @@ ml-pipeline/data/
 │   └── test_field/               # Held-out field test images (PlantDoc)
 │       ├── <class_1>/
 │       └── <class_2>/
-├── dataset_summary.json          # Machine-readable summary report
-└── dataset_summary.csv           # Tabular dataset summary report
+├── class_intersection_report.json # Detailed cross-dataset mapping
+├── dataset_summary_public.json    # Machine-readable summary report
+└── dataset_summary_public.csv     # Tabular dataset summary report
 ```
 
 ---
@@ -75,45 +100,64 @@ python -m pip install -r requirements.txt
 
 ---
 
-## 🚀 Usage Commands
+## 🚀 Public Dataset Acquisition & Preparation
 
-### 1. Dataset Preparation & Reproducible Splitting
+### 1. Manual Download Commands (PowerShell)
 
-Split raw laboratory images into an 80/20 train/validation set and isolate field test images:
+```powershell
+# Create raw directories
+New-Item -ItemType Directory -Path "ml-pipeline/data/raw/plantvillage" -Force
+New-Item -ItemType Directory -Path "ml-pipeline/data/raw/plantdoc" -Force
+
+# Clone PlantDoc repository (~50 MB)
+git clone https://github.com/pratikkayal/PlantDoc-Dataset.git ml-pipeline/data/raw/plantdoc_repo
+
+# Download and extract PlantVillage color dataset (~2.5 GB)
+Invoke-WebRequest -Uri "https://github.com/spMohanty/PlantVillage-Dataset/archive/refs/heads/master.zip" -OutFile "ml-pipeline/data/raw/plantvillage_master.zip"
+Expand-Archive -Path "ml-pipeline/data/raw/plantvillage_master.zip" -DestinationPath "ml-pipeline/data/raw/plantvillage_extracted"
+```
+
+---
+
+### 2. Class Intersection & Public Benchmark Preparation
+
+Execute the intersection and splitting utility:
 
 ```bash
-python src/datasets/prepare_splits.py \
-  --lab-data-dir ./data/raw/plantvillage \
-  --field-data-dir ./data/raw/plantdoc \
-  --output-processed-dir ./data/processed \
-  --class-labels ../backend/src/models/class_labels.json \
+python src/datasets/prepare_public_benchmark.py \
+  --pv-dir ./data/raw/plantvillage \
+  --pd-dir ./data/raw/plantdoc \
+  --processed-dir ./data/processed \
+  --labels-output ../backend/src/models/class_labels_public.json \
+  --report-output ./data/class_intersection_report.json \
+  --summary-output ./data/dataset_summary_public.csv \
   --seed 42
 ```
 
 ---
 
-### 2. Dataset Validation & Leakage Audit
+### 3. Dataset Validation & Leakage Audit
 
 Run strict dataset validation before training:
 
 ```bash
 python src/datasets/validate_dataset.py \
   --data-dir ./data/processed \
-  --class-labels ../backend/src/models/class_labels.json
+  --class-labels ../backend/src/models/class_labels_public.json
 ```
 
 The validator automatically checks for corrupt images, missing/unexpected classes, class imbalance, and verifies **zero content hash leakage** between training and held-out test sets.
 
 ---
 
-### 3. Model Training Command
+### 4. Model Training Command
 
-Run transfer learning model training across processed datasets:
+Run transfer learning model training across public benchmark datasets:
 
 ```bash
 python src/train.py \
   --data-dir ./data/processed/train \
-  --class-labels ../backend/src/models/class_labels.json \
+  --class-labels ../backend/src/models/class_labels_public.json \
   --model efficientnet_b0 \
   --epochs 25 \
   --batch-size 32 \
@@ -122,34 +166,21 @@ python src/train.py \
 
 > **Pipeline Smoke Test Mode:** Verify full pipeline execution using synthetic data when full datasets are not present:
 > ```bash
-> python src/train.py --smoke-test --epochs 2 --batch-size 8
+> python src/train.py --smoke-test --epochs 2 --batch-size 8 --class-labels ../backend/src/models/class_labels_public.json
 > ```
 
 ---
 
-### 4. Model Evaluation Command
+### 5. Model Evaluation on Held-Out Field Data
 
-Run evaluation on local validation data or held-out field test set:
+Evaluate the model against real-world field images:
 
 ```bash
 python src/evaluate.py \
   --checkpoint ./checkpoints/best_model.pth \
   --data-dir ./data/processed/test_field \
-  --class-labels ../backend/src/models/class_labels.json \
+  --class-labels ../backend/src/models/class_labels_public.json \
   --output-dir ./evaluation_results
-```
-
----
-
-### 5. Single Image Prediction CLI
-
-Predict crop disease and confidence score for a single image:
-
-```bash
-python src/predict.py \
-  --image ./path/to/leaf_photo.jpg \
-  --checkpoint ./checkpoints/best_model.pth \
-  --class-labels ../backend/src/models/class_labels.json
 ```
 
 ---
@@ -162,7 +193,7 @@ Export validated PyTorch checkpoint weights to production ONNX format:
 python src/export_onnx.py \
   --checkpoint ./checkpoints/best_model.pth \
   --output ../backend/src/models/agrismart_model.onnx \
-  --class-labels ../backend/src/models/class_labels.json
+  --class-labels ../backend/src/models/class_labels_public.json
 ```
 
 ---
@@ -175,18 +206,5 @@ Verify that PyTorch CPU inference and ONNX Runtime CPU inference produce identic
 python src/verify_onnx_parity.py \
   --checkpoint ./checkpoints/best_model.pth \
   --onnx-model ../backend/src/models/agrismart_model.onnx \
-  --class-labels ../backend/src/models/class_labels.json
+  --class-labels ../backend/src/models/class_labels_public.json
 ```
-
----
-
-## 📄 Key Artifacts Produced
-
-- **Dataset Summary JSON:** `ml-pipeline/data/processed/dataset_summary.json`
-- **Dataset Summary CSV:** `ml-pipeline/data/processed/dataset_summary.csv`
-- **Checkpoint weights:** `ml-pipeline/checkpoints/best_model.pth`
-- **Training metadata:** `ml-pipeline/checkpoints/model_config.json` & `training_history.json`
-- **Evaluation report:** `ml-pipeline/evaluation_results/evaluation_report.json`
-- **Per-class CSV:** `ml-pipeline/evaluation_results/per_class_metrics.csv`
-- **Confusion Matrix plot:** `ml-pipeline/evaluation_results/confusion_matrix.png`
-- **Production ONNX weights:** `backend/src/models/agrismart_model.onnx`

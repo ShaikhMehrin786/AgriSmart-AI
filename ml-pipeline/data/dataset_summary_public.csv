@@ -1,0 +1,10 @@
+class_name,plantvillage_total,train_count,val_count,plantdoc_field_count,total_benchmark_samples
+Apple___Apple_scab,5,4,1,3,8
+Apple___Black_rot,5,4,1,3,8
+Apple___Cedar_apple_rust,5,4,1,3,8
+Corn___Cercospora_leaf_spot,5,4,1,3,8
+Corn___Northern_Leaf_Blight,5,4,1,3,8
+Grape___Black_rot,5,4,1,3,8
+Grape___Leaf_blight,5,4,1,3,8
+Potato___Early_blight,5,4,1,3,8
+Potato___Late_blight,5,4,1,3,8
