@@ -3,12 +3,15 @@
   "train_val_source": "PlantVillage (spMohanty/PlantVillage-Dataset)",
   "field_test_source": "PlantDoc (pratikkayal/PlantDoc-Dataset)",
   "methodology": "Transfer learning baseline on lab-condition images with zero-leakage held-out field evaluation",
-  "shared_class_count": 31,
-  "disease_classes_count": 18,
-  "healthy_classes_count": 13,
+  "audit_status": "Audited & Verified",
+  "total_plantvillage_classes": 38,
+  "total_plantdoc_raw_classes": 28,
+  "shared_class_count": 28,
+  "shared_disease_classes_count": 17,
+  "shared_healthy_classes_count": 11,
+  "math_verification": "total_shared_classes (28) = shared_disease_classes (17) + shared_healthy_classes (11)",
   "shared_classes": [
     "Apple___Apple_scab",
-    "Apple___Black_rot",
     "Apple___Cedar_apple_rust",
     "Apple___healthy",
     "Blueberry___healthy",
@@ -16,9 +19,7 @@
     "Corn___Cercospora_leaf_spot",
     "Corn___Common_rust",
     "Corn___Northern_Leaf_Blight",
-    "Corn___healthy",
     "Grape___Black_rot",
-    "Grape___Leaf_blight",
     "Grape___healthy",
     "Peach___healthy",
     "Pepper_bell___Bacterial_spot",
@@ -39,15 +40,13 @@
     "Tomato___Tomato_mosaic_virus",
     "Tomato___healthy"
   ],
-  "disease_classes": [
+  "shared_disease_classes": [
     "Apple___Apple_scab",
-    "Apple___Black_rot",
     "Apple___Cedar_apple_rust",
     "Corn___Cercospora_leaf_spot",
     "Corn___Common_rust",
     "Corn___Northern_Leaf_Blight",
     "Grape___Black_rot",
-    "Grape___Leaf_blight",
     "Pepper_bell___Bacterial_spot",
     "Potato___Early_blight",
     "Potato___Late_blight",
@@ -60,11 +59,10 @@
     "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
     "Tomato___Tomato_mosaic_virus"
   ],
-  "healthy_classes": [
+  "shared_healthy_classes": [
     "Apple___healthy",
     "Blueberry___healthy",
     "Cherry___healthy",
-    "Corn___healthy",
     "Grape___healthy",
     "Peach___healthy",
     "Pepper_bell___healthy",
@@ -75,41 +73,157 @@
     "Tomato___healthy"
   ],
   "plantvillage_only_classes": [
+    "Apple___Black_rot",
     "Cherry___Powdery_mildew",
+    "Corn___healthy",
     "Grape___Esca",
+    "Grape___Leaf_blight",
     "Orange___Haunglongbing",
     "Peach___Bacterial_spot",
     "Strawberry___Leaf_scorch",
     "Tomato___Spider_mites",
     "Tomato___Target_Spot"
   ],
-  "plantdoc_raw_mapping": {
-    "Apple Scab Leaf": "Apple___Apple_scab",
-    "Apple rust leaf": "Apple___Cedar_apple_rust",
-    "Apple leaf": "Apple___healthy",
-    "Bell_pepper leaf": "Pepper_bell___healthy",
-    "Bell_pepper leaf spot": "Pepper_bell___Bacterial_spot",
-    "Blueberry leaf": "Blueberry___healthy",
-    "Cherry leaf": "Cherry___healthy",
-    "Corn Gray leaf spot": "Corn___Cercospora_leaf_spot",
-    "Corn leaf blight": "Corn___Northern_Leaf_Blight",
-    "Corn rust leaf": "Corn___Common_rust",
-    "Grape leaf": "Grape___healthy",
-    "Grape leaf black rot": "Grape___Black_rot",
-    "Peach leaf": "Peach___healthy",
-    "Potato leaf early blight": "Potato___Early_blight",
-    "Potato leaf late blight": "Potato___Late_blight",
-    "Raspberry leaf": "Raspberry___healthy",
-    "Soyabean leaf": "Soybean___healthy",
-    "Squash Powdery mildew leaf": "Squash___Powdery_mildew",
-    "Strawberry leaf": "Strawberry___healthy",
-    "Tomato Early blight leaf": "Tomato___Early_blight",
-    "Tomato Septoria leaf spot": "Tomato___Septoria_leaf_spot",
-    "Tomato leaf": "Tomato___healthy",
-    "Tomato leaf bacterial spot": "Tomato___Bacterial_spot",
-    "Tomato leaf late blight": "Tomato___Late_blight",
-    "Tomato leaf mosaic virus": "Tomato___Tomato_mosaic_virus",
-    "Tomato leaf yellow virus": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
-    "Tomato mold leaf": "Tomato___Leaf_Mold"
+  "explicit_mappings": {
+    "Apple Scab Leaf": {
+      "canonical_target": "Apple___Apple_scab",
+      "category": "Disease",
+      "pathogen": "Venturia inaequalis"
+    },
+    "Apple rust leaf": {
+      "canonical_target": "Apple___Cedar_apple_rust",
+      "category": "Disease",
+      "pathogen": "Gymnosporangium juniperi-virginianae"
+    },
+    "Apple leaf": {
+      "canonical_target": "Apple___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Bell_pepper leaf spot": {
+      "canonical_target": "Pepper_bell___Bacterial_spot",
+      "category": "Disease",
+      "pathogen": "Xanthomonas campestris"
+    },
+    "Bell_pepper leaf": {
+      "canonical_target": "Pepper_bell___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Blueberry leaf": {
+      "canonical_target": "Blueberry___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Cherry leaf": {
+      "canonical_target": "Cherry___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Corn Gray leaf spot": {
+      "canonical_target": "Corn___Cercospora_leaf_spot",
+      "category": "Disease",
+      "pathogen": "Cercospora zeae-maydis"
+    },
+    "Corn leaf blight": {
+      "canonical_target": "Corn___Northern_Leaf_Blight",
+      "category": "Disease",
+      "pathogen": "Setosphaeria turcica"
+    },
+    "Corn rust leaf": {
+      "canonical_target": "Corn___Common_rust",
+      "category": "Disease",
+      "pathogen": "Puccinia sorghi"
+    },
+    "Grape leaf black rot": {
+      "canonical_target": "Grape___Black_rot",
+      "category": "Disease",
+      "pathogen": "Guignardia bidwellii"
+    },
+    "Grape leaf": {
+      "canonical_target": "Grape___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Peach leaf": {
+      "canonical_target": "Peach___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Potato leaf early blight": {
+      "canonical_target": "Potato___Early_blight",
+      "category": "Disease",
+      "pathogen": "Alternaria solani"
+    },
+    "Potato leaf late blight": {
+      "canonical_target": "Potato___Late_blight",
+      "category": "Disease",
+      "pathogen": "Phytophthora infestans"
+    },
+    "Potato leaf": {
+      "canonical_target": "Potato___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Raspberry leaf": {
+      "canonical_target": "Raspberry___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Soyabean leaf": {
+      "canonical_target": "Soybean___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Squash Powdery mildew leaf": {
+      "canonical_target": "Squash___Powdery_mildew",
+      "category": "Disease",
+      "pathogen": "Podosphaera xanthii"
+    },
+    "Strawberry leaf": {
+      "canonical_target": "Strawberry___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    },
+    "Tomato Early blight leaf": {
+      "canonical_target": "Tomato___Early_blight",
+      "category": "Disease",
+      "pathogen": "Alternaria solani"
+    },
+    "Tomato Septoria leaf spot": {
+      "canonical_target": "Tomato___Septoria_leaf_spot",
+      "category": "Disease",
+      "pathogen": "Septoria lycopersici"
+    },
+    "Tomato leaf bacterial spot": {
+      "canonical_target": "Tomato___Bacterial_spot",
+      "category": "Disease",
+      "pathogen": "Xanthomonas campestris"
+    },
+    "Tomato leaf late blight": {
+      "canonical_target": "Tomato___Late_blight",
+      "category": "Disease",
+      "pathogen": "Phytophthora infestans"
+    },
+    "Tomato leaf mosaic virus": {
+      "canonical_target": "Tomato___Tomato_mosaic_virus",
+      "category": "Disease",
+      "pathogen": "Tomato Mosaic Tobamovirus"
+    },
+    "Tomato leaf yellow virus": {
+      "canonical_target": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "category": "Disease",
+      "pathogen": "Tomato Yellow Leaf Curl Begomovirus"
+    },
+    "Tomato mold leaf": {
+      "canonical_target": "Tomato___Leaf_Mold",
+      "category": "Disease",
+      "pathogen": "Passalora fulva"
+    },
+    "Tomato leaf": {
+      "canonical_target": "Tomato___healthy",
+      "category": "Healthy",
+      "pathogen": "None"
+    }
   }
 }

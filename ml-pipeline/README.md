@@ -48,8 +48,8 @@ AgriSmart AI utilizes two open-access agricultural datasets for development and 
 2. **Held-Out Test Data:** PlantDoc-style real-world field-condition images are strictly reserved for held-out evaluation (`data/processed/test_field/`).
 3. **ZERO Data Leakage Policy:** Held-out field test images must **NEVER** be included in training DataLoaders, validation sets, or hyperparameter selection loops.
 4. **Canonical Class Mapping:**
-   - Baseline smoke-test configuration: [`backend/src/models/class_labels.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels.json) (38 classes).
-   - Public PlantVillage + PlantDoc shared benchmark: [`backend/src/models/class_labels_public.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels_public.json) (31 classes: 18 diseases + 13 healthy).
+   - Baseline smoke-test configuration: [`backend/src/models/class_labels.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels.json) (38 classes: 26 diseases + 12 healthy).
+   - Public PlantVillage + PlantDoc shared benchmark: [`backend/src/models/class_labels_public.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels_public.json) (28 audited shared classes: 17 diseases + 11 healthy).
 
 ---
 

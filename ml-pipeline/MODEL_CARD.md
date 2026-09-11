@@ -4,8 +4,8 @@
 > **Model Version:** v1.0.0 (EfficientNet-B0 backbone)  
 > **Artifact Format:** PyTorch `.pth` checkpoint & Production ONNX `.onnx` weights  
 > **SIH Benchmark Configurations:**  
-> - Baseline Smoke-Test: `backend/src/models/class_labels.json` (38 classes)  
-> - Public Real-World Benchmark: `backend/src/models/class_labels_public.json` (31 classes: 18 diseases + 13 healthy)
+> - Baseline Smoke-Test: `backend/src/models/class_labels.json` (38 classes: 26 diseases + 12 healthy)  
+> - Public Real-World Benchmark: `backend/src/models/class_labels_public.json` (28 audited shared classes: 17 diseases + 11 healthy)
 
 ---
 
@@ -15,7 +15,7 @@ The AgriSmart AI Disease Detection Engine is a transfer-learning deep neural net
 
 - **Primary Architecture:** `efficientnet_b0` (timm / torchvision)
 - **Input Resolution:** `224 x 224` pixels (RGB)
-- **Number of Classes:** Configurable (38 baseline or 31 public benchmark classes)
+- **Number of Classes:** Configurable (38 baseline or 28 public benchmark classes)
 - **Export Standard:** ONNX Opset 14 (`agrismart_model.onnx`)
 - **Execution Provider:** CPU (`CPUExecutionProvider` in PyTorch & `onnxruntime-node`)
 
@@ -37,7 +37,7 @@ The AgriSmart AI Disease Detection Engine is a transfer-learning deep neural net
 |---|---|---|
 | **Trained Checkpoint** | [`ml-pipeline/checkpoints/best_model.pth`](file:///d:/AgriSmart%20AI/ml-pipeline/checkpoints/best_model.pth) | PyTorch model weights state dict for feature map activation hook & Grad-CAM derivation. |
 | **Model Configuration** | [`ml-pipeline/checkpoints/model_config.json`](file:///d:/AgriSmart%20AI/ml-pipeline/checkpoints/model_config.json) | Metadata containing backbone type, input dimensions, and ImageNet normalization stats. |
-| **Public Target Class Labels** | [`backend/src/models/class_labels_public.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels_public.json) | Shared PlantVillage + PlantDoc class label array (31 classes). |
+| **Public Target Class Labels** | [`backend/src/models/class_labels_public.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels_public.json) | Shared PlantVillage + PlantDoc class label array (28 classes: 17 diseases + 11 healthy). |
 | **Baseline Target Class Labels** | [`backend/src/models/class_labels.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels.json) | 38-class baseline class label array. |
 | **Class Intersection Report** | [`ml-pipeline/data/class_intersection_report.json`](file:///d:/AgriSmart%20AI/ml-pipeline/data/class_intersection_report.json) | Detailed cross-dataset mapping of PlantVillage vs PlantDoc. |
 | **Dataset Validator** | [`ml-pipeline/src/datasets/validate_dataset.py`](file:///d:/AgriSmart%20AI/ml-pipeline/src/datasets/validate_dataset.py) | SIH dataset validator and data leakage auditor. |

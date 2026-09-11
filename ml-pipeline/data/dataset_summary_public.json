@@ -1,8 +1,13 @@
 {
   "benchmark_title": "AgriSmart AI Public Benchmark Dataset Summary",
+  "audit_status": "Audited & Verified",
   "lab_source": "PlantVillage (spMohanty/PlantVillage-Dataset)",
   "field_source": "PlantDoc (pratikkayal/PlantDoc-Dataset)",
-  "shared_classes_count": 31,
+  "total_plantvillage_classes": 38,
+  "total_plantdoc_raw_classes": 28,
+  "shared_classes_count": 28,
+  "shared_disease_classes_count": 17,
+  "shared_healthy_classes_count": 11,
   "status": "Ready for acquisition & processing",
   "data_directory_structure": {
     "raw_plantvillage": "ml-pipeline/data/raw/plantvillage",

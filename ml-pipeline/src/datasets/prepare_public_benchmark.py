@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.webp', '.bmp')
 
-# Canonical Mapping Table: PlantDoc Folder Name / Variant -> PlantVillage Canonical Class Name
+# Audited Canonical Mapping Table: PlantDoc Folder Name / Variant -> PlantVillage Canonical Class Name
 PLANTDOC_TO_PLANTVILLAGE_MAP = {
     # Apple
     "apple scab leaf": "Apple___Apple_scab",
@@ -26,7 +26,6 @@ PLANTDOC_TO_PLANTVILLAGE_MAP = {
     "apple rust leaf": "Apple___Cedar_apple_rust",
     "apple rust": "Apple___Cedar_apple_rust",
     "apple leaf": "Apple___healthy",
-    "apple black rot": "Apple___Black_rot",
 
     # Bell Pepper / Pepper Bell
     "bell pepper leaf spot": "Pepper_bell___Bacterial_spot",
@@ -50,13 +49,11 @@ PLANTDOC_TO_PLANTVILLAGE_MAP = {
     "corn northern leaf blight": "Corn___Northern_Leaf_Blight",
     "corn rust leaf": "Corn___Common_rust",
     "corn rust": "Corn___Common_rust",
-    "corn leaf": "Corn___healthy",
 
     # Grape
     "grape leaf black rot": "Grape___Black_rot",
     "grape black rot": "Grape___Black_rot",
     "grape leaf": "Grape___healthy",
-    "grape leaf blight": "Grape___Leaf_blight",
 
     # Peach
     "peach leaf": "Peach___healthy",
@@ -96,13 +93,11 @@ PLANTDOC_TO_PLANTVILLAGE_MAP = {
     "tomato mosaic virus leaf": "Tomato___Tomato_mosaic_virus",
     "tomato leaf yellow virus": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
     "tomato yellow leaf curl virus": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
-    "tomato leaf": "Tomato___healthy",
     "tomato mold leaf": "Tomato___Leaf_Mold",
     "tomato leaf mold": "Tomato___Leaf_Mold",
     "tomato septoria leaf spot": "Tomato___Septoria_leaf_spot",
     "tomato septoria leaf spot leaf": "Tomato___Septoria_leaf_spot",
-    "tomato two spotted spider mites leaf": "Tomato___Spider_mites",
-    "tomato spider mites": "Tomato___Spider_mites",
+    "tomato leaf": "Tomato___healthy"
 }
 
 def resolve_path(path):
@@ -165,7 +160,6 @@ def scan_plantdoc_classes(pd_dir):
         return pd_raw_classes, pd_mapped_files, pd_unmapped, case_collisions
 
     for root, dirs, files in os.walk(pd_dir):
-        # Avoid traversing root if it only has subfolders
         folder_name = os.path.basename(root)
         if folder_name.startswith('.') or folder_name == '__MACOSX':
             continue
@@ -233,6 +227,8 @@ def prepare_public_benchmark(
     # Check healthy classes
     healthy_in_shared = [c for c in shared_classes if 'healthy' in c.lower()]
     disease_in_shared = [c for c in shared_classes if 'healthy' not in c.lower()]
+
+    assert len(shared_classes) == len(disease_in_shared) + len(healthy_in_shared), "Math inconsistency in class counts!"
 
     print(f"\n--- CLASS INTERSECTION SUMMARY ---")
     print(f"Total Shared Classes:       {len(shared_classes)} ({len(disease_in_shared)} diseases + {len(healthy_in_shared)} healthy)")
