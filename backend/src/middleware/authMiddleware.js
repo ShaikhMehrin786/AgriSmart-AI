@@ -1,27 +1,22 @@
-// JWT Authentication Middleware
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../utils/jwt');
 
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
+const protect = (req, res, next) => {
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  
   if (!token) {
-    // For prototype demo convenience, if no token, allow a mock guest user
-    req.user = { id: 'demo-guest-user-uuid', email: 'farmer@agrismart.ai', name: 'Demo Farmer' };
-    return next();
+    return res.status(401).json({ success: false, message: 'Not authorized, no token' });
   }
 
-  const secret = process.env.JWT_SECRET || 'super_secret_key';
-
-  jwt.verify(token, secret, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired authentication token.' });
-    }
-    req.user = user;
+  try {
+    const decoded = verifyToken(token);
+    req.user = { id: decoded.id };
     next();
-  });
-}
-
-module.exports = {
-  authenticateToken
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Not authorized, token failed' });
+  }
 };
+
+module.exports = { protect };

@@ -1,13 +1,10 @@
 const express = require('express');
+const { getWeather, getIrrigation, getSustainability } = require('../controllers/advisoryController');
+const { protect } = require('../middleware/authMiddleware');
 const router = express.Router();
-const {
-  getWeatherAndRisk,
-  getIrrigationAdvice,
-  getSustainabilityScore
-} = require('../controllers/advisoryController');
 
-router.get('/weather', getWeatherAndRisk);
-router.post('/irrigation', getIrrigationAdvice);
-router.post('/sustainability', getSustainabilityScore);
+router.get('/weather', protect, getWeather);
+router.post('/irrigation', protect, getIrrigation);
+router.get('/sustainability-score', protect, getSustainability);
 
 module.exports = router;

@@ -13,4 +13,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Fetch scan/prediction history
+export const fetchScanHistory = async () => {
+  const res = await api.get('/predictions/history');
+  return res.data;
+};
+
+// Send a message to the AI assistant
+export const sendAssistantQuery = async (message, prediction = null, weather = null) => {
+  const res = await api.post('/assistant/chat', { message, prediction, weather });
+  return res.data.data;
+};
+
 export default api;
