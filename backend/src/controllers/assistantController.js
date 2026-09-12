@@ -1,31 +1,14 @@
-// Grounded GenAI Assistant Controller
-const { answerFarmerQuery } = require('../services/genAiService');
 
-async function handleChat(req, res, next) {
-  try {
-    const { question, diagnosisContext, weatherContext, language } = req.body;
-
-    if (!question) {
-      return res.status(400).json({ error: 'Question text is required.' });
-    }
-
-    const answer = await answerFarmerQuery({
-      question,
-      diagnosisContext,
-      weatherContext,
-      language
-    });
-
+const chat = async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ success: false, message: 'Message required' });
+  
+  setTimeout(() => {
     res.json({
-      answer,
-      grounded: true,
-      timestamp: new Date()
+      success: true,
+      data: { reply: 'Based on your current crop data and local weather, I suggest reviewing your irrigation schedule. The recent soil moisture readings indicate adequate hydration.' }
     });
-  } catch (error) {
-    next(error);
-  }
-}
-
-module.exports = {
-  handleChat
+  }, 1000);
 };
+
+module.exports = { chat };

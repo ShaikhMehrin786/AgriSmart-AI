@@ -1,24 +1,22 @@
-// Multer Image Upload Middleware
-// Enforces 10MB limit and whitelisted image formats
 const multer = require('multer');
+const path = require('path');
 
-// Store in memory for instant tensor ingestion
-const storage = multer.memoryStorage();
-
-const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-  if (allowedMimeTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Unsupported file format. Please upload JPEG, PNG, or WebP images only.'), false);
-  }
-};
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
 
 const upload = multer({
   storage,
-  fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10 MB maximum
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|webp/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+    if (extname && mimetype) cb(null, true);
+    else cb(new Error('Images only!'));
   }
 });
 

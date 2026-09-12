@@ -1,13 +1,11 @@
 const express = require('express');
-const router = express.Router();
+const { createPrediction, getHistory, getPredictionById } = require('../controllers/predictionController');
+const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
-const { authenticateToken } = require('../middleware/authMiddleware');
-const { handlePrediction, getPredictionHistory } = require('../controllers/predictionController');
+const router = express.Router();
 
-// Disease prediction from uploaded leaf image
-router.post('/', upload.single('image'), authenticateToken, handlePrediction);
-
-// Fetch prediction history for authenticated farmer
-router.get('/history', authenticateToken, getPredictionHistory);
+router.route('/').post(protect, upload.single('image'), createPrediction);
+router.route('/history').get(protect, getHistory);
+router.route('/:id').get(protect, getPredictionById);
 
 module.exports = router;

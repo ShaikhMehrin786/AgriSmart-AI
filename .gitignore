@@ -1,31 +1,54 @@
-# Node & Frontend
+# Dependencies
 node_modules/
-.env
-.env.*
-!.env.example
-dist/
-build/
-
-# Python & ML
-venv/
-*.venv
+*/node_modules/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.coverage
-htmlcov/
-ml-pipeline/venv/
-ml-pipeline/data/raw/
-ml-pipeline/data/processed/
-ml-pipeline/data/*.zip
-ml-pipeline/data/*.tar.gz
-ml-pipeline/checkpoints/
-ml-pipeline/evaluation_results/
+*.py[cod]
+.venv/
+venv/
+*/venv/
 
-# OS & IDE
-.DS_Store
-Thumbs.db
+# Production build outputs
+dist/
+*/dist/
+build/
+*/build/
+
+# Environment Variables
+.env
+*/.env
+!.env.example
+!*/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor and OS files
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+
+# Python / ML artifacts
+ml-pipeline/checkpoints/
+ml-pipeline/evaluation_results/
+ml-pipeline/data/raw/
+ml-pipeline/data/processed/
+
+# Model artifacts generated during experiments
+*.pth
+*.pt
+*.onnx
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Local database
+backend/prisma/*.db
