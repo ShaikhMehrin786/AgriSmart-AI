@@ -1,0 +1,74 @@
+[
+  {
+    "hash": "12852b3616bcf0ba39b03b5677e74f50f5f6abf4d38957fe17949e23e2a4b244",
+    "train_files": [
+      "ml-pipeline\\data\\processed\\train\\Tomato___healthy\\pv_train_00292.jpg"
+    ],
+    "val_files": [
+      "ml-pipeline\\data\\processed\\val\\Tomato___healthy\\pv_val_00119.jpg"
+    ]
+  },
+  {
+    "hash": "372bc4a6e18895011eaa18638acf8cdd83db9c5909af02cd833263d5cfeb0cbe",
+    "train_files": [
+      "ml-pipeline\\data\\processed\\train\\Apple___healthy\\pv_train_01079.jpg"
+    ],
+    "val_files": [
+      "ml-pipeline\\data\\processed\\val\\Apple___healthy\\pv_val_00261.jpg"
+    ]
+  },
+  {
+    "hash": "375eee7b5da77c7afdd73d089574bee3148d04cbe266ee070ee4774d26aca750",
+    "train_files": [
+      "ml-pipeline\\data\\processed\\train\\Tomato___Late_blight\\pv_train_00978.jpg"
+    ],
+    "val_files": [
+      "ml-pipeline\\data\\processed\\val\\Tomato___Late_blight\\pv_val_00043.jpg"
+    ]
+  },
+  {
+    "hash": "5d486b62abe59b8dea5aef6b63f887bacd12bbc3cb2a154eb45a7a522e5d88c9",
+    "train_files": [
+      "ml-pipeline\\data\\processed\\train\\Apple___healthy\\pv_train_00703.jpg"
+    ],
+    "val_files": [
+      "ml-pipeline\\data\\processed\\val\\Apple___healthy\\pv_val_00320.jpg"
+    ]
+  },
+  {
+    "hash": "61f6fa6195ef5c59c4918a292c641d4cd3d2d31ff051dcd0f36a625daf93f5ef",
+    "train_files": [
+      "ml-pipeline\\data\\processed\\train\\Tomato___healthy\\pv_train_00725.jpg"
+    ],
+    "val_files": [
+      "ml-pipeline\\data\\processed\\val\\Tomato___healthy\\pv_val_00317.jpg"
+    ]
+  },
+  {
+    "hash": "7ff8410db407008bb9aecf0cc5505f2b47ffd89e508413a30ea983b4bc169714",
+    "train_files": [
+      "ml-pipeline\\data\\processed\\train\\Tomato___Late_blight\\pv_train_00118.jpg"
+    ],
+    "val_files": [
+      "ml-pipeline\\data\\processed\\val\\Tomato___Late_blight\\pv_val_00224.jpg"
+    ]
+  },
+  {
+    "hash": "addddf5cb2a74192c9836be70fc223659062675eb325d55429c341a0c44937d0",
+    "train_files": [
+      "ml-pipeline\\data\\processed\\train\\Tomato___healthy\\pv_train_00473.jpg"
+    ],
+    "val_files": [
+      "ml-pipeline\\data\\processed\\val\\Tomato___healthy\\pv_val_00223.jpg"
+    ]
+  },
+  {
+    "hash": "d4b74359138ab2e04caffe9733f40ccdf616ee2fc9a4ecb2f058d7ba98c94fa8",
+    "train_files": [
+      "ml-pipeline\\data\\processed\\train\\Apple___healthy\\pv_train_00326.jpg"
+    ],
+    "val_files": [
+      "ml-pipeline\\data\\processed\\val\\Apple___healthy\\pv_val_00209.jpg"
+    ]
+  }
+]

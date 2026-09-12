@@ -1,0 +1,203 @@
+{
+  "verification_passed": true,
+  "expected_counts": {
+    "train": 29615,
+    "val": 7403,
+    "test_field": 236,
+    "classes": 28
+  },
+  "actual_counts": {
+    "train": 29615,
+    "val": 7403,
+    "test_field": 236,
+    "classes_in_train_val": 28
+  },
+  "count_checks": {
+    "train_ok": true,
+    "val_ok": true,
+    "test_field_ok": true
+  },
+  "corrupt_unreadable_count": 0,
+  "zero_byte_count": 0,
+  "corrupt_files": [],
+  "unexpected_class_dirs": [],
+  "missing_canonical_classes": [],
+  "sha256_collision_counts": {
+    "train_val": 0,
+    "train_test_field": 0,
+    "val_test_field": 0
+  },
+  "leakage_check_passed": true,
+  "potato_healthy_check": {
+    "expected": {
+      "train": 122,
+      "val": 30,
+      "test_field": 0
+    },
+    "actual": {
+      "train": 122,
+      "val": 30,
+      "test_field": 0
+    },
+    "passed": true
+  },
+  "per_class_counts": {
+    "Apple___Apple_scab": {
+      "train": 504,
+      "val": 126,
+      "test_field": 10
+    },
+    "Apple___Cedar_apple_rust": {
+      "train": 220,
+      "val": 55,
+      "test_field": 10
+    },
+    "Apple___healthy": {
+      "train": 1315,
+      "val": 330,
+      "test_field": 9
+    },
+    "Blueberry___healthy": {
+      "train": 1202,
+      "val": 300,
+      "test_field": 11
+    },
+    "Cherry___healthy": {
+      "train": 683,
+      "val": 171,
+      "test_field": 10
+    },
+    "Corn___Cercospora_leaf_spot": {
+      "train": 410,
+      "val": 103,
+      "test_field": 4
+    },
+    "Corn___Common_rust": {
+      "train": 954,
+      "val": 238,
+      "test_field": 10
+    },
+    "Corn___Northern_Leaf_Blight": {
+      "train": 788,
+      "val": 197,
+      "test_field": 12
+    },
+    "Grape___Black_rot": {
+      "train": 944,
+      "val": 236,
+      "test_field": 8
+    },
+    "Grape___healthy": {
+      "train": 338,
+      "val": 85,
+      "test_field": 12
+    },
+    "Peach___healthy": {
+      "train": 288,
+      "val": 72,
+      "test_field": 9
+    },
+    "Pepper_bell___Bacterial_spot": {
+      "train": 798,
+      "val": 199,
+      "test_field": 9
+    },
+    "Pepper_bell___healthy": {
+      "train": 1182,
+      "val": 296,
+      "test_field": 8
+    },
+    "Potato___Early_blight": {
+      "train": 800,
+      "val": 200,
+      "test_field": 8
+    },
+    "Potato___Late_blight": {
+      "train": 800,
+      "val": 200,
+      "test_field": 8
+    },
+    "Potato___healthy": {
+      "train": 122,
+      "val": 30,
+      "test_field": 0
+    },
+    "Raspberry___healthy": {
+      "train": 297,
+      "val": 74,
+      "test_field": 7
+    },
+    "Soybean___healthy": {
+      "train": 4072,
+      "val": 1018,
+      "test_field": 8
+    },
+    "Squash___Powdery_mildew": {
+      "train": 1468,
+      "val": 367,
+      "test_field": 6
+    },
+    "Strawberry___healthy": {
+      "train": 365,
+      "val": 91,
+      "test_field": 8
+    },
+    "Tomato___Bacterial_spot": {
+      "train": 1702,
+      "val": 425,
+      "test_field": 9
+    },
+    "Tomato___Early_blight": {
+      "train": 800,
+      "val": 200,
+      "test_field": 9
+    },
+    "Tomato___Late_blight": {
+      "train": 1527,
+      "val": 382,
+      "test_field": 10
+    },
+    "Tomato___Leaf_Mold": {
+      "train": 762,
+      "val": 190,
+      "test_field": 6
+    },
+    "Tomato___Septoria_leaf_spot": {
+      "train": 1417,
+      "val": 354,
+      "test_field": 11
+    },
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+      "train": 4286,
+      "val": 1071,
+      "test_field": 6
+    },
+    "Tomato___Tomato_mosaic_virus": {
+      "train": 298,
+      "val": 75,
+      "test_field": 10
+    },
+    "Tomato___healthy": {
+      "train": 1273,
+      "val": 318,
+      "test_field": 8
+    }
+  },
+  "report_cross_check": {
+    "report_train_count": 29615,
+    "report_val_count": 7403,
+    "report_test_field_count": 236,
+    "report_num_classes": 28,
+    "report_excluded": 224,
+    "filesystem_train": 29615,
+    "filesystem_val": 7403,
+    "filesystem_test_field": 236,
+    "counts_match_report": true
+  },
+  "leakage_report_summary": {
+    "report_total_exclusions": 224,
+    "report_cross_split_leakage_count": 0,
+    "report_intra_test_dupe_count": 224,
+    "report_final_audit_result": "PASSED \u2014 zero train\u2194val collisions after content-aware split fix"
+  }
+}

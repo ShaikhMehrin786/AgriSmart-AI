@@ -1,0 +1,29 @@
+raw_plantdoc_class,normalized_name,mapped_benchmark_class,crop,condition,category_type,confidence_status,train_count,test_count,total_count
+Apple Scab Leaf,apple scab leaf,Apple___Apple_scab,Apple,Apple Scab,Disease,DirectMatch,83,10,93
+Apple leaf,apple leaf,Apple___healthy,Apple,Healthy Foliage,Healthy,DirectMatch,82,9,91
+Apple rust leaf,apple rust leaf,Apple___Cedar_apple_rust,Apple,Cedar Apple Rust,Disease,DirectMatch,79,10,89
+Bell_pepper leaf,bell pepper leaf,Pepper_bell___healthy,Pepper Bell,Healthy Foliage,Healthy,DirectMatch,53,8,61
+Bell_pepper leaf spot,bell pepper leaf spot,Pepper_bell___Bacterial_spot,Pepper Bell,Bacterial Spot,Disease,DirectMatch,62,9,71
+Blueberry leaf,blueberry leaf,Blueberry___healthy,Blueberry,Healthy Foliage,Healthy,DirectMatch,106,11,117
+Cherry leaf,cherry leaf,Cherry___healthy,Cherry,Healthy Foliage,Healthy,DirectMatch,47,10,57
+Corn Gray leaf spot,corn gray leaf spot,Corn___Cercospora_leaf_spot,Corn,Cercospora Leaf Spot / Gray Leaf Spot,Disease,DirectMatch,64,4,68
+Corn leaf blight,corn leaf blight,Corn___Northern_Leaf_Blight,Corn,Northern Leaf Blight,Disease,DirectMatch,180,12,192
+Corn rust leaf,corn rust leaf,Corn___Common_rust,Corn,Common Rust,Disease,DirectMatch,106,10,116
+Peach leaf,peach leaf,Peach___healthy,Peach,Healthy Foliage,Healthy,DirectMatch,103,9,112
+Potato leaf early blight,potato leaf early blight,Potato___Early_blight,Potato,Early Blight,Disease,DirectMatch,109,8,117
+Potato leaf late blight,potato leaf late blight,Potato___Late_blight,Potato,Late Blight,Disease,DirectMatch,97,8,105
+Raspberry leaf,raspberry leaf,Raspberry___healthy,Raspberry,Healthy Foliage,Healthy,DirectMatch,112,7,119
+Soyabean leaf,soyabean leaf,Soybean___healthy,Soybean,Healthy Foliage,Healthy,DirectMatch,57,8,65
+Squash Powdery mildew leaf,squash powdery mildew leaf,Squash___Powdery_mildew,Squash,Powdery Mildew,Disease,DirectMatch,124,6,130
+Strawberry leaf,strawberry leaf,Strawberry___healthy,Strawberry,Healthy Foliage,Healthy,DirectMatch,88,8,96
+Tomato Early blight leaf,tomato early blight leaf,Tomato___Early_blight,Tomato,Early Blight,Disease,DirectMatch,79,9,88
+Tomato Septoria leaf spot,tomato septoria leaf spot,Tomato___Septoria_leaf_spot,Tomato,Septoria Leaf Spot,Disease,DirectMatch,140,11,151
+Tomato leaf,tomato leaf,Tomato___healthy,Tomato,Healthy Foliage,Healthy,DirectMatch,55,8,63
+Tomato leaf bacterial spot,tomato leaf bacterial spot,Tomato___Bacterial_spot,Tomato,Bacterial Spot,Disease,DirectMatch,101,9,110
+Tomato leaf late blight,tomato leaf late blight,Tomato___Late_blight,Tomato,Late Blight,Disease,DirectMatch,101,10,111
+Tomato leaf mosaic virus,tomato leaf mosaic virus,Tomato___Tomato_mosaic_virus,Tomato,Mosaic Virus,Disease,DirectMatch,44,10,54
+Tomato leaf yellow virus,tomato leaf yellow virus,Tomato___Tomato_Yellow_Leaf_Curl_Virus,Tomato,Yellow Leaf Curl Virus,Disease,DirectMatch,70,6,76
+Tomato mold leaf,tomato mold leaf,Tomato___Leaf_Mold,Tomato,Leaf Mold,Disease,DirectMatch,85,6,91
+Tomato two spotted spider mites leaf,tomato two spotted spider mites leaf,Tomato___Spider_mites,Tomato,Two-Spotted Spider Mites,Disease,DirectMatch,2,0,2
+grape leaf,grape leaf,Grape___healthy,Grape,Healthy Foliage,Healthy,DirectMatch,57,12,69
+grape leaf black rot,grape leaf black rot,Grape___Black_rot,Grape,Black Rot,Disease,DirectMatch,56,8,64

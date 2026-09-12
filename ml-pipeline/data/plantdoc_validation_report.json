@@ -1,0 +1,197 @@
+{
+  "dataset_name": "PlantDoc",
+  "dataset_path": "D:\\AgriSmart AI\\ml-pipeline\\data\\raw\\plantdoc_recovered",
+  "authoritative_image_count": 2579,
+  "total_images_scanned": 2579,
+  "total_train_images": 2342,
+  "total_test_images": 236,
+  "total_other_images": 1,
+  "unique_raw_classes_count": 28,
+  "train_classes_count": 28,
+  "test_classes_count": 27,
+  "corrupt_images_count": 0,
+  "zero_byte_files_count": 0,
+  "duplicate_groups_total": 18,
+  "duplicate_files_total": 36,
+  "intra_train_duplicate_groups": 7,
+  "intra_train_duplicate_files_count": 14,
+  "intra_test_duplicate_groups": 0,
+  "intra_test_duplicate_files_count": 0,
+  "train_test_leakage_groups": 11,
+  "train_test_leakage_files": 11,
+  "validation_status": "PASSED",
+  "per_class_counts": {
+    "train": {
+      "Apple Scab Leaf": 83,
+      "Apple leaf": 82,
+      "Apple rust leaf": 79,
+      "Bell_pepper leaf spot": 62,
+      "Bell_pepper leaf": 53,
+      "Blueberry leaf": 106,
+      "Cherry leaf": 47,
+      "Corn Gray leaf spot": 64,
+      "Corn leaf blight": 180,
+      "Corn rust leaf": 106,
+      "Peach leaf": 103,
+      "Potato leaf early blight": 109,
+      "Potato leaf late blight": 97,
+      "Raspberry leaf": 112,
+      "Soyabean leaf": 57,
+      "Squash Powdery mildew leaf": 124,
+      "Strawberry leaf": 88,
+      "Tomato Early blight leaf": 79,
+      "Tomato Septoria leaf spot": 140,
+      "Tomato leaf bacterial spot": 101,
+      "Tomato leaf late blight": 101,
+      "Tomato leaf mosaic virus": 44,
+      "Tomato leaf yellow virus": 70,
+      "Tomato leaf": 55,
+      "Tomato mold leaf": 85,
+      "Tomato two spotted spider mites leaf": 2,
+      "grape leaf black rot": 56,
+      "grape leaf": 57
+    },
+    "test": {
+      "Apple Scab Leaf": 10,
+      "Apple leaf": 9,
+      "Apple rust leaf": 10,
+      "Bell_pepper leaf spot": 9,
+      "Bell_pepper leaf": 8,
+      "Blueberry leaf": 11,
+      "Cherry leaf": 10,
+      "Corn Gray leaf spot": 4,
+      "Corn leaf blight": 12,
+      "Corn rust leaf": 10,
+      "Peach leaf": 9,
+      "Potato leaf early blight": 8,
+      "Potato leaf late blight": 8,
+      "Raspberry leaf": 7,
+      "Soyabean leaf": 8,
+      "Squash Powdery mildew leaf": 6,
+      "Strawberry leaf": 8,
+      "Tomato Early blight leaf": 9,
+      "Tomato Septoria leaf spot": 11,
+      "Tomato leaf bacterial spot": 9,
+      "Tomato leaf late blight": 10,
+      "Tomato leaf mosaic virus": 10,
+      "Tomato leaf yellow virus": 6,
+      "Tomato leaf": 8,
+      "Tomato mold leaf": 6,
+      "grape leaf black rot": 8,
+      "grape leaf": 12
+    }
+  },
+  "train_test_leakage_samples": [
+    [
+      "07b9b0a3395d6643e0033f5327c188305479c20a67b9e0081efec85139d63306",
+      {
+        "train_occurrences": [
+          "train\\Blueberry leaf\\blueberry-leaves-normal-above-and-iron-deficient-below-bgahf8.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Blueberry leaf\\blueberry-leaves-normal-above-and-iron-deficient-below-bgahf8.jpg"
+        ]
+      }
+    ],
+    [
+      "ee3838e2249e671b7b4510b0d3831f30882e2bcbf20c9c8c42ee8f4e1b95fcce",
+      {
+        "train_occurrences": [
+          "train\\Corn leaf blight\\IMG_42231.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Corn Gray leaf spot\\IMG_42231.jpg"
+        ]
+      }
+    ],
+    [
+      "6e777d1b6829140e66573f918c0f1681ca4cd2979859c37435c84977153ec223",
+      {
+        "train_occurrences": [
+          "train\\Corn Gray leaf spot\\2015070295153021.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Corn leaf blight\\2015070295153021.jpg"
+        ]
+      }
+    ],
+    [
+      "9120578a76fd8539da220def6e0609ebb2435decc7a9c34b949e46e86e794c8d",
+      {
+        "train_occurrences": [
+          "train\\Corn Gray leaf spot\\corn-gray-leaf-spot-f4.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Corn leaf blight\\corn-gray-leaf-spot-f4.jpg"
+        ]
+      }
+    ],
+    [
+      "64c0f7b5701e815769bad881c0834ffb3b58018233fc3af42c3a1b7968f86973",
+      {
+        "train_occurrences": [
+          "train\\Potato leaf late blight\\backus-056-potato-blight.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Potato leaf early blight\\backus-056-potato-blight.jpg"
+        ]
+      }
+    ],
+    [
+      "c53ad8d40c38debfbc0b79a87d0f3649c20b933a65f5b78a6931f59d06aad498",
+      {
+        "train_occurrences": [
+          "train\\Potato leaf early blight\\1421_0.jpeg_itok=FMtmgePj.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Potato leaf late blight\\1421_0.jpeg_itok=FMtmgePj.jpg"
+        ]
+      }
+    ],
+    [
+      "a981ee59e5e1dcafd0d225f74369a05969200352c17743318c31987083ab6f4c",
+      {
+        "train_occurrences": [
+          "train\\Potato leaf early blight\\5816740026_d42ef24413_Phytophthora-Infestans.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Potato leaf late blight\\5816740026_d42ef24413_Phytophthora-Infestans.jpg"
+        ]
+      }
+    ],
+    [
+      "9dd93b4217495fbb725cfdded86d3dc5f98955c9616fff5323be1a00df17be8b",
+      {
+        "train_occurrences": [
+          "train\\Potato leaf early blight\\irish-blight-symptoms-on-potato-leaves-atmf8b.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Potato leaf late blight\\irish-blight-symptoms-on-potato-leaves-atmf8b.jpg"
+        ]
+      }
+    ],
+    [
+      "93c989d8551209bf34d4002ee9fae48ddbf6ab66fc3c27466c0473bcc7c0a2b7",
+      {
+        "train_occurrences": [
+          "train\\Tomato Septoria leaf spot\\early-blight-septoria-ls-fig-3.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Tomato Septoria leaf spot\\early-blight-septoria-ls-fig-3.jpg"
+        ]
+      }
+    ],
+    [
+      "e23a29c94b58aac28e92f57f95eb6f53e99c874323cb2b90ebd327085721574e",
+      {
+        "train_occurrences": [
+          "train\\Tomato Septoria leaf spot\\tomato_V8.jpg"
+        ],
+        "test_occurrences": [
+          "test\\Tomato leaf bacterial spot\\tomato_V8.jpg"
+        ]
+      }
+    ]
+  ],
+  "corrupt_files": []
+}

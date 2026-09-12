@@ -1,0 +1,20 @@
+{
+  "dataset_name": "PlantDoc",
+  "git_source_directory": "D:\\AgriSmart AI\\ml-pipeline\\data\\raw\\plantdoc",
+  "recovered_output_directory": "D:\\AgriSmart AI\\ml-pipeline\\data\\raw\\plantdoc_recovered",
+  "total_git_tracked_paths": 2581,
+  "image_paths_found": 2579,
+  "extracted_images_count": 2579,
+  "skipped_non_image_files_count": 2,
+  "sanitized_windows_paths_count": 87,
+  "collision_resolution_count": 0,
+  "extraction_errors_count": 0,
+  "corrupt_images_count": 0,
+  "valid_decoded_images_count": 2828,
+  "train_image_count": 2366,
+  "test_image_count": 460,
+  "elapsed_seconds": 57.8,
+  "extraction_errors": [],
+  "corrupt_images": [],
+  "is_ready_for_validation": true
+}

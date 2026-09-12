@@ -1,0 +1,243 @@
+{
+  "benchmark_name": "AgriSmart AI Public Benchmark (PlantVillage Lab + PlantDoc Field)",
+  "creation_timestamp": "2026-09-11T11:30:04.813113+00:00",
+  "seed": 42,
+  "train_ratio": 0.8,
+  "val_ratio": 0.2,
+  "source_directories": {
+    "plantvillage": "D:\\AgriSmart AI\\ml-pipeline\\data\\raw\\plantvillage",
+    "plantdoc_test": "D:\\AgriSmart AI\\ml-pipeline\\data\\raw\\plantdoc_recovered\\test",
+    "processed_output": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed"
+  },
+  "class_labels_path": "D:\\AgriSmart AI\\backend\\src\\models\\class_labels_public.json",
+  "num_canonical_classes": 28,
+  "canonical_classes": [
+    "Apple___Apple_scab",
+    "Apple___Cedar_apple_rust",
+    "Apple___healthy",
+    "Blueberry___healthy",
+    "Cherry___healthy",
+    "Corn___Cercospora_leaf_spot",
+    "Corn___Common_rust",
+    "Corn___Northern_Leaf_Blight",
+    "Grape___Black_rot",
+    "Grape___healthy",
+    "Peach___healthy",
+    "Pepper_bell___Bacterial_spot",
+    "Pepper_bell___healthy",
+    "Potato___Early_blight",
+    "Potato___Late_blight",
+    "Potato___healthy",
+    "Raspberry___healthy",
+    "Soybean___healthy",
+    "Squash___Powdery_mildew",
+    "Strawberry___healthy",
+    "Tomato___Bacterial_spot",
+    "Tomato___Early_blight",
+    "Tomato___Late_blight",
+    "Tomato___Leaf_Mold",
+    "Tomato___Septoria_leaf_spot",
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+    "Tomato___Tomato_mosaic_virus",
+    "Tomato___healthy"
+  ],
+  "classes_with_no_test_field": [
+    "Potato___healthy"
+  ],
+  "classes_with_no_train": [],
+  "plantvillage_source_count": 37018,
+  "plantdoc_test_source_count": 460,
+  "final_train_count": 29615,
+  "final_val_count": 7403,
+  "final_test_field_count": 236,
+  "total_benchmark_images": 37254,
+  "excluded_images_total": 224,
+  "cross_split_leakage_removed": 0,
+  "intra_test_field_dupes_removed": 224,
+  "plantdoc_unmapped_raw_folders": [],
+  "leakage_audit_result": "PASSED \u2014 zero residual cross-split SHA-256 collisions",
+  "imbalance_stats": {
+    "min_train_count": 122,
+    "max_train_count": 4286,
+    "imbalance_ratio_max_min": 35.13
+  },
+  "per_class_counts": {
+    "Apple___Apple_scab": {
+      "pv_source": 630,
+      "train": 504,
+      "val": 126,
+      "test_field": 10
+    },
+    "Apple___Cedar_apple_rust": {
+      "pv_source": 275,
+      "train": 220,
+      "val": 55,
+      "test_field": 10
+    },
+    "Apple___healthy": {
+      "pv_source": 1645,
+      "train": 1315,
+      "val": 330,
+      "test_field": 9
+    },
+    "Blueberry___healthy": {
+      "pv_source": 1502,
+      "train": 1202,
+      "val": 300,
+      "test_field": 11
+    },
+    "Cherry___healthy": {
+      "pv_source": 854,
+      "train": 683,
+      "val": 171,
+      "test_field": 10
+    },
+    "Corn___Cercospora_leaf_spot": {
+      "pv_source": 513,
+      "train": 410,
+      "val": 103,
+      "test_field": 4
+    },
+    "Corn___Common_rust": {
+      "pv_source": 1192,
+      "train": 954,
+      "val": 238,
+      "test_field": 10
+    },
+    "Corn___Northern_Leaf_Blight": {
+      "pv_source": 985,
+      "train": 788,
+      "val": 197,
+      "test_field": 12
+    },
+    "Grape___Black_rot": {
+      "pv_source": 1180,
+      "train": 944,
+      "val": 236,
+      "test_field": 8
+    },
+    "Grape___healthy": {
+      "pv_source": 423,
+      "train": 338,
+      "val": 85,
+      "test_field": 12
+    },
+    "Peach___healthy": {
+      "pv_source": 360,
+      "train": 288,
+      "val": 72,
+      "test_field": 9
+    },
+    "Pepper_bell___Bacterial_spot": {
+      "pv_source": 997,
+      "train": 798,
+      "val": 199,
+      "test_field": 9
+    },
+    "Pepper_bell___healthy": {
+      "pv_source": 1478,
+      "train": 1182,
+      "val": 296,
+      "test_field": 8
+    },
+    "Potato___Early_blight": {
+      "pv_source": 1000,
+      "train": 800,
+      "val": 200,
+      "test_field": 8
+    },
+    "Potato___Late_blight": {
+      "pv_source": 1000,
+      "train": 800,
+      "val": 200,
+      "test_field": 8
+    },
+    "Potato___healthy": {
+      "pv_source": 152,
+      "train": 122,
+      "val": 30,
+      "test_field": 0
+    },
+    "Raspberry___healthy": {
+      "pv_source": 371,
+      "train": 297,
+      "val": 74,
+      "test_field": 7
+    },
+    "Soybean___healthy": {
+      "pv_source": 5090,
+      "train": 4072,
+      "val": 1018,
+      "test_field": 8
+    },
+    "Squash___Powdery_mildew": {
+      "pv_source": 1835,
+      "train": 1468,
+      "val": 367,
+      "test_field": 6
+    },
+    "Strawberry___healthy": {
+      "pv_source": 456,
+      "train": 365,
+      "val": 91,
+      "test_field": 8
+    },
+    "Tomato___Bacterial_spot": {
+      "pv_source": 2127,
+      "train": 1702,
+      "val": 425,
+      "test_field": 9
+    },
+    "Tomato___Early_blight": {
+      "pv_source": 1000,
+      "train": 800,
+      "val": 200,
+      "test_field": 9
+    },
+    "Tomato___Late_blight": {
+      "pv_source": 1909,
+      "train": 1527,
+      "val": 382,
+      "test_field": 10
+    },
+    "Tomato___Leaf_Mold": {
+      "pv_source": 952,
+      "train": 762,
+      "val": 190,
+      "test_field": 6
+    },
+    "Tomato___Septoria_leaf_spot": {
+      "pv_source": 1771,
+      "train": 1417,
+      "val": 354,
+      "test_field": 11
+    },
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+      "pv_source": 5357,
+      "train": 4286,
+      "val": 1071,
+      "test_field": 6
+    },
+    "Tomato___Tomato_mosaic_virus": {
+      "pv_source": 373,
+      "train": 298,
+      "val": 75,
+      "test_field": 10
+    },
+    "Tomato___healthy": {
+      "pv_source": 1591,
+      "train": 1273,
+      "val": 318,
+      "test_field": 8
+    }
+  },
+  "fix_applied": "content_aware_split_v2",
+  "fix_reason": "8 train\u2194val SHA-256 collisions found in original split. PlantVillage contains duplicate-content files under different UUID filenames. Fixed by grouping files by SHA-256 before splitting so all copies of identical content are assigned to the same split.",
+  "fix_affected_classes": [
+    "Apple___healthy",
+    "Tomato___Late_blight",
+    "Tomato___healthy"
+  ],
+  "fix_dup_groups_total": 21,
+  "train_val_collision_count_after_fix": 0
+}

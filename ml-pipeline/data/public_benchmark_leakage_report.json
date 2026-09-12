@@ -1,0 +1,1615 @@
+{
+  "audit_timestamp": "2026-09-11T10:42:08.469663Z",
+  "hash_algorithm": "SHA-256",
+  "total_exclusions": 224,
+  "cross_split_leakage_count": 0,
+  "intra_test_field_dupe_count": 224,
+  "residual_leakage_after_removal": 0,
+  "final_audit_result": "PASSED \u2014 zero train\u2194val collisions after content-aware split fix",
+  "removed_records": [
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00001.jpg",
+      "hash": "13cfeac779b23fa433e92498086f19b1768b84cab23bc9d25e5b33cbe7ca17db",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00003.jpg",
+      "hash": "7af1a2678a7114632f0274947888e29794321fc9e5edc25dd78d16d42017d685",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00005.jpg",
+      "hash": "5fb95aeef21638c09143a6f15c39c65eb7be22e7c752730c648ed7b60c6d50d8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00007.jpg",
+      "hash": "ffc0df6903deff23117a8517a8365d729b073b272d3e6dfb97d414b1f736ddf5",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00009.jpg",
+      "hash": "9fc6c998582e99696112bc79e2ce2f20f023641323d2642489b772f43073f3cf",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00011.jpg",
+      "hash": "6caf2ad458a695a73f9d890934f38628ad47e1fc395e5219ce0ee1caf57242d8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00013.jpg",
+      "hash": "1eaebcb9926515196f0e5499ed932bffe2dd1897e8bad55da41c4100cbc4f1b2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00015.jpg",
+      "hash": "b47288fa0e351c4483d62ff1bd6db178e3fba89137407726e6f2890cf7a5d248",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00017.jpg",
+      "hash": "f91a6ba2e60144bd62175891872170b57a3e1bfd642a7816b018b86db76257f7",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Apple_scab",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Apple_scab\\pd_field_00019.jpg",
+      "hash": "0b32e3e7a5a1b37b7f9a18721cb2674260f6ac3246c690879d82345c9c576f76",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00001.jpg",
+      "hash": "f1b4f0ef38724290a0f896de850871f302aa12eac89625705233f77b0bd52797",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00003.jpg",
+      "hash": "9773123c2caf06b5b574c406894ed37fff53638d2b826343603504b1d69595b1",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00005.jpg",
+      "hash": "93337329613ae06077f080ee91254267039c1fb27e04eb090e6c81f99a90fda2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00007.jpg",
+      "hash": "0902a4df3831c69d0580f0b746a8ea277d317e358dcd05d5304c13ac539996e7",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00009.jpg",
+      "hash": "20adb414a8162e2dfd875b16ab9ba78b80713e62242d2a57497d1cbf22f621c1",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00011.jpg",
+      "hash": "326ddb5fd0ec65489a154a583d968dc63177c9e244f82f12a55f42c2eada807f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00013.jpg",
+      "hash": "b383d0ba58fbd71926956fe38016ef2cb1de8dd1cf09534c289b6d00b9a1e6bb",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00015.jpg",
+      "hash": "ea6f3c7dfbba1e7089ccb48ca2421249c9b8c96405668369963c723f8a136011",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00017.jpg",
+      "hash": "b1572c5a942ed6485bcf2d41c2b8aaa6d6a42041fc19b0f5e9f212ff8f10210c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___Cedar_apple_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___Cedar_apple_rust\\pd_field_00019.jpg",
+      "hash": "33d5438707e6c733eef23f55d2ca20c455a847cbdaa6055e986c7601b0cd8d23",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___healthy\\pd_field_00001.jpg",
+      "hash": "93eaedfb1c29ec24e347500fa9e1e5556ba94af539254caac79c8b471d11b8df",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___healthy\\pd_field_00003.jpg",
+      "hash": "646de55f7314f6994e453a8b5306fdf63e7b8f66a28b29fa9274be3b4d763883",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___healthy\\pd_field_00005.jpg",
+      "hash": "aa297cdf285ef4fd70ef7561b0f80f212d169a075ab01e6ea15a39b49788d4bb",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___healthy\\pd_field_00007.jpg",
+      "hash": "86ae7cf7e63818282f1e6c217a50ddd0bc2399c677d29268c5603bc0869f8192",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___healthy\\pd_field_00009.jpg",
+      "hash": "ee31497d152703df4f9581a32796cc272181cc0b2bd7be22d5e10ee0f40cac9d",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___healthy\\pd_field_00011.jpg",
+      "hash": "56a414ce3976cfbd137ebabac52ca2faba093d9a865368d129eae5bae0ac14e8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___healthy\\pd_field_00013.jpg",
+      "hash": "8d345ef55e8b6b13407264385e8076101c8f3711b908c6c2f8eb32a16ae78864",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___healthy\\pd_field_00015.jpg",
+      "hash": "4742bf7d38d0b0d9042cb3430d6f703d9877fc1bc5703977da24d48fb001df82",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Apple___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Apple___healthy\\pd_field_00017.jpg",
+      "hash": "632220da09aa65fcd78c805f778511125c99639b3894170f4d9c8a94f7f32ddb",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00001.jpg",
+      "hash": "07b9b0a3395d6643e0033f5327c188305479c20a67b9e0081efec85139d63306",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00003.jpg",
+      "hash": "09a3f4807d7d79b399e19da63d212e271fb0ecb4be8a90d0629b62c483403d0a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00005.jpg",
+      "hash": "c80d8c6ad4eab11f18540936ed92cc607269612ed4915780268f6bd584de3a2d",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00007.jpg",
+      "hash": "9825a869d66d0aa4fa812dac3233a95372c0c37d963b894eb7a7baa83cb9bf0c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00009.jpg",
+      "hash": "f16930fbfab4042fbabc2966fb8a7f9cfe00c1029b7f768e3afdf322c98f09e2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00011.jpg",
+      "hash": "59c1b790426d06c2b119456b682f898453c9dcc3aac7d77627455d6b4c6c0cf2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00013.jpg",
+      "hash": "5e31b852c76e429e3fe2981d6b383b655618a8c9d04b8c29451de26a6780e9a8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00015.jpg",
+      "hash": "9f252ca961c41ade2ecc1baab912a309d173397db1acd6b8701c4268f6fb370c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00017.jpg",
+      "hash": "5012fc4eac7e81d6030083fad12253182bc00365c46a4ea72d682ed31b7bc35c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00019.jpg",
+      "hash": "a230f0f7f35b6f2c1473259c429f68537a9332545bac2a59c5940620cae3ff4c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Blueberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Blueberry___healthy\\pd_field_00021.jpg",
+      "hash": "ce7c810c3188f547ec5f77ff917fff685adb9d61fa46e3d4e31124cccc555cb8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00001.jpg",
+      "hash": "c8558de1281f269c91d394fbaf4fd06fb2c0a04dd3125cad4d5fcec2be3a5891",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00003.jpg",
+      "hash": "58b9ab22b87542a82c76f4ccdc24c7a2a7979a26b59d2a1ed051edfd036760b6",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00005.jpg",
+      "hash": "0a26a3e226bdd6d34416e19bbc4e168a034f201ce5effa5fb46e6896ad877334",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00007.jpg",
+      "hash": "acda7a4b63745a43b2da5195eb7d16f36f5933f6b23bd7ebe60cb285176d1bf7",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00009.jpg",
+      "hash": "5a5df8b7b4a21e5edae671379674afa0e3b958466893f7d9cabacb085670f336",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00011.jpg",
+      "hash": "edcfea2e7632ee23e48a545f941b4ff6b2bcc26995f953501e3d5079ba1ee768",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00013.jpg",
+      "hash": "b24b1b75df677567d96f6fa00ff0530afe4512cd647efa860ac7e625da706d5a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00015.jpg",
+      "hash": "2fd622275560e03ed0880b393d9f888c9776184ce842e530fc51aea2b1525a0c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00017.jpg",
+      "hash": "281c7ac4550ab84d66c8bb2caedddf25bfe6ece1e743cf02027dcaaaa006b3d5",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Cherry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Cherry___healthy\\pd_field_00019.jpg",
+      "hash": "f0dacd9900802e97ca97d7931308959993c3a09d3cecbaa8de051af5a1dfb3d1",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Cercospora_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Cercospora_leaf_spot\\pd_field_00001.jpg",
+      "hash": "ee3838e2249e671b7b4510b0d3831f30882e2bcbf20c9c8c42ee8f4e1b95fcce",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Cercospora_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Cercospora_leaf_spot\\pd_field_00003.jpg",
+      "hash": "723b0d272e745f3d81f205fc60dcfc989cb7698e3d48087aa63f904001ff9101",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Cercospora_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Cercospora_leaf_spot\\pd_field_00005.jpg",
+      "hash": "09be2f9958acdcd1cc32b43cb3f9b6196815f6ee9103077861a10f78f2a5978c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Cercospora_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Cercospora_leaf_spot\\pd_field_00007.jpg",
+      "hash": "d335de0aeb36d5127592a6c5b33cc02e5e9e9bff688500e71cd338736329cf1c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00001.jpg",
+      "hash": "74f5150ebe2ad2efc2288e5d8764852c8616ae96b9cd0486b72e48c08fb3dc55",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00003.jpg",
+      "hash": "d81099827be9eea9fd64d18771a60680255ea1fa9a2d2dd9247d55c97df59556",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00005.jpg",
+      "hash": "9d3bbdb56a902458d4bb09c2b16a117173048eb2f9dac5a25adaf5b87a32782e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00007.jpg",
+      "hash": "d551e7c75cb72e01ddb13abdc7cc996e7727c54bb21556a552b82bebcd81f825",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00009.jpg",
+      "hash": "3072867b4b451739759fa7b4e26de9018e72e9f85ea5069b8bd2179dc20a4694",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00011.jpg",
+      "hash": "376de5dfd4c5f0385e483a9a9e8b64d58c271787b9c0f72da2713cfb08ab702d",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00013.jpg",
+      "hash": "851941010e7f34ff324b3891139d55c9615272153e26a570732b81cd5f8b4930",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00015.jpg",
+      "hash": "35371942d3914e29adc6ce0247d6e9aff2c04820d58f2168ea42c515a33e32a6",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00017.jpg",
+      "hash": "1236a199431c6c7b4798310cfb847faa4c4b9047b62149de91674989b1ed76b9",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Common_rust",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Common_rust\\pd_field_00019.jpg",
+      "hash": "10e15f1c88ceda5b126d25f64ca4ec09229e2359b58ed8b0d39381df3dffd883",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00001.jpg",
+      "hash": "0a7d472d5da53b9436775feb479598e0c8067eae96dfd06c7ebdaecee79af473",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00003.jpg",
+      "hash": "3b616d93a4aa72ad932f05dd2ff1a0392139ce355a1b9d24f0e78cf71405a62c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00005.jpg",
+      "hash": "4713b10521040b12bd472f7d83aca182cb240f99d6a214ec2c904cca3316e30a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00007.jpg",
+      "hash": "9b17c3e4a9dacb6144f7c6ae7e69366b5966f8bdc49bd5ac175450a9c2f60dcf",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00009.jpg",
+      "hash": "0269c07a3081df41e9e8e5a7ee3c18394bb81fd8b0c6bff78b610d993b72a14d",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00011.jpg",
+      "hash": "23fb26f404234f8f4a24641c038cac24dade2a9fa70c5da27c6aa2328a8270cd",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00013.jpg",
+      "hash": "366cac0649df317e9cdfbc64ec11c8b3da8e15aa7db164a9bf84db5c6236dfa3",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00015.jpg",
+      "hash": "6e777d1b6829140e66573f918c0f1681ca4cd2979859c37435c84977153ec223",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00017.jpg",
+      "hash": "248c90ff324974883bc2a6547f5946f1fb26349186618d6f961e5cd1979e4abf",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00019.jpg",
+      "hash": "440c5caae1739af7a4e8530fd16cf3a5d450a376ce315fbe0ccab2e326139606",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00021.jpg",
+      "hash": "9120578a76fd8539da220def6e0609ebb2435decc7a9c34b949e46e86e794c8d",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Corn___Northern_Leaf_Blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Corn___Northern_Leaf_Blight\\pd_field_00023.jpg",
+      "hash": "deef0c607d0a5decdae484b0d1d92633ba4fe0ab15595d33e36222f62313f58e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Grape___Black_rot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Grape___Black_rot\\pd_field_00001.jpg",
+      "hash": "e8468522aba52f73e8e919658fa833130602633a98aa3033dba6dd1595bc8718",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Grape___Black_rot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Grape___Black_rot\\pd_field_00003.jpg",
+      "hash": "d20cc643fdfbb07db3616a50de0a2280383e134fa8f06ca5522e07c0cfc25aa9",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Grape___Black_rot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Grape___Black_rot\\pd_field_00005.jpg",
+      "hash": "404fd83fecf8cb839ab7c76ac90e2a9e1906d2c4a62acf86568b3ef037b88f41",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Grape___Black_rot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Grape___Black_rot\\pd_field_00009.jpg",
+      "hash": "e64969c324e6981d478bfff5c9099da715e0bdd974b2ea7a7acd62fa8ee63af0",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Grape___Black_rot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Grape___Black_rot\\pd_field_00008.jpg",
+      "hash": "99c0a3a63c127e376a4120007fcc81797ec8248cf95a8020510e46f602590335",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Grape___Black_rot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Grape___Black_rot\\pd_field_00011.jpg",
+      "hash": "09f5a6a0ded0e8f811d4a6c10f479c5fecb09f41b713eb729d381de12bd4ac01",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Grape___Black_rot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Grape___Black_rot\\pd_field_00013.jpg",
+      "hash": "2309bc80cdef703d4923dee780d5d840ec67e8d83118915b2014053de3a2a6c9",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Grape___Black_rot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Grape___Black_rot\\pd_field_00015.jpg",
+      "hash": "4949d0f81b7c1ec21b55e51ccbdcce34eec213d02c58f9f9121660552be6cd7c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Peach___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Peach___healthy\\pd_field_00001.jpg",
+      "hash": "efe7103184ba7b526b7958d11ece9922d3a7110b20603860b3225e1dbeb4db82",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Peach___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Peach___healthy\\pd_field_00003.jpg",
+      "hash": "2b42bfdb7b7422f0229cf8049232f8f38acf1e3df5070ef79b343ed1515c5ed1",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Peach___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Peach___healthy\\pd_field_00005.jpg",
+      "hash": "512ff2f4d94b3d8047719b056442ff695406ddc3d09509949812c599cf988101",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Peach___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Peach___healthy\\pd_field_00007.jpg",
+      "hash": "160f181cf8b1db9892696a724d3bbfc3f271f7eae0cbd6a76e7c165f54c341ef",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Peach___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Peach___healthy\\pd_field_00009.jpg",
+      "hash": "d50fe7bece6375221f16b2d8f1547416d4384f6bbaf57580ef16fe81daf7f65e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Peach___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Peach___healthy\\pd_field_00011.jpg",
+      "hash": "c33f72012a661f5aea0244a0312f66485d90a7dd819bd27f4656852c8b215975",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Peach___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Peach___healthy\\pd_field_00013.jpg",
+      "hash": "cec29697c55ee511861de7246d98948525e0b25876d2cbf0b36fe15d45c9664b",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Peach___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Peach___healthy\\pd_field_00015.jpg",
+      "hash": "9e6ed3aeaadb6670be4740a4bf977c5e6166f24ffa03953988b51985322f2ebb",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Peach___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Peach___healthy\\pd_field_00017.jpg",
+      "hash": "3b0dab3c5cdff9da949bbe6fa10f6e4e7422a1c9715ff5451a89427f1abf5224",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___Bacterial_spot\\pd_field_00003.jpg",
+      "hash": "092fd6fa8208f5c46f10899a8c58543949ad3ee3c7621a4e760d685bfd9f610a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___Bacterial_spot\\pd_field_00002.jpg",
+      "hash": "428e8aa1e9ea0e344c1fc50c26734079f7d4eb0d76c5709a9b4a3cf6d1f559cb",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___Bacterial_spot\\pd_field_00005.jpg",
+      "hash": "993f8bea1f19f3bc3334636badfe6e05d1206d7e338d2138cff7392fba6ff9d9",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___Bacterial_spot\\pd_field_00007.jpg",
+      "hash": "f17a668a59155565f613ffc6352a4de92be0153e90ed86d48a4443c2492c5128",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___Bacterial_spot\\pd_field_00009.jpg",
+      "hash": "f92092c55bfd2a95571995f5b38bd8e784da25440b5e146b98644494f3425728",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___Bacterial_spot\\pd_field_00011.jpg",
+      "hash": "cda914f54adfddcc5bce2771d0aa908e9497602645a27281c30dacaca836905e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___Bacterial_spot\\pd_field_00013.jpg",
+      "hash": "ea4730d34e5117cea5a252f952381393ccb22938680b33ae952a39f2a4771c68",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___Bacterial_spot\\pd_field_00015.jpg",
+      "hash": "a5a5f34a7c50efbbbc3f680af9f277b7a016b4e145f60b6a0eafb7de39b3bb5f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___Bacterial_spot\\pd_field_00017.jpg",
+      "hash": "aec0b49214e20a168593766a67f93a22b310be6b36a6c518a9916e5055bece8e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___healthy\\pd_field_00001.jpg",
+      "hash": "18d27a2f69525db1028494ad8d3a54871f431133017ebcc2fa432da18bb50205",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___healthy\\pd_field_00003.jpg",
+      "hash": "31bf779ab58fdb35b249d94105c47a57f372302b7158f9c26bbfb2d3c1e580de",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___healthy\\pd_field_00005.jpg",
+      "hash": "dd6526f15640c67223a9d40b4cd34e9522732deea2b09df09dc9c2eb08099047",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___healthy\\pd_field_00007.jpg",
+      "hash": "7d0741e7826cfcb6ee50a0c78215ab42a66128b2db342e0d6d104bfcff2c370f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___healthy\\pd_field_00009.jpg",
+      "hash": "7ae7d000d7730a008e6bf53dfc78c207859c4569c2bad0eee22675129058256b",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___healthy\\pd_field_00011.jpg",
+      "hash": "a651cf2765e927ffc2c865cdd0a68876f4df8e6ba5f3a2483dcb13754a02c4b9",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___healthy\\pd_field_00013.jpg",
+      "hash": "13b8b10d2b5ac884239a21da79d04911ea3128094aed4ee22a52b7a85c05e893",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Pepper_bell___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Pepper_bell___healthy\\pd_field_00015.jpg",
+      "hash": "bfc4393571e4be68819bd2f8835dfdb82015a9a160ce6fb186b0197da4de32ce",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Early_blight\\pd_field_00001.jpg",
+      "hash": "4e8b82493c841d55dc0c3d43ae6dde79e03beaaf5cb1f425acaa44cffd8f1c99",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Early_blight\\pd_field_00003.jpg",
+      "hash": "64c0f7b5701e815769bad881c0834ffb3b58018233fc3af42c3a1b7968f86973",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Early_blight\\pd_field_00005.jpg",
+      "hash": "53410fa233b049b9d1ccf632a0295969427b799a1b807a16b324166e0b73131a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Early_blight\\pd_field_00007.jpg",
+      "hash": "c256a583dacb5c2747393b2820b4e5fb5aec08c54f930ad76ef3422d2153f48e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Early_blight\\pd_field_00009.jpg",
+      "hash": "c339100d52667a90c43b2f7f36d969e5894849f621b1bbc4a5ba5cf6817b8cbe",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Early_blight\\pd_field_00011.jpg",
+      "hash": "908640f63872eb893ca69db7ddd5297a1f7e5489f2fd9dcd5e3192efefe0f28c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Early_blight\\pd_field_00013.jpg",
+      "hash": "b21f34ffc768f1aa57a1922e87c6816b9a5556a06fd89d6d4051d59fe6410db8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Early_blight\\pd_field_00015.jpg",
+      "hash": "01431bdbb52ca18d4dfb15f10b99d1b3370f0ac00650b0afdad8a00be24e11b3",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Late_blight\\pd_field_00001.jpg",
+      "hash": "c53ad8d40c38debfbc0b79a87d0f3649c20b933a65f5b78a6931f59d06aad498",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Late_blight\\pd_field_00003.jpg",
+      "hash": "2f6afbd158df153a151b3b0e543d24268b902c541520c1c4fb0ee0b34fce0cce",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Late_blight\\pd_field_00005.jpg",
+      "hash": "64f8a9c1c9ca88b4f82e655a9c7ac2eb7f5f34ce9916d244cc9fb21c5d5e8407",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Late_blight\\pd_field_00007.jpg",
+      "hash": "a981ee59e5e1dcafd0d225f74369a05969200352c17743318c31987083ab6f4c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Late_blight\\pd_field_00009.jpg",
+      "hash": "c1bd41ada257040720bf59326a146b777fb1d495cd76a91325e84840ebafa48c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Late_blight\\pd_field_00011.jpg",
+      "hash": "9dd93b4217495fbb725cfdded86d3dc5f98955c9616fff5323be1a00df17be8b",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Late_blight\\pd_field_00013.jpg",
+      "hash": "ce65c731160136a6f3c4c90b8de8ce50780ada4fe63a14184afba62c78e047fa",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Potato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Potato___Late_blight\\pd_field_00015.jpg",
+      "hash": "227457fb9c8f3169fc7fde40362d8dad348e255a0fc4462db1a8fcbae4d12233",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Raspberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Raspberry___healthy\\pd_field_00001.jpg",
+      "hash": "1cfceb41b043427b272f96d110dda31beba1ba51d4854573cd82d268cfa3e7ef",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Raspberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Raspberry___healthy\\pd_field_00003.jpg",
+      "hash": "7b7ce0877a26f90c92e21e9821ee8f51d8a3aba15282e7f8f3f0ab676593f023",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Raspberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Raspberry___healthy\\pd_field_00005.jpg",
+      "hash": "a8e2b6196a3ccb3f8e0bb83bb8bc3d66d3c7fb3500745c12fde98912e5701c31",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Raspberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Raspberry___healthy\\pd_field_00007.jpg",
+      "hash": "7bec837ba4b297e24eb52da79bb1227840701f6713e7ef1403be2c847ae5b182",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Raspberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Raspberry___healthy\\pd_field_00009.jpg",
+      "hash": "bb2c865c8688a236110436a43f8c337c6ac62cfda91668e27d1fdaa8e821fd3a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Raspberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Raspberry___healthy\\pd_field_00011.jpg",
+      "hash": "145fa84daca79846d3703b5c4992a4f24555067750e7ef2a329500f77e72dc3c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Raspberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Raspberry___healthy\\pd_field_00013.jpg",
+      "hash": "01857adfcb9d90567d2a688211ed216f057d5b230bc386ddd020665acb74d2fa",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Soybean___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Soybean___healthy\\pd_field_00001.jpg",
+      "hash": "8224271e90dba7b9bad497190ce77adbb394984e90890256f12bf78a785b392f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Soybean___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Soybean___healthy\\pd_field_00003.jpg",
+      "hash": "75648ab5449cbf6a7551d0620e0b19e6de95c42dbf06c7e14979a0665b35a527",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Soybean___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Soybean___healthy\\pd_field_00005.jpg",
+      "hash": "11fb9e1e3000b8a2757c1c1c5b86f2d98383362397ebe9d865b5e32ac8b9ed0f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Soybean___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Soybean___healthy\\pd_field_00007.jpg",
+      "hash": "cf2b890efa23dc50f8782b78bba353d4c1d9c295b2f0ff233519c8a1d5f56c75",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Soybean___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Soybean___healthy\\pd_field_00009.jpg",
+      "hash": "80beb9f77638e075ef045dd0235d0b5c6beb7093bb3cb065b655901035cf1a21",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Soybean___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Soybean___healthy\\pd_field_00011.jpg",
+      "hash": "d63b89ea66ff5e235452b7f053fea1fea662137af04fdcf21a5691e2058760a2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Soybean___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Soybean___healthy\\pd_field_00013.jpg",
+      "hash": "16fcddded95b475317ef2713402c00bf2388d5e02f3e29aa6f775b8403e00d69",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Soybean___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Soybean___healthy\\pd_field_00015.jpg",
+      "hash": "f011a2eec5088bbd45ba547f60f718703b562c1ceb5c2732910bc3da18375a1b",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Squash___Powdery_mildew",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Squash___Powdery_mildew\\pd_field_00001.jpg",
+      "hash": "d67d991266f922355cb4e3f9c45ef875cac7767bd3918d3ae324dac37ea2e14b",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Squash___Powdery_mildew",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Squash___Powdery_mildew\\pd_field_00003.jpg",
+      "hash": "3be3664ce890bc311ed008a168f435ddcfdfab5e967016aaf8f03374b0447de6",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Squash___Powdery_mildew",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Squash___Powdery_mildew\\pd_field_00005.jpg",
+      "hash": "0439b496676027f8849c588c6bc5422196ff322b7e8c5748a09a456c0c0f257d",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Squash___Powdery_mildew",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Squash___Powdery_mildew\\pd_field_00007.jpg",
+      "hash": "8376d9a89830912317ce9aeb81cb87707fbb2d727bf0658692e293074a214dd6",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Squash___Powdery_mildew",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Squash___Powdery_mildew\\pd_field_00009.jpg",
+      "hash": "1a99306b14c3f304aa673b7f63b2a1b054f8a57a91fdea1ed3cabaf2b70a964f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Squash___Powdery_mildew",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Squash___Powdery_mildew\\pd_field_00011.jpg",
+      "hash": "f10b4168449157a72bdf544c72d8e6cccf316772218e2669a496fb1bd6d0891c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Strawberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Strawberry___healthy\\pd_field_00001.jpg",
+      "hash": "2b1e04fb0167cda6984a1f168ec887d6898551642686e63935cc533069c0ab9e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Strawberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Strawberry___healthy\\pd_field_00003.jpg",
+      "hash": "cdef75f85823e13c782ab13417945edafd68f2253f13e1f35d7b86116cca3bcc",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Strawberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Strawberry___healthy\\pd_field_00005.jpg",
+      "hash": "fd8e2d007ab7d6895f447cb48ae48db10c7bab6d6c18134df241fb6f9f945f23",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Strawberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Strawberry___healthy\\pd_field_00007.jpg",
+      "hash": "aea238ab644bf26dfde18e6c62abedcb90ed03af78df7f5dc0751b6fe58dfc42",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Strawberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Strawberry___healthy\\pd_field_00009.jpg",
+      "hash": "71fe6863521c8342592f98ab3c43ac349dd17263efa11bc528e41010557f2244",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Strawberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Strawberry___healthy\\pd_field_00011.jpg",
+      "hash": "55c83b9af55c51d9fe59e6a4d76a46bcc11dbf29cca5425cdd5444c2ee8073ae",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Strawberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Strawberry___healthy\\pd_field_00013.jpg",
+      "hash": "3d4dc882286ba25f66c6adb5d8066cdbbf31a377277699c1b35efe652fee93e0",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Strawberry___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Strawberry___healthy\\pd_field_00015.jpg",
+      "hash": "f9143045c9180ab7ae754421d4f5400971995ae7c92a81cabbedb8f4cbfd7366",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Bacterial_spot\\pd_field_00001.jpg",
+      "hash": "b609929106ab0044de24717ceb091163e7630ec3460ec18c6d9c7bf2b996121c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Bacterial_spot\\pd_field_00003.jpg",
+      "hash": "d9e9aa3d8e0e58d5875c4b9bb17b19327a5b004e91e20942d7a528a8c52f4eeb",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Bacterial_spot\\pd_field_00005.jpg",
+      "hash": "04de396dcc709310361f017f4b290e8994ba258685a0725607169e2c16bb5877",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Bacterial_spot\\pd_field_00007.jpg",
+      "hash": "f8a309c930537862201f172a32c48db8558e0f3e119757ec85a5dc22d9e96e7f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Bacterial_spot\\pd_field_00009.jpg",
+      "hash": "98d1b4229761f914476b63c2b7c70a4bd5a23681bf9b4622b642c3dc09cac8ce",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Bacterial_spot\\pd_field_00011.jpg",
+      "hash": "18ce26ad83522efb7d2721582f0bd6f2a7d047f313e969442af25da038f6a2ec",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Bacterial_spot\\pd_field_00013.jpg",
+      "hash": "e23a29c94b58aac28e92f57f95eb6f53e99c874323cb2b90ebd327085721574e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Bacterial_spot\\pd_field_00015.jpg",
+      "hash": "abe1259ccd33542f7cd9c14ecef8a995b601272c0808b52daade7f153fdc5b66",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Bacterial_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Bacterial_spot\\pd_field_00017.jpg",
+      "hash": "07d8f5a4a18746daf367d85b9254364ace2824ce5c31dfacefb0d00b89d99ac8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Early_blight\\pd_field_00001.jpg",
+      "hash": "7d9c5c6947554d5fc6e98df5fbc1beb6363255128bd56446960e29a73242c02e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Early_blight\\pd_field_00003.jpg",
+      "hash": "98d52f733e1e23c5f5059f3ce57c762a1e0fc26028abf8750105d0250c29f670",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Early_blight\\pd_field_00005.jpg",
+      "hash": "236d96cdae7b29039c3d93147f447394c78a077fec42ce5aadbd0506a0aca0cb",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Early_blight\\pd_field_00007.jpg",
+      "hash": "55570c32bf51ea713ee2dc293078ce3008986ad281a8cce626fbb264e0b44679",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Early_blight\\pd_field_00009.jpg",
+      "hash": "375244fd47978c73c1c7da2afb50df359e8b496cb20500f09ed02fa984e3ad62",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Early_blight\\pd_field_00011.jpg",
+      "hash": "33051105a7999fd6346911a9de67485f5678af4af738076308b1edafada1bfe7",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Early_blight\\pd_field_00013.jpg",
+      "hash": "9650bd867d436b35710a6c8e5142baf3744910eee250372efe547f23d514980a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Early_blight\\pd_field_00015.jpg",
+      "hash": "7885910ac8d584a706d6448390c24f77e4e36ada4a75ae58b354a5642d0448b4",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Early_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Early_blight\\pd_field_00017.jpg",
+      "hash": "7571d72639461cc8de512dd2087c63cc1877322ae1954f7b4521756789c362c9",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00001.jpg",
+      "hash": "fd87cea75ee543ab40c76fb94cbc40e42d1c848e5f5dd7756e56f44d0367c734",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00003.jpg",
+      "hash": "1a33cccc63bbb630a1c07cc04a1caa2ee0bbfb8f855529328076b3e725950afc",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00005.jpg",
+      "hash": "d306bef21e5a4d9ddd57401a7b047a74a260f92096f443c786986cebf0402159",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00007.jpg",
+      "hash": "26eb8199defc993cacb48533b22628d8eb5cfd092b5dbc10b8d9db509aad848a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00009.jpg",
+      "hash": "0024d2b0e3bd578375ffb676d5c5a20c3f6d82d335f8758a215a539ac3a27ff6",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00011.jpg",
+      "hash": "1146802ff74c97a511dedcb6bf204d3029e13734bb2d0fcc9a44bce50d2311f2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00013.jpg",
+      "hash": "85f650d777a583a5a3f528fa7c356d8b673bc8c76f635cbf9dfdae773ea446a8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00015.jpg",
+      "hash": "f77f5a7245b8a2ff0e3640693e679ac52b036ab639bbfef405d7de4ed4768536",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00017.jpg",
+      "hash": "69526a0f4413d8f8e786650a8264e460496e41e0a794747b8358c7d4074dfee6",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Late_blight",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Late_blight\\pd_field_00019.jpg",
+      "hash": "3d2fdce4dd866c8db1a76996e0115dec623b25cfa90a98e8259d6fabc038b3d2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Leaf_Mold",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Leaf_Mold\\pd_field_00001.jpg",
+      "hash": "3c831e06fae662ff4a0351be082f516545b537c4df5fad003eeb1c623fd160d1",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Leaf_Mold",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Leaf_Mold\\pd_field_00003.jpg",
+      "hash": "038898eee33130b1e02ecee95413923d4c51b9f81bd0277c29381a479bf53f2c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Leaf_Mold",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Leaf_Mold\\pd_field_00005.jpg",
+      "hash": "4d61613d92bdb576e294d12be4e4c8a78fd92c683eed9cdaf8f43b2eaa9bdad5",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Leaf_Mold",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Leaf_Mold\\pd_field_00007.jpg",
+      "hash": "555167747a5a251e3df7053d441bedf96d9707027d572d606313bf4f71483ef5",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Leaf_Mold",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Leaf_Mold\\pd_field_00009.jpg",
+      "hash": "e64cf32592c83208ed72d4e5ccee2f3bbfe5aec8f108d3f3db9a43cce7ea95fb",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Leaf_Mold",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Leaf_Mold\\pd_field_00011.jpg",
+      "hash": "bfdd82a0f88aab850f5f214c7104d42d4266c11400b47285563b18693b4aa9f8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00001.jpg",
+      "hash": "c7e82b8ce320acec30c35a89e73490618e425c76d3c80d2d88a3053d39e9709e",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00003.jpg",
+      "hash": "b3404b141d9bda7cea19fa8dff6cef38da2a6e3f0a38fb6778713118578c13fc",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00005.jpg",
+      "hash": "a8844aed418d61e8db0e2ef68c9da1ede9c0e3800e0756b6fbf02e0247ad1b7c",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00007.jpg",
+      "hash": "9dbcc935858b4fcc4b4f6c895c48045735b1f577959e995f2941bf761e42390a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00009.jpg",
+      "hash": "5fc6710f54773260cd3d3f1444e1a3aa29a9b55c64065ab8eb12851bd4b9b9c5",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00011.jpg",
+      "hash": "519210b5c98e67f1ec0a0705b12ed0b28625e2e514b472c86d8d3d1ba7256365",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00013.jpg",
+      "hash": "2d87a16ce8325e687e246afc29a9b6468cddc7841d113ac7d4948b0fefee6197",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00015.jpg",
+      "hash": "c80add2c370abf75ee50396e7dec72b686732c7474df5bbba02343ae504751c9",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00017.jpg",
+      "hash": "93c989d8551209bf34d4002ee9fae48ddbf6ab66fc3c27466c0473bcc7c0a2b7",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00019.jpg",
+      "hash": "2005cb2706dc299ac16e5be8b42e705da41d4aae2d6fe17f24e87466a6a856fa",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Septoria_leaf_spot",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Septoria_leaf_spot\\pd_field_00021.jpg",
+      "hash": "3398df03c7b73de34b61da8df99de69a7f2448b800356be6809fa9edddc6abce",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_Yellow_Leaf_Curl_Virus\\pd_field_00001.jpg",
+      "hash": "1f62f0f3eabfd7d955f212d852f4143e8f0bb49077e9350f641696749f595d01",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_Yellow_Leaf_Curl_Virus\\pd_field_00003.jpg",
+      "hash": "e75892c6833fde9fddcf03d8d0529863c2827c91f971ac18b92d8dc2546a769d",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_Yellow_Leaf_Curl_Virus\\pd_field_00005.jpg",
+      "hash": "3f9a9d33fdcdd8e091a878416ddf9360148a7c9b7a28293339c83402b480b1e0",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_Yellow_Leaf_Curl_Virus\\pd_field_00007.jpg",
+      "hash": "9ac4376dfcbf51d037888a2183aa8984cf60ec0227fe82dcdd7b49275df6d38a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_Yellow_Leaf_Curl_Virus\\pd_field_00009.jpg",
+      "hash": "fa18a5b4f6d307b52db63d16e7fa0cdcda2804c4316631273df9470819dac16f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_Yellow_Leaf_Curl_Virus\\pd_field_00011.jpg",
+      "hash": "3c52144e19e95cc3d4170407eaf729d0981b934615eaa183f7f5aa29d8ef265a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00001.jpg",
+      "hash": "114ad00502e682078ccbed196422c3092e017a3d11078ebd439f9825a57e1fa2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00003.jpg",
+      "hash": "1dd06a9e3bd48713bb445a8588d8c38dec7643435e5c8b0652f584ac4eff64c1",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00005.jpg",
+      "hash": "3be8d7001035234d99b56906f4b1d0d0037b22b785396889d3b9ce6eaa7d15cc",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00007.jpg",
+      "hash": "fd47dc830e0dbbd0120d2a6777741dabbd9b4f6f296e31bc063b40568310250d",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00009.jpg",
+      "hash": "995ada04ba135f89218ddc3f17617e59411b63ae5167c25ded94284aeda9d7e8",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00011.jpg",
+      "hash": "d4ced16a63bfb55865541775dfa1311bc76c6714659af4443d9154297bf41ff0",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00013.jpg",
+      "hash": "c5d7e06ccd83c8b15a0102d343fb9bfecfb36c4cf83acfdf92c2b88c18899f5f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00015.jpg",
+      "hash": "4e1e9dd3e151f41b1a610024c4ca401a7c052f970723faf8b137edce24102e41",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00017.jpg",
+      "hash": "300516de60912443a4b013d2588e35bcbab6705561e04ba421eec3a7070f2148",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___Tomato_mosaic_virus",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___Tomato_mosaic_virus\\pd_field_00019.jpg",
+      "hash": "6314256efc354bde93065b70bd0044361644e866604b12ecd1cb762307405428",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___healthy\\pd_field_00001.jpg",
+      "hash": "bc0ec6abdabe070a8e98749360809fc8cca196e21661f93a038d75b45e13b18d",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___healthy\\pd_field_00003.jpg",
+      "hash": "f462b769606f79703c44a2c595f57269924bb41ea335b94cbff099bc5c2525a2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___healthy\\pd_field_00005.jpg",
+      "hash": "e990d6c955434857b52b7904fdcc48893ff0b0cebcbc839db143bc301ec7b191",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___healthy\\pd_field_00007.jpg",
+      "hash": "66e581feb1714e0cfd3e2afdc8f90dcf0394b897886233aa515b7dea1390da1a",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___healthy\\pd_field_00009.jpg",
+      "hash": "d119deb0673b049551857318a686c6ecab5c2aa2607fc349ac25424d4ce636c2",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___healthy\\pd_field_00011.jpg",
+      "hash": "66d8d18b9bf9c8d83efd3a0cf09c53fbbd575795a518b57a66bc338c11c07069",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___healthy\\pd_field_00013.jpg",
+      "hash": "36d4cf67739d3d7b079eed20331535674781886f75abbf7f010999a45b00980f",
+      "action": "intra_test_field_duplicate_removed"
+    },
+    {
+      "removed_from": "test_field",
+      "test_field_class": "Tomato___healthy",
+      "test_field_dst": "D:\\AgriSmart AI\\ml-pipeline\\data\\processed\\test_field\\Tomato___healthy\\pd_field_00015.jpg",
+      "hash": "9cffe92d5f898fa2bb96e78f63ef46059b710a0f2d97054f1e534a5619778b13",
+      "action": "intra_test_field_duplicate_removed"
+    }
+  ],
+  "fix_applied": "content_aware_split_v2",
+  "fix_timestamp": "2026-09-11T11:30:04.813113+00:00",
+  "train_val_collision_fix": {
+    "collisions_before_fix": 8,
+    "collisions_after_fix": 0,
+    "root_cause": "PlantVillage duplicate-content files with different UUID filenames",
+    "fix_method": "SHA-256 content-group isolation before train_test_split",
+    "affected_classes": [
+      "Apple___healthy",
+      "Tomato___Late_blight",
+      "Tomato___healthy"
+    ],
+    "dup_groups_detail": [
+      {
+        "class": "Apple___healthy",
+        "source_files": 1645,
+        "dup_content_groups": 7,
+        "train_count": 1315,
+        "val_count": 330
+      },
+      {
+        "class": "Tomato___Late_blight",
+        "source_files": 1909,
+        "dup_content_groups": 8,
+        "train_count": 1527,
+        "val_count": 382
+      },
+      {
+        "class": "Tomato___healthy",
+        "source_files": 1591,
+        "dup_content_groups": 6,
+        "train_count": 1273,
+        "val_count": 318
+      }
+    ]
+  }
+}
