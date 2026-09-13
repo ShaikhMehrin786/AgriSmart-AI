@@ -28,7 +28,7 @@ import {
   Check,
 } from 'lucide-react';
 import FieldNotebook from '../components/FieldNotebook';
-import RazorpayStyleHowItWorks from '../components/RazorpayStyleHowItWorks';
+import AgronomyWorkflow from '../components/AgronomyWorkflow';
 
 const stats = [
   { value: '38+',   label: 'Disease Classes Calibrated', detail: 'PlantVillage & PlantDoc dual-benchmark' },
@@ -369,8 +369,8 @@ const LandingPage = () => {
             </p>
           </div>
 
-          {/* Razorpay Component */}
-          <RazorpayStyleHowItWorks />
+          {/* Interactive Scroll-Driven Agronomy Notebook Workflow */}
+          <AgronomyWorkflow />
         </div>
       </section>
 
