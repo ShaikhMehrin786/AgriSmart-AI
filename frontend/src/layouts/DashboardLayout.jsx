@@ -61,13 +61,16 @@ const DashboardLayout = () => {
   const SidebarContent = () => (
     <div className="flex flex-col h-full" style={{ background: 'var(--bg-sidebar)' }}>
       {/* Brand Header */}
-      <div
+      <Link
+        to="/dashboard"
         style={{
           padding: '1.25rem 1.5rem',
           borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
+          textDecoration: 'none',
+          cursor: 'pointer',
         }}
       >
         <div
@@ -100,7 +103,7 @@ const DashboardLayout = () => {
             Precision Agronomy Platform
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Navigation List */}
       <nav style={{ flex: 1, padding: '1rem 0.75rem', overflowY: 'auto' }}>

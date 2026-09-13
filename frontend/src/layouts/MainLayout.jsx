@@ -34,10 +34,9 @@ const MainLayout = () => {
             justifyContent: 'space-between',
           }}
         >
-          {/* Brand Logo with Smooth Scroll to Top */}
+          {/* Brand Logo directing to Dashboard */}
           <Link
-            to="/"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            to="/dashboard"
             style={{
               textDecoration: 'none',
               display: 'flex',
@@ -237,11 +236,14 @@ const MainLayout = () => {
             gap: 16,
           }}
         >
-          <div
+          <Link
+            to="/dashboard"
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 9,
+              textDecoration: 'none',
+              cursor: 'pointer',
             }}
           >
             <div
@@ -266,7 +268,7 @@ const MainLayout = () => {
             >
               AgriSmart AI
             </span>
-          </div>
+          </Link>
 
           <p style={{ maxWidth: 500, fontSize: '0.88rem', margin: 0, lineHeight: 1.6 }}>
             Empowering Indian agriculture with zero-latency, in-process ONNX leaf pathology,
