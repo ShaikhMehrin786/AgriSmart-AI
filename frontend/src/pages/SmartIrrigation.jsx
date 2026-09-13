@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Droplets, Loader2, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Droplets, Loader2, CheckCircle2, Clock, AlertTriangle, MapPin, Sparkles } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
-import api from '../services/api';
+import { fetchIrrigationPlan } from '../services/api';
+import IrrigationCard from '../components/IrrigationCard';
 
 const CROPS   = ['Wheat', 'Corn', 'Tomato', 'Rice', 'Potato', 'Cotton', 'Soybean', 'Sugarcane'];
 const STAGES  = ['Seedling', 'Vegetative', 'Flowering', 'Fruiting', 'Maturity'];
@@ -9,15 +10,27 @@ const SOILS   = ['Sandy', 'Loamy', 'Clay', 'Silty', 'Peaty'];
 
 const SmartIrrigation = () => {
   const [form, setForm] = useState({
-    crop:          CROPS[0],
+    crop:          CROPS[2], // Default to Tomato
     stage:         STAGES[1],
     soilType:      SOILS[1],
-    soilMoisture:  60,
+    soilMoisture:  40,
     area:          1,
   });
+  const [coords, setCoords]             = useState(null);
   const [loading, setLoading]           = useState(false);
   const [recommendation, setRec]        = useState(null);
   const toast = useToast();
+
+  // Attempt to acquire geolocation for live weather alignment
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        () => console.warn('Using regional farm baseline coordinates for irrigation calculation.'),
+        { timeout: 6000 }
+      );
+    }
+  }, []);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -26,39 +39,62 @@ const SmartIrrigation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Client-side validation
+    if (form.soilMoisture < 0 || form.soilMoisture > 100 || isNaN(form.soilMoisture)) {
+      toast.error('Soil moisture must be between 0% and 100%.');
+      return;
+    }
+    if (form.area <= 0 || isNaN(form.area)) {
+      toast.error('Field area must be a positive number greater than 0.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.post('/advisory/irrigation', form);
-      if (res.data.success) {
-        setRec(res.data.data);
-        toast.success('Irrigation plan generated!');
+      const payload = {
+        ...form,
+        lat: coords?.lat,
+        lon: coords?.lon
+      };
+
+      const res = await fetchIrrigationPlan(payload);
+      if (res.success && res.data) {
+        setRec(res.data);
+        toast.success('Smart irrigation plan calculated!');
       } else {
-        toast.error(res.data.message || 'Could not generate recommendation.');
+        toast.error(res.message || 'Could not generate recommendation.');
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to connect to backend.');
+      const msg = err.response?.data?.message || err.message || 'Failed to connect to backend.';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const isDelay = recommendation?.action?.toLowerCase().includes('delay') ||
-                  recommendation?.action?.toLowerCase().includes('no irrigation');
-
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ maxWidth: 880, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 4 }}>Smart Irrigation Planner</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Get AI-driven water schedules based on crop, soil, and weather.
+          Rule-based water scheduling balanced against real-time weather telemetry and crop water demands.
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '1.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
 
-        {/* Form */}
+        {/* Form Panel */}
         <div className="card">
-          <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '1.25rem' }}>Field Parameters</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+            <h2 style={{ fontWeight: 700, fontSize: '1rem' }}>Field Parameters</h2>
+            {coords && (
+              <span style={{ fontSize: '0.72rem', color: '#16a34a', background: '#dcfce7', padding: '2px 8px', borderRadius: 9999, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <MapPin size={11} /> GPS Active
+              </span>
+            )}
+          </div>
+
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
             <div>
@@ -85,7 +121,13 @@ const SmartIrrigation = () => {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                 <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Soil Moisture</label>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-600)' }}>{form.soilMoisture}%</span>
+                <span style={{
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  color: form.soilMoisture < 25 ? '#dc2626' : form.soilMoisture > 75 ? '#2563eb' : 'var(--primary-600)'
+                }}>
+                  {form.soilMoisture}% {form.soilMoisture < 25 ? '(Dry)' : form.soilMoisture > 75 ? '(Saturated)' : '(Moist)'}
+                </span>
               </div>
               <input
                 type="range" name="soilMoisture"
@@ -94,81 +136,33 @@ const SmartIrrigation = () => {
                 style={{ width: '100%', accentColor: 'var(--primary-600)', cursor: 'pointer' }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                <span>Dry (0%)</span><span>Saturated (100%)</span>
+                <span>Dry (0%)</span>
+                <span>Wilting Threshold (~25%)</span>
+                <span>Saturated (100%)</span>
               </div>
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 5 }}>Field Area (hectares)</label>
-              <input type="number" name="area" className="input" min={0.1} step={0.1} value={form.area} onChange={handleChange} />
+              <input type="number" name="area" className="input" min={0.1} step={0.1} value={form.area} onChange={handleChange} required />
             </div>
 
             <button type="submit" className="btn-primary" disabled={loading}
-              style={{ justifyContent: 'center', padding: '0.65rem', marginTop: 4 }}>
+              style={{ justifyContent: 'center', padding: '0.7rem', marginTop: 6 }}>
               {loading
-                ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Calculating…</>
-                : <><Droplets size={16} /> Get Irrigation Plan</>}
+                ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Calculating Irrigation Schedule…</>
+                : <><Droplets size={16} /> Calculate Irrigation Plan</>}
             </button>
           </form>
         </div>
 
-        {/* Result */}
+        {/* Advisory Result Panel (Reusing IrrigationCard) */}
         <div>
           {recommendation ? (
-            <div className="card" style={{
-              height: '100%', display: 'flex', flexDirection: 'column', gap: 16,
-              borderTop: `4px solid ${isDelay ? '#16a34a' : '#2563eb'}`,
-            }}>
-              {/* Action badge */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 10,
-                  background: isDelay ? 'rgba(34, 197, 94, 0.15)' : 'rgba(37, 99, 235, 0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {isDelay ? <Clock size={22} color="var(--primary-500)" /> : <Droplets size={22} color="#3b82f6" />}
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>Recommended Action</div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: isDelay ? 'var(--primary-500)' : '#3b82f6' }}>
-                    {recommendation.action}
-                  </div>
-                </div>
-              </div>
-
-              {recommendation.waterRequired && (
-                <div style={{
-                  background: 'rgba(59, 130, 246, 0.12)',
-                  border: '1px solid rgba(59, 130, 246, 0.25)',
-                  padding: '12px 16px', borderRadius: 'var(--radius-sm)',
-                  display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <Droplets size={18} color="#3b82f6" />
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 600 }}>WATER REQUIRED</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#3b82f6' }}>{recommendation.waterRequired}</div>
-                  </div>
-                </div>
-              )}
-
-              {recommendation.reason && (
-                <div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>WHY THIS RECOMMENDATION</div>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-main)', lineHeight: 1.65 }}>
-                    {recommendation.reason}
-                  </p>
-                </div>
-              )}
-
-              {recommendation.nextIrrigation && (
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 'auto', paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
-                  Next irrigation: <strong style={{ color: 'var(--text-main)' }}>{recommendation.nextIrrigation}</strong>
-                </div>
-              )}
-            </div>
+            <IrrigationCard advisory={recommendation} />
           ) : (
             <div className="card" style={{
-              height: '100%', minHeight: 280,
+              height: '100%', minHeight: 320,
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
               textAlign: 'center', gap: 14,
@@ -184,9 +178,9 @@ const SmartIrrigation = () => {
                 <Droplets size={26} color="#3b82f6" />
               </div>
               <div>
-                <p style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-main)' }}>No plan yet</p>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Fill in your field parameters and click<br />"Get Irrigation Plan".
+                <p style={{ fontWeight: 700, marginBottom: 4, color: 'var(--text-main)' }}>No plan calculated yet</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: 260 }}>
+                  Adjust your crop, soil moisture slider, and field parameters, then click "Calculate Irrigation Plan".
                 </p>
               </div>
             </div>

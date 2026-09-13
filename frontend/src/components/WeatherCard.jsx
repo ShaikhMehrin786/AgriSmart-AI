@@ -4,60 +4,75 @@ import { CloudRain, Thermometer, Droplets, Wind, AlertOctagon } from 'lucide-rea
 export default function WeatherCard({ weather, risk }) {
   if (!weather) return null;
 
-  const isHighRisk = risk?.riskLevel?.includes('CRITICAL') || risk?.riskLevel?.includes('HIGH');
+  const effectiveRisk = risk || weather.pathogenRisk;
+  const isHighRisk = effectiveRisk?.riskLevel?.includes('CRITICAL') || effectiveRisk?.riskLevel?.includes('HIGH');
+  const isModerateRisk = effectiveRisk?.riskLevel?.includes('MODERATE');
 
   return (
-    <div className="glass-panel">
-      <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Location: {weather.location}</span>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Weather Intelligence & Risk</h3>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Weather Intelligence & Pathogen Risk</h3>
         </div>
-        {risk && (
-          <span className={isHighRisk ? 'badge badge-critical' : 'badge badge-low'}>
-            {risk.riskLevel}
+        {effectiveRisk && (
+          <span className={isHighRisk ? 'badge badge-critical' : isModerateRisk ? 'badge badge-moderate' : 'badge badge-low'}>
+            {effectiveRisk.riskLevel}
           </span>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '14px', borderRadius: 'var(--radius-sm)' }}>
-          <div className="flex items-center gap-4" style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-            <Thermometer size={16} color="#f59e0b" /> Temperature
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+        <div style={{ background: '#f9fafb', border: '1px solid var(--border-subtle)', padding: '12px', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+            <Thermometer size={15} color="#dc2626" /> Temperature
           </div>
-          <p style={{ fontSize: '1.3rem', fontWeight: 700, marginTop: '4px' }}>{weather.temperature}°C</p>
+          <p style={{ fontSize: '1.3rem', fontWeight: 800, color: '#dc2626', marginTop: '4px' }}>{weather.temperature}°C</p>
         </div>
 
-        <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '14px', borderRadius: 'var(--radius-sm)' }}>
-          <div className="flex items-center gap-4" style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-            <Droplets size={16} color="#3b82f6" /> Humidity
+        <div style={{ background: '#f9fafb', border: '1px solid var(--border-subtle)', padding: '12px', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+            <Droplets size={15} color="#2563eb" /> Humidity
           </div>
-          <p style={{ fontSize: '1.3rem', fontWeight: 700, marginTop: '4px' }}>{weather.humidity}%</p>
+          <p style={{ fontSize: '1.3rem', fontWeight: 800, color: '#2563eb', marginTop: '4px' }}>{weather.humidity}%</p>
         </div>
 
-        <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '14px', borderRadius: 'var(--radius-sm)' }}>
-          <div className="flex items-center gap-4" style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-            <CloudRain size={16} color="#10b981" /> Rain Probability
+        <div style={{ background: '#f9fafb', border: '1px solid var(--border-subtle)', padding: '12px', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+            <CloudRain size={15} color="#0891b2" /> Rain Prob.
           </div>
-          <p style={{ fontSize: '1.3rem', fontWeight: 700, marginTop: '4px' }}>{weather.rainProbability}%</p>
+          <p style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0891b2', marginTop: '4px' }}>{weather.rainProbability}%</p>
         </div>
+
+        {weather.windSpeed != null && (
+          <div style={{ background: '#f9fafb', border: '1px solid var(--border-subtle)', padding: '12px', borderRadius: 'var(--radius-sm)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+              <Wind size={15} color="#7c3aed" /> Wind Speed
+            </div>
+            <p style={{ fontSize: '1.3rem', fontWeight: 800, color: '#7c3aed', marginTop: '4px' }}>{weather.windSpeed} km/h</p>
+          </div>
+        )}
       </div>
 
-      {risk?.alertMessage && (
+      {effectiveRisk?.alertMessage && (
         <div style={{
-          marginTop: '16px',
-          padding: '12px',
+          padding: '12px 14px',
           borderRadius: 'var(--radius-sm)',
-          background: isHighRisk ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.08)',
-          border: `1px solid ${isHighRisk ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.2)'}`,
+          background: isHighRisk ? '#fef2f2' : isModerateRisk ? '#fefce8' : '#f0fdf4',
+          border: `1px solid ${isHighRisk ? '#fca5a5' : isModerateRisk ? '#fde047' : '#86efac'}`,
           display: 'flex',
           gap: '10px',
           alignItems: 'flex-start'
         }}>
-          <AlertOctagon size={18} color={isHighRisk ? '#f87171' : '#34d399'} style={{ flexShrink: 0, marginTop: '2px' }} />
-          <p style={{ fontSize: '0.85rem', color: isHighRisk ? '#fca5a5' : '#a7f3d0' }}>
-            {risk.alertMessage}
-          </p>
+          <AlertOctagon size={18} color={isHighRisk ? '#dc2626' : isModerateRisk ? '#ca8a04' : '#16a34a'} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: isHighRisk ? '#991b1b' : isModerateRisk ? '#854d0e' : '#166534', textTransform: 'uppercase' }}>
+              Pathogen Alert · {effectiveRisk.riskLevel}
+            </div>
+            <p style={{ fontSize: '0.85rem', color: isHighRisk ? '#7f1d1d' : isModerateRisk ? '#713f12' : '#14532d', marginTop: 2, lineHeight: 1.5 }}>
+              {effectiveRisk.alertMessage}
+            </p>
+          </div>
         </div>
       )}
     </div>

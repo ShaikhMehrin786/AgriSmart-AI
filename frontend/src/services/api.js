@@ -46,4 +46,30 @@ export const sendAssistantQuery = async (message, prediction = null, weather = n
   return res.data.data;
 };
 
+// Fetch weather with optional geolocation and pathogen risk query
+export const fetchWeather = async (lat = null, lon = null, disease = null) => {
+  const params = {};
+  if (lat != null && lon != null) {
+    params.lat = lat;
+    params.lon = lon;
+  }
+  if (disease) {
+    params.disease = disease;
+  }
+  const res = await api.get('/advisory/weather', { params });
+  return res.data;
+};
+
+// Fetch smart irrigation recommendation
+export const fetchIrrigationPlan = async (formData) => {
+  const res = await api.post('/advisory/irrigation', formData);
+  return res.data;
+};
+
+// Fetch integrated agronomy recommendations
+export const fetchRecommendations = async (payload) => {
+  const res = await api.post('/advisory/recommendations', payload);
+  return res.data;
+};
+
 export default api;
