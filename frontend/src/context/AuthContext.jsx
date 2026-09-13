@@ -6,7 +6,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Hydrate from localStorage on first mount
+  // Hydrate from localStorage on first mount & listen for session revocation
   useEffect(() => {
     try {
       const token      = localStorage.getItem('token');
@@ -20,6 +20,13 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+
+    const handleUnauthorized = () => {
+      setUser(null);
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
   const login = useCallback((token, userData) => {

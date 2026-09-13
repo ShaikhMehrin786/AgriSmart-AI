@@ -13,6 +13,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor: auto-logout on 401 Unauthorized (expired or revoked session)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const url = error.config?.url || '';
+      // Exclude deliberate login/register credentials failures from triggering auto-logout
+      const isAuthAttempt = url.includes('/auth/login') || url.includes('/auth/register');
+      if (!isAuthAttempt) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.dispatchEvent(new Event('auth:unauthorized'));
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login?expired=1';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Fetch scan/prediction history
 export const fetchScanHistory = async () => {
   const res = await api.get('/predictions/history');

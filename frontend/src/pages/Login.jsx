@@ -17,6 +17,13 @@ const Login = () => {
   const location  = useLocation();
   const from      = location.state?.from?.pathname || '/dashboard';
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('expired') === '1') {
+      toast.error('Your session has expired. Please sign in again.');
+    }
+  }, [location.search]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim() || !password) return;
