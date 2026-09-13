@@ -325,7 +325,7 @@ const LandingPage = () => {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════════
-          RAZORPAY-STYLE "HOW IT WORKS" & ECOSYSTEM SHOWCASE
+          INTERACTIVE AGRONOMY WORKFLOW & ECOSYSTEM SHOWCASE
           ═════════════════════════════════════════════════════════════════ */}
       <section
         id="how-it-works"
