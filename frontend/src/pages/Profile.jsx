@@ -109,8 +109,8 @@ const Profile = () => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '10px 14px', borderRadius: 'var(--radius-sm)',
-          background: '#fef9c3', border: '1px solid #fde68a',
-          fontSize: '0.82rem', color: '#854d0e',
+          background: 'rgba(234, 179, 8, 0.12)', border: '1px solid rgba(234, 179, 8, 0.28)',
+          fontSize: '0.82rem', color: '#facc15',
         }}>
           <AlertTriangle size={15} />
           Showing cached profile — backend may be offline. Changes may not save.
@@ -168,17 +168,19 @@ const Profile = () => {
         {/* Email — read-only */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
-          padding: '10px 14px', background: '#f9fafb', borderRadius: 'var(--radius-sm)',
+          padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border-subtle)',
         }}>
           <Mail size={16} color="var(--text-muted)" />
           <span style={{ flex: 1, fontSize: '0.875rem' }}>{profile.email}</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontStyle: 'italic' }}>read-only</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>read-only</span>
         </div>
 
         {/* Phone */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
-          padding: '10px 14px', background: '#f9fafb', borderRadius: 'var(--radius-sm)',
+          padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border-subtle)',
         }}>
           <Phone size={16} color="var(--text-muted)" />
           {isEditing ? (
@@ -198,7 +200,8 @@ const Profile = () => {
         {profile.createdAt && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: '10px 14px', background: '#f9fafb', borderRadius: 'var(--radius-sm)',
+            padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--border-subtle)',
           }}>
             <User size={16} color="var(--text-muted)" />
             <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>

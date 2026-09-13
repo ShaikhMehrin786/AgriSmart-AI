@@ -178,14 +178,15 @@ const Dashboard = () => {
         ) : weather ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.75rem' }}>
             {[
-              { icon: Thermometer, label: 'Temperature', value: `${weather.temperature}°C`, color: '#dc2626' },
-              { icon: Droplets,    label: 'Humidity',    value: `${weather.humidity}%`,     color: '#2563eb' },
-              { icon: CloudRain,   label: 'Rain Prob.',  value: `${weather.rainProbability}%`, color: '#0891b2' },
-              { icon: Wind,        label: 'Wind Speed',  value: `${weather.windSpeed} km/h`, color: '#7c3aed' },
+              { icon: Thermometer, label: 'Temperature', value: `${weather.temperature}°C`, color: '#ef4444' },
+              { icon: Droplets,    label: 'Humidity',    value: `${weather.humidity}%`,     color: '#3b82f6' },
+              { icon: CloudRain,   label: 'Rain Prob.',  value: `${weather.rainProbability}%`, color: '#06b6d4' },
+              { icon: Wind,        label: 'Wind Speed',  value: `${weather.windSpeed} km/h`, color: '#8b5cf6' },
             ].map(w => (
               <div key={w.label} style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 12px', background: '#f9fafb', borderRadius: 'var(--radius-sm)',
+                padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-subtle)',
               }}>
                 <w.icon size={18} color={w.color} style={{ flexShrink: 0 }} />
                 <div>
@@ -206,8 +207,9 @@ const Dashboard = () => {
         {weather && (
           <div style={{
             marginTop: 12, padding: '8px 12px', borderRadius: 'var(--radius-sm)',
-            background: weather.rainProbability > 60 ? '#dbeafe' : '#dcfce7',
-            fontSize: '0.8rem', color: weather.rainProbability > 60 ? '#1e40af' : '#15803d',
+            background: weather.rainProbability > 60 ? 'rgba(59, 130, 246, 0.12)' : 'rgba(34, 197, 94, 0.12)',
+            border: weather.rainProbability > 60 ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid rgba(34, 197, 94, 0.25)',
+            fontSize: '0.8rem', color: weather.rainProbability > 60 ? '#60a5fa' : 'var(--primary-400)',
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
             {weather.rainProbability > 60

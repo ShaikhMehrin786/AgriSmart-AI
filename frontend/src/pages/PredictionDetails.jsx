@@ -93,7 +93,7 @@ const PredictionDetails = () => {
               ) : (
                 <div style={{
                   height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: '#f9fafb', borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', fontSize: '0.85rem',
+                  background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', fontSize: '0.85rem',
                 }}>
                   Image not available
                 </div>
@@ -107,12 +107,13 @@ const PredictionDetails = () => {
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 14px', borderRadius: 'var(--radius-sm)',
-                background: isHealthy ? '#dcfce7' : '#fee2e2',
+                background: isHealthy ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                border: isHealthy ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(239, 68, 68, 0.25)',
               }}>
                 {isHealthy
-                  ? <CheckCircle2 size={20} color="#16a34a" />
-                  : <AlertTriangle size={20} color="#dc2626" />}
-                <span style={{ fontWeight: 700, color: isHealthy ? '#15803d' : '#991b1b', fontSize: '0.95rem' }}>
+                  ? <CheckCircle2 size={20} color="var(--primary-500)" />
+                  : <AlertTriangle size={20} color="#ef4444" />}
+                <span style={{ fontWeight: 700, color: isHealthy ? 'var(--primary-400)' : '#f87171', fontSize: '0.95rem' }}>
                   {isHealthy ? 'Healthy Crop' : 'Disease Detected'}
                 </span>
               </div>

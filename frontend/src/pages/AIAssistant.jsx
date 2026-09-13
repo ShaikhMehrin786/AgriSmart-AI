@@ -95,7 +95,7 @@ const AIAssistant = () => {
       {/* Messages */}
       <div style={{
         flex: 1, overflowY: 'auto', padding: '1.25rem',
-        background: '#f8fafc',
+        background: 'var(--bg-subtle)',
         border: '1px solid var(--border-subtle)',
         borderTop: 'none', borderBottom: 'none',
         display: 'flex', flexDirection: 'column', gap: 14,
@@ -123,8 +123,8 @@ const AIAssistant = () => {
                 <div style={{
                   padding: '10px 14px',
                   borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                  background: isUser ? '#2563eb' : '#fff',
-                  color: isUser ? '#fff' : 'var(--text-main)',
+                  background: isUser ? 'var(--primary-600)' : 'var(--bg-card)',
+                  color: isUser ? '#ffffff' : 'var(--text-main)',
                   fontSize: '0.875rem',
                   lineHeight: 1.65,
                   border: isUser ? 'none' : '1px solid var(--border-subtle)',
@@ -135,7 +135,7 @@ const AIAssistant = () => {
                   {msg.content}
                 </div>
                 <div style={{
-                  fontSize: '0.7rem', color: 'var(--text-light)',
+                  fontSize: '0.7rem', color: 'var(--text-muted)',
                   marginTop: 4,
                   textAlign: isUser ? 'right' : 'left',
                 }}>
@@ -158,13 +158,13 @@ const AIAssistant = () => {
             </div>
             <div style={{
               padding: '10px 16px', borderRadius: '14px 14px 14px 4px',
-              background: '#fff', border: '1px solid var(--border-subtle)',
+              background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
               display: 'flex', gap: 5, alignItems: 'center',
             }}>
               {[0,1,2].map(j => (
                 <span key={j} style={{
                   width: 7, height: 7, borderRadius: '50%',
-                  background: 'var(--text-light)',
+                  background: 'var(--text-muted)',
                   display: 'inline-block',
                   animation: `bounce 1.2s ease-in-out ${j * 0.2}s infinite`,
                 }} />
@@ -188,10 +188,14 @@ const AIAssistant = () => {
           {QUICK.map((q, i) => (
             <button key={i} onClick={() => send(q)} disabled={loading}
               style={{
-                flexShrink: 0, background: '#f0fdf4', border: '1px solid #bbf7d0',
-                color: 'var(--primary-700)', fontSize: '0.75rem', fontWeight: 500,
-                padding: '4px 12px', borderRadius: 9999, cursor: 'pointer',
+                flexShrink: 0,
+                background: 'rgba(var(--primary-rgb), 0.12)',
+                border: '1px solid rgba(var(--primary-rgb), 0.28)',
+                color: 'var(--primary-500)',
+                fontSize: '0.75rem', fontWeight: 600,
+                padding: '5px 12px', borderRadius: 9999, cursor: 'pointer',
                 whiteSpace: 'nowrap',
+                transition: 'all 0.15s ease',
               }}>
               {q}
             </button>

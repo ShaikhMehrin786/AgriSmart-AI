@@ -71,7 +71,7 @@ const Sustainability = () => {
                 >
                   <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
                   <RadialBar
-                    background={{ fill: '#f0f0f0' }}
+                    background={{ fill: 'rgba(148, 163, 184, 0.2)' }}
                     dataKey="value"
                     cornerRadius={8}
                     angleAxisId={0}

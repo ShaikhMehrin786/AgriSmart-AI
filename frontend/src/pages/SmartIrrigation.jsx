@@ -123,14 +123,14 @@ const SmartIrrigation = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: 10,
-                  background: isDelay ? '#dcfce7' : '#dbeafe',
+                  background: isDelay ? 'rgba(34, 197, 94, 0.15)' : 'rgba(37, 99, 235, 0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {isDelay ? <Clock size={22} color="#16a34a" /> : <Droplets size={22} color="#2563eb" />}
+                  {isDelay ? <Clock size={22} color="var(--primary-500)" /> : <Droplets size={22} color="#3b82f6" />}
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>Recommended Action</div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: isDelay ? '#16a34a' : '#2563eb' }}>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: isDelay ? 'var(--primary-500)' : '#3b82f6' }}>
                     {recommendation.action}
                   </div>
                 </div>
@@ -138,13 +138,15 @@ const SmartIrrigation = () => {
 
               {recommendation.waterRequired && (
                 <div style={{
-                  background: '#dbeafe', padding: '12px 16px', borderRadius: 'var(--radius-sm)',
+                  background: 'rgba(59, 130, 246, 0.12)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                  padding: '12px 16px', borderRadius: 'var(--radius-sm)',
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}>
-                  <Droplets size={18} color="#2563eb" />
+                  <Droplets size={18} color="#3b82f6" />
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: '#1e40af', fontWeight: 600 }}>WATER REQUIRED</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#2563eb' }}>{recommendation.waterRequired}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 600 }}>WATER REQUIRED</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#3b82f6' }}>{recommendation.waterRequired}</div>
                   </div>
                 </div>
               )}
@@ -170,19 +172,19 @@ const SmartIrrigation = () => {
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
               textAlign: 'center', gap: 14,
-              background: '#f8fafc',
+              background: 'var(--bg-subtle)',
               border: '2px dashed var(--border-subtle)',
               boxShadow: 'none',
             }}>
               <div style={{
                 width: 56, height: 56, borderRadius: '50%',
-                background: '#dbeafe',
+                background: 'rgba(59, 130, 246, 0.15)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <Droplets size={26} color="#2563eb" />
+                <Droplets size={26} color="#3b82f6" />
               </div>
               <div>
-                <p style={{ fontWeight: 600, marginBottom: 4 }}>No plan yet</p>
+                <p style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-main)' }}>No plan yet</p>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                   Fill in your field parameters and click<br />"Get Irrigation Plan".
                 </p>

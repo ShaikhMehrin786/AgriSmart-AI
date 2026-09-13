@@ -104,7 +104,7 @@ const DiseaseDetection = () => {
               borderRadius: 'var(--radius-md)',
               padding: '2.5rem 1.5rem',
               textAlign: 'center',
-              background: drag ? '#f0fdf4' : '#fafafa',
+              background: drag ? 'rgba(34, 197, 94, 0.12)' : 'var(--bg-subtle)',
               cursor: preview ? 'default' : 'pointer',
               transition: 'all 0.2s ease',
               position: 'relative',
@@ -135,10 +135,10 @@ const DiseaseDetection = () => {
               <div>
                 <div style={{
                   width: 64, height: 64, borderRadius: '50%',
-                  background: '#f0fdf4', display: 'flex', alignItems: 'center',
+                  background: 'rgba(34, 197, 94, 0.12)', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', margin: '0 auto 16px',
                 }}>
-                  <UploadCloud size={30} color="var(--primary-600)" />
+                  <UploadCloud size={30} color="var(--primary-500)" />
                 </div>
                 <p style={{ fontWeight: 700, marginBottom: 6 }}>Drop your leaf image here</p>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 14 }}>
@@ -180,12 +180,13 @@ const DiseaseDetection = () => {
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 14px', borderRadius: 'var(--radius-sm)',
-                background: isHealthy ? '#dcfce7' : '#fee2e2',
+                background: isHealthy ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                border: isHealthy ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(239, 68, 68, 0.25)',
               }}>
                 {isHealthy
-                  ? <CheckCircle2 size={20} color="#16a34a" />
-                  : <AlertTriangle size={20} color="#dc2626" />}
-                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: isHealthy ? '#15803d' : '#991b1b' }}>
+                  ? <CheckCircle2 size={20} color="var(--primary-500)" />
+                  : <AlertTriangle size={20} color="#ef4444" />}
+                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: isHealthy ? 'var(--primary-400)' : '#f87171' }}>
                   {isHealthy ? 'Crop is Healthy' : 'Disease Detected'}
                 </span>
               </div>

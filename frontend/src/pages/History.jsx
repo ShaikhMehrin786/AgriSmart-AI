@@ -82,7 +82,7 @@ const History = () => {
               style={{
                 padding: '6px 14px', borderRadius: 9999, fontSize: '0.8rem', fontWeight: 600,
                 cursor: 'pointer', border: '1px solid',
-                background: filter === f.id ? 'var(--primary-600)' : '#fff',
+                background: filter === f.id ? 'var(--primary-600)' : 'var(--bg-card)',
                 color:      filter === f.id ? '#fff' : 'var(--text-muted)',
                 borderColor: filter === f.id ? 'var(--primary-600)' : 'var(--border-subtle)',
               }}>
@@ -101,7 +101,7 @@ const History = () => {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid var(--border-subtle)' }}>
+              <tr style={{ background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Date', 'Crop', 'Diagnosis', 'Confidence', 'Details'].map(h => (
                   <th key={h} style={{
                     padding: '11px 16px', textAlign: 'left',
@@ -131,7 +131,7 @@ const History = () => {
                       return (
                         <tr key={item.id || i}
                           style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.12s' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           <td style={{ padding: '13px 16px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>

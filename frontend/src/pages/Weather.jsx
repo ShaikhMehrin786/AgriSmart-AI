@@ -24,10 +24,10 @@ const Weather = () => {
   useEffect(() => { fetch_(); }, []);
 
   const metrics = data ? [
-    { label: 'Temperature',   value: `${data.temperature}°C`, icon: Thermometer, color: '#dc2626', bg: '#fee2e2', raw: data.temperature },
-    { label: 'Humidity',      value: `${data.humidity}%`,     icon: Droplets,    color: '#2563eb', bg: '#dbeafe', raw: data.humidity },
-    { label: 'Rain Prob.',    value: `${data.rainProbability}%`, icon: CloudRain, color: '#0891b2', bg: '#cffafe', raw: data.rainProbability },
-    { label: 'Wind Speed',    value: `${data.windSpeed} km/h`, icon: Wind,       color: '#7c3aed', bg: '#ede9fe', raw: data.windSpeed },
+    { label: 'Temperature',   value: `${data.temperature}°C`, icon: Thermometer, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', raw: data.temperature },
+    { label: 'Humidity',      value: `${data.humidity}%`,     icon: Droplets,    color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', raw: data.humidity },
+    { label: 'Rain Prob.',    value: `${data.rainProbability}%`, icon: CloudRain, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', raw: data.rainProbability },
+    { label: 'Wind Speed',    value: `${data.windSpeed} km/h`, icon: Wind,       color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', raw: data.windSpeed },
   ] : [];
 
   // Mock 7-day forecast bars from available data
@@ -94,12 +94,12 @@ const Weather = () => {
               </p>
               <ResponsiveContainer width="100%" height={140}>
                 <BarChart data={forecastBars} barSize={22}>
-                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                   <YAxis hide domain={['auto', 'auto']} />
-                  <Tooltip formatter={v => [`${v}°C`, 'Temp']} contentStyle={{ fontSize: '0.8rem', borderRadius: 8 }} />
+                  <Tooltip formatter={v => [`${v}°C`, 'Temp']} contentStyle={{ fontSize: '0.8rem', borderRadius: 8, background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-subtle)' }} />
                   <Bar dataKey="temp" radius={[4,4,0,0]}>
                     {forecastBars.map((e, i) => (
-                      <Cell key={i} fill={i === 0 ? '#dc2626' : '#fca5a5'} />
+                      <Cell key={i} fill={i === 0 ? '#ef4444' : 'rgba(239, 68, 68, 0.45)'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -111,12 +111,12 @@ const Weather = () => {
               </p>
               <ResponsiveContainer width="100%" height={140}>
                 <BarChart data={forecastBars} barSize={22}>
-                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                   <YAxis hide domain={[0, 100]} />
-                  <Tooltip formatter={v => [`${v}%`, 'Rain']} contentStyle={{ fontSize: '0.8rem', borderRadius: 8 }} />
+                  <Tooltip formatter={v => [`${v}%`, 'Rain']} contentStyle={{ fontSize: '0.8rem', borderRadius: 8, background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-subtle)' }} />
                   <Bar dataKey="rain" radius={[4,4,0,0]}>
                     {forecastBars.map((e, i) => (
-                      <Cell key={i} fill={e.rain > 60 ? '#2563eb' : '#93c5fd'} />
+                      <Cell key={i} fill={e.rain > 60 ? '#3b82f6' : 'rgba(59, 130, 246, 0.45)'} />
                     ))}
                   </Bar>
                 </BarChart>
