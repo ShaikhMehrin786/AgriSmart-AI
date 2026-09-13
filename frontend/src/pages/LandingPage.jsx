@@ -330,13 +330,14 @@ const LandingPage = () => {
       <section
         id="how-it-works"
         style={{
-          padding: '5.5rem 1.5rem',
+          scrollMarginTop: '80px',
+          padding: '4rem 1.5rem 5rem',
           background: 'var(--bg-base)',
           transition: 'background-color 0.3s ease',
         }}
       >
         <div id="solutions" style={{ maxWidth: 1180, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <div
               style={{
                 display: 'inline-flex',

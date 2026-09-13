@@ -7,7 +7,6 @@ import {
   ClipboardCheck,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   CheckCircle2,
   AlertTriangle,
   Flame,
@@ -18,6 +17,10 @@ import {
   Zap,
   BookOpen,
   ArrowDown,
+  Sparkles,
+  Compass,
+  FileText,
+  Sliders,
 } from 'lucide-react';
 
 const CHAPTERS = [
@@ -25,56 +28,86 @@ const CHAPTERS = [
     id: 'capture',
     num: '01',
     name: 'Optical Capture',
-    title: 'In-Field Leaf Pathology Capture & Tensor Preprocessing',
-    tag: 'DIAGNOSTIC INGESTION',
+    title: 'In-Field Leaf Pathology Capture & Tensor Normalization',
+    tag: 'STEP 1 · VISION INGESTION',
     badge: 'Mobile Web Vision',
     icon: Scan,
     summary:
-      'Farmer captures leaf photo in any lighting. Automated center-cropping, illumination normalization, and float32 tensor conversion.',
+      'Farmer captures leaf photo in variable field lighting. Automated center-cropping, illumination normalization, and float32 tensor conversion.',
+    fieldNotes: {
+      resolution: '4032 × 3024 raw → 224 × 224 tensor',
+      device: 'Mobile Web PWA (Chrome/Safari)',
+      channels: 'RGB Float32 (ImageNet Standard)',
+      lighting: 'Dynamic CLAHE contrast equalization',
+    },
   },
   {
     id: 'inference',
     num: '02',
     name: 'ONNX Inference',
     title: 'Sub-35ms In-Process ONNX Neural Inference',
-    tag: 'ZERO-PYTHON RUNTIME',
+    tag: 'STEP 2 · NEURAL ENGINE',
     badge: 'onnxruntime-node',
     icon: Cpu,
     summary:
       'Direct Node.js execution with zero Python subprocess latency. 38+ plant pathology classes evaluated with 95.8% validation accuracy.',
+    fieldNotes: {
+      runtime: 'Node.js onnxruntime-node v1.18.0',
+      latency: '34ms (Sub-50ms hard constraint)',
+      simd: 'Enabled (AVX2 / SSE4 vector acceleration)',
+      memory: '18.4 MB resident model footprint',
+    },
   },
   {
     id: 'saliency',
     num: '03',
     name: 'Grad-CAM Saliency',
     title: 'Explainable AI & Thermal Attention Mapping',
-    tag: 'INTERPRETABILITY ENGINE',
+    tag: 'STEP 3 · INTERPRETABILITY',
     badge: 'Grad-CAM Attention',
     icon: Eye,
     summary:
       'Back-propagates convolutional gradients to project a thermal heatmap directly over necrotic fungal lesions and chlorotic halo borders.',
+    fieldNotes: {
+      targetLayer: 'layer4[2].conv2 (Final ResNet Block)',
+      saliencyScore: '91.2% lesion overlap alignment',
+      artifactRemoval: 'Background fingers & soil discarded',
+      explainability: 'Full Grad-CAM activation overlay',
+    },
   },
   {
     id: 'irrigation',
     num: '04',
     name: 'Smart Irrigation',
     title: 'Autonomous Soil Telemetry & Weather Intercept',
-    tag: 'FAO-56 HYDROLOGY',
+    tag: 'STEP 4 · HYDROLOGY',
     badge: 'Penman-Monteith ET0',
     icon: Droplets,
     summary:
       'Synthesizes root-zone sensor moisture with 24-hour hyperlocal precipitation forecasts to automatically delay irrigation before rains.',
+    fieldNotes: {
+      soilMoisture: '48% (Field capacity threshold)',
+      evapotranspiration: '4.8 mm/day atmospheric loss',
+      forecastIntercept: '75% rain probability within 18h',
+      waterConserved: '1,800 Liters saved per hectare',
+    },
   },
   {
     id: 'prescription',
     num: '05',
     name: 'Remediation',
     title: 'Precision Dual Organic & Chemical Prescription',
-    tag: 'AGRONOMIC ADVISORY',
+    tag: 'STEP 5 · REMEDIATION',
     badge: 'Prescription Engine',
     icon: ClipboardCheck,
     summary:
       'Formulates instant remediation protocols—balancing organic biocontrols with precise chemical fungicides and withholding intervals.',
+    fieldNotes: {
+      severity: 'Moderate (Concentric target spots)',
+      urgency: 'Action required within 48 hours',
+      organicBio: 'Trichoderma viride + Neem extract 5%',
+      chemicalDosage: 'Mancozeb 75% WP @ 2.5g/L water',
+    },
   },
 ];
 
@@ -83,11 +116,12 @@ const AgronomyWorkflow = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isManualTurn, setIsManualTurn] = useState(false);
-  const [viewMode, setViewMode] = useState('scan'); // 'scan' | 'heatmap' for page 3
+  const [viewMode, setViewMode] = useState('heatmap'); // 'scan' | 'heatmap' for page 3
   const [isSimulatingScan, setIsSimulatingScan] = useState(false);
   const [smsSent, setSmsSent] = useState(false);
+  const [turningSheet, setTurningSheet] = useState(null); // tracking active page flip transition
 
-  // Scroll listener for turning pages as the user scrolls
+  // Continuous scroll-driven page turn
   useEffect(() => {
     let ticking = false;
 
@@ -104,12 +138,14 @@ const AgronomyWorkflow = () => {
             const progress = Math.max(0, Math.min(1, currentScroll / totalScroll));
             setScrollProgress(progress);
 
-            // Determine page index based on progress (0 to 4)
+            // Compute active chapter index (0 to 4)
             const numPages = CHAPTERS.length;
-            const newIndex = Math.min(numPages - 1, Math.floor(progress * numPages));
+            const targetIndex = Math.min(numPages - 1, Math.floor(progress * numPages * 0.999));
 
-            if (!isManualTurn) {
-              setCurrentPage(newIndex);
+            if (!isManualTurn && targetIndex !== currentPage) {
+              setTurningSheet(targetIndex > currentPage ? currentPage : targetIndex);
+              setCurrentPage(targetIndex);
+              setTimeout(() => setTurningSheet(null), 600);
             }
           }
           ticking = false;
@@ -122,88 +158,82 @@ const AgronomyWorkflow = () => {
     handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isManualTurn]);
+  }, [currentPage, isManualTurn]);
 
-  // Handle direct page selection
-  const goToPage = (idx) => {
+  // Turn page directly via buttons or chapter pills
+  const turnToPage = (targetIdx) => {
+    if (targetIdx === currentPage || targetIdx < 0 || targetIdx >= CHAPTERS.length) return;
     setIsManualTurn(true);
-    setCurrentPage(idx);
+    setTurningSheet(targetIdx > currentPage ? currentPage : targetIdx);
+    setCurrentPage(targetIdx);
 
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const totalScroll = rect.height - window.innerHeight;
-      const targetScroll = scrollTop + rect.top + (idx / (CHAPTERS.length - 1)) * totalScroll;
+      const targetScroll =
+        scrollTop + rect.top + (targetIdx / (CHAPTERS.length - 1)) * totalScroll + 20;
       window.scrollTo({ top: targetScroll, behavior: 'smooth' });
     }
 
     setTimeout(() => {
+      setTurningSheet(null);
       setIsManualTurn(false);
-    }, 800);
+    }, 700);
   };
 
-  const nextPage = () => {
-    if (currentPage < CHAPTERS.length - 1) {
-      goToPage(currentPage + 1);
-    }
-  };
+  const nextPage = () => turnToPage(currentPage + 1);
+  const prevPage = () => turnToPage(currentPage - 1);
 
-  const prevPage = () => {
-    if (currentPage > 0) {
-      goToPage(currentPage - 1);
-    }
-  };
-
-  // Re-trigger scan simulation on page 1
   const triggerScan = () => {
     setIsSimulatingScan(true);
-    setTimeout(() => setIsSimulatingScan(false), 1600);
+    setTimeout(() => setIsSimulatingScan(false), 1500);
   };
 
-  // Simulated SMS advisory send on page 5
   const sendAdvisorySms = () => {
     setSmsSent(true);
-    setTimeout(() => setSmsSent(false), 4000);
+    setTimeout(() => setSmsSent(false), 3500);
   };
 
   return (
     <div
       ref={containerRef}
       style={{
-        minHeight: '320vh',
+        minHeight: '280vh',
         position: 'relative',
       }}
     >
-      {/* Sticky Presentation Desk */}
+      {/* Sticky Presentation Desk (Fits cleanly below 68px navbar with breathing room) */}
       <div
         style={{
           position: 'sticky',
-          top: '78px',
-          height: 'calc(100vh - 95px)',
-          minHeight: 620,
+          top: '84px',
+          height: 'calc(100vh - 104px)',
+          maxHeight: '660px',
+          minHeight: '520px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          gap: '1rem',
-          padding: '0.5rem 0',
+          gap: '0.75rem',
+          zIndex: 10,
         }}
       >
-        {/* Top Control Ribbon: Chapter Navigation & Scroll Progress Indicator */}
+        {/* Chapter Selection Ribbon & Scroll-Turn Indicator */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: 12,
+            gap: 10,
             background: 'var(--bg-card)',
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-lg)',
-            padding: '0.65rem 1.25rem',
+            padding: '0.5rem 1rem',
             boxShadow: 'var(--shadow-sm)',
           }}
         >
-          {/* Chapter Selector Tabs */}
+          {/* Chapter Tabs */}
           <div
             style={{
               display: 'flex',
@@ -211,7 +241,6 @@ const AgronomyWorkflow = () => {
               gap: 6,
               overflowX: 'auto',
               scrollbarWidth: 'none',
-              maxWidth: '100%',
             }}
           >
             {CHAPTERS.map((ch, idx) => {
@@ -220,15 +249,15 @@ const AgronomyWorkflow = () => {
               return (
                 <button
                   key={ch.id}
-                  onClick={() => goToPage(idx)}
+                  onClick={() => turnToPage(idx)}
                   type="button"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    padding: '6px 12px',
+                    padding: '5px 11px',
                     borderRadius: 9999,
-                    fontSize: '0.78rem',
+                    fontSize: '0.76rem',
                     fontWeight: 700,
                     border: '1px solid',
                     borderColor: isActive
@@ -247,7 +276,7 @@ const AgronomyWorkflow = () => {
                       ? 'var(--primary-500)'
                       : 'var(--text-muted)',
                     cursor: 'pointer',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transition: 'all 0.2s ease',
                     whiteSpace: 'nowrap',
                   }}
                 >
@@ -261,36 +290,33 @@ const AgronomyWorkflow = () => {
             })}
           </div>
 
-          {/* Scroll Progress & Page Turn Navigation */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Turn Page Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                fontSize: '0.75rem',
-                fontWeight: 600,
+                gap: 6,
+                fontSize: '0.74rem',
                 color: 'var(--text-muted)',
+                fontWeight: 600,
               }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <ArrowDown size={12} className="animate-bounce" />
-                Scroll to flip
-              </span>
+              <ArrowDown size={12} className="animate-bounce" />
+              <span>Scroll to turn</span>
               <span style={{ color: 'var(--text-light)' }}>·</span>
               <strong style={{ color: 'var(--primary-600)' }}>
-                Page {currentPage + 1} / {CHAPTERS.length}
+                Page {currentPage + 1} of {CHAPTERS.length}
               </strong>
             </div>
 
-            {/* Previous / Next Arrow Buttons */}
             <div style={{ display: 'flex', gap: 4 }}>
               <button
                 onClick={prevPage}
                 disabled={currentPage === 0}
                 style={{
-                  width: 30,
-                  height: 30,
+                  width: 28,
+                  height: 28,
                   borderRadius: '50%',
                   border: '1px solid var(--border-subtle)',
                   background: 'var(--bg-subtle)',
@@ -300,16 +326,16 @@ const AgronomyWorkflow = () => {
                   justifyContent: 'center',
                   cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
                 }}
-                title="Previous Page"
+                title="Turn Page Back"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={15} />
               </button>
               <button
                 onClick={nextPage}
                 disabled={currentPage === CHAPTERS.length - 1}
                 style={{
-                  width: 30,
-                  height: 30,
+                  width: 28,
+                  height: 28,
                   borderRadius: '50%',
                   border: '1px solid var(--border-subtle)',
                   background: 'var(--bg-subtle)',
@@ -320,209 +346,256 @@ const AgronomyWorkflow = () => {
                   justifyContent: 'center',
                   cursor: currentPage === CHAPTERS.length - 1 ? 'not-allowed' : 'pointer',
                 }}
-                title="Next Page"
+                title="Turn Page Forward"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={15} />
               </button>
             </div>
           </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════
-            THE 3D OPEN FIELD NOTEBOOK (DUAL SPREAD WITH PAGE TURN EFFECT)
+            3D OPEN FIELD NOTEBOOK WITH DUAL-LEAF SPREAD & REAL PAGE TURNING
             ══════════════════════════════════════════════════════════════════ */}
         <div
-          className="field-notebook-desk"
+          className="book-leather-casing"
           style={{
             flex: 1,
             position: 'relative',
-            perspective: 2600,
-            perspectiveOrigin: '50% 50%',
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr)',
-            gap: 0,
+            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            padding: '10px',
             borderRadius: 'var(--radius-xl)',
-            boxShadow: 'var(--notebook-shadow)',
-            background: 'var(--notebook-paper)',
-            border: '1px solid var(--border-subtle)',
-            overflow: 'hidden',
+            boxShadow: '0 25px 60px -15px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1)',
+            display: 'flex',
           }}
         >
-          {/* Central Ring Binder Spiral Wire */}
+          {/* Inner Paper Spread */}
           <div
+            className="book-paper-spread"
             style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: '45.45%',
-              width: 24,
-              transform: 'translateX(-50%)',
-              zIndex: 30,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-evenly',
-              alignItems: 'center',
-              pointerEvents: 'none',
+              flex: 1,
+              position: 'relative',
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.25fr)',
+              background: 'var(--notebook-paper)',
+              borderRadius: 'calc(var(--radius-xl) - 4px)',
+              overflow: 'hidden',
+              perspective: '2500px',
+              perspectiveOrigin: '50% 50%',
             }}
           >
-            {Array.from({ length: 14 }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  width: 26,
-                  height: 10,
-                  borderRadius: 6,
-                  background:
-                    'linear-gradient(180deg, #94a3b8 0%, #475569 40%, #1e293b 80%, #94a3b8 100%)',
-                  boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                }}
-              />
-            ))}
-          </div>
-
-          {/* ─────────────────────────────────────────────────────────────
-              LEFT SPREAD: FIXED LOGBOOK FIELD HEADER & RUNTIME SPECS
-              ───────────────────────────────────────────────────────────── */}
-          <div
-            style={{
-              padding: '2rem 2.25rem 2rem 2.5rem',
-              borderRight: '2px dashed var(--border-subtle)',
-              backgroundImage: 'linear-gradient(var(--notebook-line) 1px, transparent 1px)',
-              backgroundSize: '100% 28px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-              backgroundPosition: '0 10px',
-              overflowY: 'auto',
-            }}
-          >
-            {/* Header Field Stamp */}
+            {/* Center Spiral Ring Wire Spine */}
             <div
+              className="notebook-center-spine"
               style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: '44.4%',
+                width: 26,
+                transform: 'translateX(-50%)',
+                zIndex: 35,
                 display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                borderBottom: '1px solid var(--border-subtle)',
-                paddingBottom: 14,
+                flexDirection: 'column',
+                justifyContent: 'space-evenly',
+                alignItems: 'center',
+                pointerEvents: 'none',
               }}
             >
+              {Array.from({ length: 14 }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: 28,
+                    height: 9,
+                    borderRadius: 5,
+                    background:
+                      'linear-gradient(180deg, #94a3b8 0%, #475569 40%, #1e293b 80%, #94a3b8 100%)',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.35)',
+                    border: '1px solid rgba(255,255,255,0.25)',
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* ─────────────────────────────────────────────────────────────
+                LEFT PAGE: AGRONOMY FIELD TELEMETRY & CHAPTER FIELD NOTES
+                ───────────────────────────────────────────────────────────── */}
+            <div
+              style={{
+                padding: '1.5rem 1.85rem 1.5rem 2rem',
+                borderRight: '2px dashed var(--border-subtle)',
+                backgroundImage: 'linear-gradient(var(--notebook-line) 1px, transparent 1px)',
+                backgroundSize: '100% 26px',
+                backgroundPosition: '0 8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                overflowY: 'auto',
+              }}
+            >
+              {/* Header Stamp */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  paddingBottom: 10,
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      color: 'var(--primary-600)',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    <BookOpen size={11} />
+                    <span>FIELD LOGBOOK · SIH 2026</span>
+                  </div>
+                  <h3
+                    style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 900,
+                      margin: '2px 0 0',
+                      color: 'var(--text-main)',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Tomato (Solanum lycopersicum)
+                  </h3>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
+                    Plot 4B · Solapur Agro-Cluster · Kharif Season
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    border: '2px solid #16a34a',
+                    color: '#16a34a',
+                    borderRadius: 6,
+                    padding: '3px 6px',
+                    fontSize: '0.6rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.06em',
+                    transform: 'rotate(-4deg)',
+                    textAlign: 'center',
+                    background: 'rgba(34, 197, 94, 0.08)',
+                  }}
+                >
+                  <div>ONNX v2.4</div>
+                  <strong>CALIBRATED</strong>
+                </div>
+              </div>
+
+              {/* Dynamic Chapter Field Notes (Updates with each turned page) */}
+              <div
+                style={{
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '10px 12px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    color: 'var(--primary-600)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginBottom: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <FileText size={12} />
+                  <span>Chapter {CHAPTERS[currentPage].num} Empirical Field Notes:</span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: '0.73rem' }}>
+                  {Object.entries(CHAPTERS[currentPage].fieldNotes).map(([k, v]) => (
+                    <div key={k}>
+                      <span style={{ color: 'var(--text-muted)', textTransform: 'capitalize' }}>
+                        {k.replace(/([A-Z])/g, ' $1')}:
+                      </span>
+                      <div style={{ fontWeight: 700, color: 'var(--text-main)', marginTop: 1 }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Progress Steps Overview */}
               <div>
                 <div
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
                     fontSize: '0.68rem',
                     fontWeight: 800,
-                    letterSpacing: '0.08em',
-                    color: 'var(--primary-600)',
+                    color: 'var(--text-muted)',
                     textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginBottom: 6,
                   }}
                 >
-                  <BookOpen size={12} />
-                  <span>AGRONOMIST FIELD RESEARCH LOG</span>
+                  Agronomic Pipeline Flow:
                 </div>
-                <h3
-                  style={{
-                    fontSize: '1.45rem',
-                    fontWeight: 900,
-                    margin: '4px 0 2px',
-                    color: 'var(--text-main)',
-                  }}
-                >
-                  Tomato (Solanum lycopersicum)
-                </h3>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
-                  Plot 4B · Solapur Agro-Cluster · Kharif Season 2026
-                </p>
-              </div>
-
-              {/* Verified Stamp */}
-              <div
-                style={{
-                  border: '2px solid #16a34a',
-                  color: '#16a34a',
-                  borderRadius: 6,
-                  padding: '4px 8px',
-                  fontSize: '0.65rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.08em',
-                  transform: 'rotate(-4deg)',
-                  textAlign: 'center',
-                  background: 'rgba(34, 197, 94, 0.08)',
-                }}
-              >
-                <div>ONNX v2.4</div>
-                <strong style={{ fontSize: '0.75rem' }}>CALIBRATED</strong>
-              </div>
-            </div>
-
-            {/* Active Workflow Progression Tracker */}
-            <div>
-              <div
-                style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted)',
-                  marginBottom: 10,
-                }}
-              >
-                Diagnostic Pipeline State:
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {CHAPTERS.map((ch, idx) => {
-                  const isCurrent = currentPage === idx;
-                  const isDone = currentPage > idx;
-                  return (
-                    <div
-                      key={ch.id}
-                      onClick={() => goToPage(idx)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '6px 10px',
-                        borderRadius: 'var(--radius-sm)',
-                        background: isCurrent
-                          ? 'rgba(var(--primary-rgb), 0.14)'
-                          : isDone
-                          ? 'var(--bg-subtle)'
-                          : 'transparent',
-                        border: isCurrent
-                          ? '1px solid var(--primary-600)'
-                          : '1px solid transparent',
-                        cursor: 'pointer',
-                        transition: 'all 0.18s ease',
-                      }}
-                    >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {CHAPTERS.map((ch, idx) => {
+                    const isCurrent = currentPage === idx;
+                    const isDone = currentPage > idx;
+                    return (
                       <div
+                        key={ch.id}
+                        onClick={() => turnToPage(idx)}
                         style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: '50%',
-                          background: isCurrent
-                            ? 'var(--primary-600)'
-                            : isDone
-                            ? '#16a34a'
-                            : 'var(--border-medium)',
-                          color: '#fff',
-                          fontSize: '0.7rem',
-                          fontWeight: 800,
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
+                          gap: 8,
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          background: isCurrent
+                            ? 'rgba(var(--primary-rgb), 0.14)'
+                            : isDone
+                            ? 'var(--bg-subtle)'
+                            : 'transparent',
+                          border: isCurrent
+                            ? '1px solid var(--primary-600)'
+                            : '1px solid transparent',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
                         }}
                       >
-                        {isDone ? <CheckCircle2 size={12} /> : ch.num}
-                      </div>
-                      <div style={{ flex: 1 }}>
                         <div
                           style={{
-                            fontSize: '0.82rem',
-                            fontWeight: isCurrent ? 800 : 600,
+                            width: 18,
+                            height: 18,
+                            borderRadius: '50%',
+                            background: isCurrent
+                              ? 'var(--primary-600)'
+                              : isDone
+                              ? '#16a34a'
+                              : 'var(--border-medium)',
+                            color: '#fff',
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {isDone ? <CheckCircle2 size={11} /> : ch.num}
+                        </div>
+                        <span
+                          style={{
+                            fontWeight: isCurrent ? 800 : 500,
                             color: isCurrent
                               ? 'var(--primary-600)'
                               : isDone
@@ -531,824 +604,788 @@ const AgronomyWorkflow = () => {
                           }}
                         >
                           {ch.title}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bottom Quick Spec */}
+              <div
+                style={{
+                  marginTop: 'auto',
+                  borderTop: '1px solid var(--border-subtle)',
+                  paddingTop: 8,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.72rem',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                <span>Zero-Python In-Process ONNX</span>
+                <strong style={{ color: 'var(--primary-600)' }}>⚡ 34ms Latency</strong>
+              </div>
+            </div>
+
+            {/* ─────────────────────────────────────────────────────────────
+                RIGHT PAGE: 3D PAGE-TURNING PRESENTATION LEAF
+                ───────────────────────────────────────────────────────────── */}
+            <div
+              className="turning-page-container"
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                backgroundImage: 'linear-gradient(var(--notebook-line) 1px, transparent 1px)',
+                backgroundSize: '100% 26px',
+                backgroundPosition: '0 8px',
+                padding: '1.5rem 2rem 1.25rem 2rem',
+                display: 'flex',
+                flexDirection: 'column',
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              {/* Page Number & Step Tag Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  paddingBottom: 8,
+                  marginBottom: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 900,
+                      color: '#ffffff',
+                      background: 'var(--primary-600)',
+                      padding: '2px 8px',
+                      borderRadius: 5,
+                    }}
+                  >
+                    STEP {CHAPTERS[currentPage].num}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      color: 'var(--primary-600)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    {CHAPTERS[currentPage].tag}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  Page {currentPage + 1} of {CHAPTERS.length}
+                </div>
+              </div>
+
+              {/* 3D Page Flip Content Leaf */}
+              <div
+                key={currentPage}
+                className="page-flip-stage"
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  animation: 'bookPageTurn 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
+                  transformOrigin: 'left center',
+                }}
+              >
+                <h4
+                  style={{
+                    fontSize: '1.3rem',
+                    fontWeight: 900,
+                    color: 'var(--text-main)',
+                    margin: '0 0 4px',
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {CHAPTERS[currentPage].title}
+                </h4>
+                <p
+                  style={{
+                    fontSize: '0.84rem',
+                    color: 'var(--text-muted)',
+                    lineHeight: 1.5,
+                    margin: '0 0 10px',
+                  }}
+                >
+                  {CHAPTERS[currentPage].summary}
+                </p>
+
+                {/* ─── CHAPTER 1: IN-FIELD OPTICAL SCAN ──────────────────── */}
+                {currentPage === 0 && (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div
+                      style={{
+                        position: 'relative',
+                        height: 180,
+                        borderRadius: 'var(--radius-md)',
+                        overflow: 'hidden',
+                        background: 'radial-gradient(ellipse at center, #3f7e34 0%, #1c4b18 85%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: 'inset 0 0 30px rgba(0,0,0,0.5)',
+                        border: '1px solid var(--border-subtle)',
+                      }}
+                    >
+                      {/* Bounding Box Alignment Guide */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 16,
+                          border: '2px dashed rgba(255,255,255,0.45)',
+                          borderRadius: 8,
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: 6,
+                            left: 8,
+                            fontSize: '0.62rem',
+                            color: '#fff',
+                            background: 'rgba(0,0,0,0.5)',
+                            padding: '2px 5px',
+                            borderRadius: 4,
+                          }}
+                        >
+                          LEAF TARGET FOCUS
+                        </span>
+                      </div>
+
+                      {/* Necrotic Spot Mock */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '36%',
+                          left: '46%',
+                          width: 42,
+                          height: 42,
+                          borderRadius: '50%',
+                          background:
+                            'radial-gradient(circle, #2d1804 20%, #7c3a07 60%, rgba(245,158,11,0.6) 90%)',
+                          border: '1px solid rgba(245,158,11,0.7)',
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '55%',
+                          left: '58%',
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          background:
+                            'radial-gradient(circle, #2d1804 20%, #7c3a07 60%, rgba(245,158,11,0.5) 90%)',
+                        }}
+                      />
+
+                      {/* Moving Laser Sweep Beam */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          height: 3,
+                          background:
+                            'linear-gradient(90deg, transparent, #22c55e, #4ade80, transparent)',
+                          boxShadow: '0 0 14px #22c55e',
+                          animation: isSimulatingScan
+                            ? 'laserFast 0.7s ease-in-out infinite'
+                            : 'laserSweep 2.8s ease-in-out infinite',
+                        }}
+                      />
+
+                      <button
+                        onClick={triggerScan}
+                        type="button"
+                        style={{
+                          position: 'absolute',
+                          bottom: 10,
+                          right: 10,
+                          background: 'rgba(0,0,0,0.65)',
+                          border: '1px solid rgba(255,255,255,0.25)',
+                          color: '#fff',
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          padding: '4px 9px',
+                          borderRadius: 5,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <Scan size={12} /> {isSimulatingScan ? 'Scanning…' : 'Trigger Rescan'}
+                      </button>
+                    </div>
+
+                    {/* Normalization Specs */}
+                    <div
+                      style={{
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '8px 12px',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: 6,
+                        fontSize: '0.72rem',
+                      }}
+                    >
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>Input Shape:</span>
+                        <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>
+                          [1, 3, 224, 224]
                         </div>
                       </div>
-                      {isCurrent && (
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>RGB Mean:</span>
+                        <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>
+                          [0.485, 0.456, 0.406]
+                        </div>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>Standardization:</span>
+                        <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>
+                          ImageNet FP32
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── CHAPTER 2: SUB-35MS ONNX INFERENCE ─────────────────── */}
+                {currentPage === 1 && (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div
+                      style={{
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '12px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span
+                          style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-main)' }}
+                        >
+                          Neural Confidence Softmax Distribution
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            color: '#16a34a',
+                            background: 'rgba(34, 197, 94, 0.12)',
+                            padding: '2px 7px',
+                            borderRadius: 9999,
+                          }}
+                        >
+                          ⚡ 34ms SIMD
+                        </span>
+                      </div>
+
+                      {/* Bar 1 */}
+                      <div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: '0.75rem',
+                            marginBottom: 3,
+                          }}
+                        >
+                          <strong style={{ color: '#f59e0b' }}>
+                            Tomato Early Blight (Alternaria solani)
+                          </strong>
+                          <span style={{ fontWeight: 800, color: '#f59e0b' }}>96.4%</span>
+                        </div>
+                        <div
+                          style={{
+                            height: 7,
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            borderRadius: 4,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: '96.4%',
+                              height: '100%',
+                              background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Bar 2 */}
+                      <div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: '0.75rem',
+                            marginBottom: 3,
+                          }}
+                        >
+                          <span style={{ color: 'var(--text-muted)' }}>Septoria Leaf Spot</span>
+                          <span style={{ color: 'var(--text-muted)' }}>2.1%</span>
+                        </div>
+                        <div
+                          style={{
+                            height: 5,
+                            background: 'var(--border-subtle)',
+                            borderRadius: 3,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div style={{ width: '2.1%', height: '100%', background: '#94a3b8' }} />
+                        </div>
+                      </div>
+
+                      {/* Bar 3 */}
+                      <div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: '0.75rem',
+                            marginBottom: 3,
+                          }}
+                        >
+                          <span style={{ color: 'var(--text-muted)' }}>
+                            Late Blight (Phytophthora)
+                          </span>
+                          <span style={{ color: 'var(--text-muted)' }}>1.0%</span>
+                        </div>
+                        <div
+                          style={{
+                            height: 5,
+                            background: 'var(--border-subtle)',
+                            borderRadius: 3,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div style={{ width: '1.0%', height: '100%', background: '#94a3b8' }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        borderLeft: '3px solid var(--primary-600)',
+                        padding: '6px 12px',
+                        background: 'rgba(var(--primary-rgb), 0.08)',
+                        borderRadius: '0 6px 6px 0',
+                        fontSize: '0.76rem',
+                        lineHeight: 1.45,
+                        color: 'var(--text-main)',
+                      }}
+                    >
+                      <strong>Zero-Python Node.js:</strong> In-process ONNX avoids Python subprocess overhead,
+                      enabling massive concurrent requests during monsoon disease spikes.
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── CHAPTER 3: GRAD-CAM ATTENTION HEATMAP ─────────────── */}
+                {currentPage === 2 && (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <span
+                        style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}
+                      >
+                        Convolutional Attention Layer:
+                      </span>
+                      <div style={{ display: 'flex', gap: 5 }}>
+                        <button
+                          onClick={() => setViewMode('scan')}
+                          type="button"
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 5,
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            border: '1px solid var(--border-subtle)',
+                            background:
+                              viewMode === 'scan' ? 'var(--primary-600)' : 'var(--bg-card)',
+                            color: viewMode === 'scan' ? '#fff' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Optical Leaf
+                        </button>
+                        <button
+                          onClick={() => setViewMode('heatmap')}
+                          type="button"
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 5,
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            border: '1px solid var(--border-subtle)',
+                            background:
+                              viewMode === 'heatmap' ? 'var(--primary-600)' : 'var(--bg-card)',
+                            color: viewMode === 'heatmap' ? '#fff' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Grad-CAM Thermal
+                        </button>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        height: 170,
+                        borderRadius: 'var(--radius-md)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        background: 'radial-gradient(ellipse at center, #3f7e34 0%, #1c4b18 85%)',
+                        boxShadow: 'inset 0 0 25px rgba(0,0,0,0.5)',
+                        border: '1px solid var(--border-subtle)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '38%',
+                          left: '46%',
+                          width: 44,
+                          height: 44,
+                          borderRadius: '50%',
+                          background: '#2d1804',
+                        }}
+                      />
+
+                      {/* Grad-CAM Thermal Layer */}
+                      {viewMode === 'heatmap' && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background:
+                              'radial-gradient(circle at 48% 44%, rgba(239, 68, 68, 0.85) 0%, rgba(245, 158, 11, 0.65) 28%, rgba(34, 197, 94, 0.25) 55%, transparent 75%)',
+                            mixBlendMode: 'screen',
+                            animation: 'fadeIn 0.25s ease',
+                          }}
+                        />
+                      )}
+
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 6,
+                          left: 8,
+                          background: 'rgba(0,0,0,0.65)',
+                          color: '#fff',
+                          padding: '2px 7px',
+                          borderRadius: 4,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {viewMode === 'heatmap'
+                          ? '🔥 Red thermal focus: 91.2% Saliency Alignment'
+                          : '🌿 Natural Leaf RGB Spectrum'}
+                      </div>
+                    </div>
+
+                    <p
+                      style={{
+                        fontSize: '0.78rem',
+                        color: 'var(--text-muted)',
+                        margin: 0,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Grad-CAM proves model decisions are rooted in concentric necrotic lesions rather
+                      than background noise or finger artifacts.
+                    </p>
+                  </div>
+                )}
+
+                {/* ─── CHAPTER 4: PENMAN-MONTEITH IRRIGATION ──────────────── */}
+                {currentPage === 3 && (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div
+                      style={{
+                        background: 'rgba(59, 130, 246, 0.08)',
+                        border: '1px solid rgba(59, 130, 246, 0.25)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '12px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 7,
+                            background: 'rgba(37, 99, 235, 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#2563eb',
+                          }}
+                        >
+                          <Droplets size={18} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.68rem', color: '#2563eb', fontWeight: 800 }}>
+                            RECOMMENDED ACTION
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '1.1rem',
+                              fontWeight: 900,
+                              color: 'var(--text-main)',
+                            }}
+                          >
+                            Delay Scheduled Irrigation
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sensor Grid */}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr 1fr',
+                          gap: 6,
+                          background: 'var(--bg-card)',
+                          padding: '8px 10px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-subtle)',
+                          fontSize: '0.72rem',
+                        }}
+                      >
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>Root Moisture:</span>
+                          <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>48% (Optimal)</div>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>ET0 Rate:</span>
+                          <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>4.8 mm/day</div>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>Rain Probability:</span>
+                          <div style={{ fontWeight: 800, color: '#2563eb' }}>75% within 18h</div>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: '0.76rem',
+                          color: 'var(--text-main)',
+                          background: 'rgba(34, 197, 94, 0.1)',
+                          border: '1px solid rgba(34, 197, 94, 0.25)',
+                          padding: '6px 10px',
+                          borderRadius: 5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <CheckCircle2 size={14} color="#16a34a" />
+                        <span>
+                          <strong>Resource Dividend:</strong> Conserves <strong>1,800 Liters</strong> of
+                          groundwater by eliminating redundant irrigation.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── CHAPTER 5: DUAL REMEDIATION PRESCRIPTION ───────────── */}
+                {currentPage === 4 && (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div
+                      style={{
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '12px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span
+                          style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-main)' }}
+                        >
+                          Dual Protocol Treatment
+                        </span>
                         <span
                           style={{
                             fontSize: '0.65rem',
                             fontWeight: 800,
-                            color: 'var(--primary-600)',
-                            background: '#ffffff',
-                            padding: '2px 6px',
+                            color: '#dc2626',
+                            background: 'rgba(239, 68, 68, 0.12)',
+                            padding: '2px 7px',
                             borderRadius: 9999,
-                            boxShadow: 'var(--shadow-sm)',
                           }}
                         >
-                          ACTIVE
+                          Action within 48 Hours
                         </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      </div>
 
-            {/* Telemetry Summary Strip */}
-            <div
-              style={{
-                marginTop: 'auto',
-                background: 'var(--bg-subtle)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
-                padding: '12px 16px',
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 12,
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                  PATHOLOGY MATCH
-                </div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#f59e0b' }}>
-                  Alternaria solani
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Early Blight</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                  INFERENCE LATENCY
-                </div>
-                <div
-                  style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 800,
-                    color: 'var(--primary-600)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  <Zap size={14} /> 34ms
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Sub-50ms hard limit</div>
-              </div>
-            </div>
-          </div>
-
-          {/* ─────────────────────────────────────────────────────────────
-              RIGHT SPREAD: DYNAMIC FLIPPING PAGE CONTENT
-              ───────────────────────────────────────────────────────────── */}
-          <div
-            style={{
-              position: 'relative',
-              overflow: 'hidden',
-              backgroundImage: 'linear-gradient(var(--notebook-line) 1px, transparent 1px)',
-              backgroundSize: '100% 28px',
-              backgroundPosition: '0 10px',
-              padding: '2.25rem 2.5rem 2.25rem 2.5rem',
-              display: 'flex',
-              flexDirection: 'column',
-              background: 'var(--notebook-paper)',
-            }}
-          >
-            {/* Page Header Bar */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottom: '1px solid var(--border-subtle)',
-                paddingBottom: 12,
-                marginBottom: 16,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 900,
-                    color: '#ffffff',
-                    background: 'var(--primary-600)',
-                    padding: '3px 9px',
-                    borderRadius: 6,
-                  }}
-                >
-                  STEP {CHAPTERS[currentPage].num}
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 800,
-                    color: 'var(--primary-600)',
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {CHAPTERS[currentPage].tag}
-                </span>
-              </div>
-              <div
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: 'var(--text-muted)',
-                  fontStyle: 'italic',
-                }}
-              >
-                Page {currentPage + 1} of {CHAPTERS.length}
-              </div>
-            </div>
-
-            {/* Dynamic Page Content Container with Fade/Flip Transition */}
-            <div
-              key={currentPage}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                animation: 'pageCurlIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '1.45rem',
-                  fontWeight: 900,
-                  color: 'var(--text-main)',
-                  margin: '0 0 6px',
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                {CHAPTERS[currentPage].title}
-              </h2>
-              <p
-                style={{
-                  fontSize: '0.88rem',
-                  color: 'var(--text-muted)',
-                  lineHeight: 1.6,
-                  margin: '0 0 16px',
-                }}
-              >
-                {CHAPTERS[currentPage].summary}
-              </p>
-
-              {/* ─── CHAPTER 1: OPTICAL SCAN STAGE ─────────────────────── */}
-              {currentPage === 0 && (
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: 'relative',
-                      height: 220,
-                      borderRadius: 'var(--radius-md)',
-                      overflow: 'hidden',
-                      background: 'radial-gradient(ellipse at center, #3f7e34 0%, #1c4b18 85%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: 'inset 0 0 30px rgba(0,0,0,0.5)',
-                      border: '1px solid var(--border-subtle)',
-                    }}
-                  >
-                    {/* Bounding box guide corners */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 20,
-                        border: '2px dashed rgba(255,255,255,0.4)',
-                        borderRadius: 8,
-                        pointerEvents: 'none',
-                      }}
-                    >
-                      <span
+                      {/* Organic */}
+                      <div
                         style={{
-                          position: 'absolute',
-                          top: 8,
-                          left: 8,
-                          fontSize: '0.65rem',
-                          color: '#fff',
-                          background: 'rgba(0,0,0,0.5)',
-                          padding: '2px 6px',
+                          padding: '6px 9px',
+                          background: 'rgba(34, 197, 94, 0.08)',
+                          borderLeft: '3px solid #16a34a',
                           borderRadius: 4,
                         }}
                       >
-                        LEAF TARGET AREA
-                      </span>
-                    </div>
-
-                    {/* Concentric Lesion Spots */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '38%',
-                        left: '46%',
-                        width: 44,
-                        height: 44,
-                        borderRadius: '50%',
-                        background:
-                          'radial-gradient(circle, #2d1804 20%, #7c3a07 60%, rgba(245,158,11,0.6) 90%)',
-                        border: '1px solid rgba(245,158,11,0.7)',
-                      }}
-                    />
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '55%',
-                        left: '58%',
-                        width: 30,
-                        height: 30,
-                        borderRadius: '50%',
-                        background:
-                          'radial-gradient(circle, #2d1804 20%, #7c3a07 60%, rgba(245,158,11,0.5) 90%)',
-                      }}
-                    />
-
-                    {/* Moving Laser Scanner Line */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        right: 0,
-                        height: 3,
-                        background: 'linear-gradient(90deg, transparent, #22c55e, #4ade80, transparent)',
-                        boxShadow: '0 0 15px #22c55e',
-                        animation: isSimulatingScan
-                          ? 'laserFast 0.8s ease-in-out infinite'
-                          : 'laserSweep 3s ease-in-out infinite',
-                      }}
-                    />
-
-                    <button
-                      onClick={triggerScan}
-                      type="button"
-                      style={{
-                        position: 'absolute',
-                        bottom: 12,
-                        right: 12,
-                        background: 'rgba(0,0,0,0.65)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        color: '#fff',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        padding: '5px 10px',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5,
-                      }}
-                    >
-                      <Scan size={12} /> {isSimulatingScan ? 'Scanning…' : 'Trigger Rescan'}
-                    </button>
-                  </div>
-
-                  {/* Tensor Specifications */}
-                  <div
-                    style={{
-                      background: 'var(--bg-subtle)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '10px 14px',
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: 8,
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    <div>
-                      <span style={{ color: 'var(--text-muted)' }}>Input Shape:</span>
-                      <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>[1, 3, 224, 224]</div>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-muted)' }}>RGB Mean:</span>
-                      <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>[0.485, 0.456, 0.406]</div>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-muted)' }}>Standardization:</span>
-                      <div style={{ fontWeight: 800, color: 'var(--primary-600)' }}>ImageNet FP32</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── CHAPTER 2: ONNX RUNTIME INFERENCE ──────────────────── */}
-              {currentPage === 1 && (
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      background: 'var(--bg-subtle)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '16px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 12,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                        Top-3 Pathogen Confidence Softmax
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          fontWeight: 800,
-                          color: '#16a34a',
-                          background: 'rgba(34, 197, 94, 0.12)',
-                          padding: '2px 8px',
-                          borderRadius: 9999,
-                        }}
-                      >
-                        ⚡ 34ms Execution
-                      </span>
-                    </div>
-
-                    {/* Progress Bar 1 */}
-                    <div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: '0.78rem',
-                          marginBottom: 4,
-                        }}
-                      >
-                        <strong style={{ color: '#f59e0b' }}>Tomato Early Blight (Alternaria solani)</strong>
-                        <span style={{ fontWeight: 800, color: '#f59e0b' }}>96.4%</span>
-                      </div>
-                      <div
-                        style={{
-                          height: 8,
-                          background: 'rgba(245, 158, 11, 0.15)',
-                          borderRadius: 4,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: '96.4%',
-                            height: '100%',
-                            background: 'linear-gradient(90deg, #f59e0b, #d97706)',
-                            borderRadius: 4,
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Progress Bar 2 */}
-                    <div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: '0.78rem',
-                          marginBottom: 4,
-                        }}
-                      >
-                        <span style={{ color: 'var(--text-muted)' }}>Septoria Leaf Spot</span>
-                        <span style={{ color: 'var(--text-muted)' }}>2.1%</span>
-                      </div>
-                      <div
-                        style={{
-                          height: 6,
-                          background: 'var(--border-subtle)',
-                          borderRadius: 3,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div style={{ width: '2.1%', height: '100%', background: '#94a3b8' }} />
-                      </div>
-                    </div>
-
-                    {/* Progress Bar 3 */}
-                    <div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: '0.78rem',
-                          marginBottom: 4,
-                        }}
-                      >
-                        <span style={{ color: 'var(--text-muted)' }}>Late Blight (Phytophthora)</span>
-                        <span style={{ color: 'var(--text-muted)' }}>1.0%</span>
-                      </div>
-                      <div
-                        style={{
-                          height: 6,
-                          background: 'var(--border-subtle)',
-                          borderRadius: 3,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div style={{ width: '1.0%', height: '100%', background: '#94a3b8' }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Architecture Callout */}
-                  <div
-                    style={{
-                      borderLeft: '3px solid var(--primary-600)',
-                      padding: '8px 14px',
-                      background: 'rgba(var(--primary-rgb), 0.08)',
-                      borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
-                      fontSize: '0.8rem',
-                      lineHeight: 1.5,
-                      color: 'var(--text-main)',
-                    }}
-                  >
-                    <strong>SIH Compliance:</strong> In-process ONNX engine requires <strong>no Python</strong> at
-                    runtime—executing asynchronously in native C++ bindings for enterprise scale.
-                  </div>
-                </div>
-              )}
-
-              {/* ─── CHAPTER 3: GRAD-CAM ATTENTION SALIENCY ────────────── */}
-              {currentPage === 2 && (
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                      Visual Attention Layer:
-                    </span>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button
-                        onClick={() => setViewMode('scan')}
-                        type="button"
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: 6,
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          border: '1px solid var(--border-subtle)',
-                          background: viewMode === 'scan' ? 'var(--primary-600)' : 'var(--bg-card)',
-                          color: viewMode === 'scan' ? '#fff' : 'var(--text-muted)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Optical Leaf
-                      </button>
-                      <button
-                        onClick={() => setViewMode('heatmap')}
-                        type="button"
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: 6,
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          border: '1px solid var(--border-subtle)',
-                          background: viewMode === 'heatmap' ? 'var(--primary-600)' : 'var(--bg-card)',
-                          color: viewMode === 'heatmap' ? '#fff' : 'var(--text-muted)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Grad-CAM Thermal
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Visualizer Frame */}
-                  <div
-                    style={{
-                      height: 200,
-                      borderRadius: 'var(--radius-md)',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      background: 'radial-gradient(ellipse at center, #3f7e34 0%, #1c4b18 85%)',
-                      boxShadow: 'inset 0 0 25px rgba(0,0,0,0.5)',
-                      border: '1px solid var(--border-subtle)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {/* Lesion Spots */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '40%',
-                        left: '46%',
-                        width: 48,
-                        height: 48,
-                        borderRadius: '50%',
-                        background: '#2d1804',
-                      }}
-                    />
-
-                    {/* Grad-CAM Thermal Layer */}
-                    {viewMode === 'heatmap' && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background:
-                            'radial-gradient(circle at 48% 44%, rgba(239, 68, 68, 0.85) 0%, rgba(245, 158, 11, 0.65) 28%, rgba(34, 197, 94, 0.25) 55%, transparent 75%)',
-                          mixBlendMode: 'screen',
-                          animation: 'fadeIn 0.3s ease',
-                        }}
-                      />
-                    )}
-
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: 8,
-                        left: 10,
-                        background: 'rgba(0,0,0,0.6)',
-                        color: '#fff',
-                        padding: '3px 8px',
-                        borderRadius: 4,
-                        fontSize: '0.68rem',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {viewMode === 'heatmap'
-                        ? '🔥 Red focal region: 91.2% Saliency Alignment'
-                        : '🌿 Natural Leaf RGB Spectrum'}
-                    </div>
-                  </div>
-
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-                    Grad-CAM extracts gradients flowing into the final convolutional feature layer, confirming
-                    the model targets biological fungal concentric rings rather than background fingers or soil.
-                  </p>
-                </div>
-              )}
-
-              {/* ─── CHAPTER 4: PENMAN-MONTEITH IRRIGATION ──────────────── */}
-              {currentPage === 3 && (
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      background: 'rgba(59, 130, 246, 0.08)',
-                      border: '1px solid rgba(59, 130, 246, 0.25)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '16px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 12,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 8,
-                          background: 'rgba(37, 99, 235, 0.15)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#2563eb',
-                        }}
-                      >
-                        <Droplets size={20} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.72rem', color: '#2563eb', fontWeight: 800 }}>
-                          RECOMMENDED ACTION
+                        <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#16a34a' }}>
+                          ORGANIC BIOCONTROL (FIRST PRIORITY)
                         </div>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)' }}>
-                          Delay Irrigation Schedule
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-main)', marginTop: 2 }}>
+                          Neem seed kernel extract 5% + Trichoderma viride @ 5g/L foliar wash.
+                        </div>
+                      </div>
+
+                      {/* Chemical */}
+                      <div
+                        style={{
+                          padding: '6px 9px',
+                          background: 'rgba(234, 179, 8, 0.08)',
+                          borderLeft: '3px solid #eab308',
+                          borderRadius: 4,
+                        }}
+                      >
+                        <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#ca8a04' }}>
+                          TARGETED CHEMICAL FUNGICIDE (IF SPREAD &gt; 5%)
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-main)', marginTop: 2 }}>
+                          Mancozeb 75% WP @ 2.5g/L water. Withholding interval: 7 days.
                         </div>
                       </div>
                     </div>
 
-                    {/* Sensor Telemetry Grid */}
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr 1fr',
-                        gap: 8,
-                        background: 'var(--bg-card)',
-                        padding: '10px 12px',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-subtle)',
-                        fontSize: '0.75rem',
-                      }}
-                    >
-                      <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Root Moisture:</span>
-                        <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>48% (Optimal)</div>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)' }}>ET0 Rate:</span>
-                        <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>4.8 mm/day</div>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Rain Probability:</span>
-                        <div style={{ fontWeight: 800, color: '#2563eb' }}>75% within 18h</div>
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: '0.8rem',
-                        color: 'var(--text-main)',
-                        background: 'rgba(34, 197, 94, 0.1)',
-                        border: '1px solid rgba(34, 197, 94, 0.25)',
-                        padding: '8px 12px',
-                        borderRadius: 6,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                      }}
-                    >
-                      <CheckCircle2 size={16} color="#16a34a" />
-                      <span>
-                        <strong>Preservation Dividend:</strong> Conserves <strong>1,800 Liters</strong> of groundwater
-                        by avoiding pre-rain pumping.
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── CHAPTER 5: DUAL REMEDIATION PRESCRIPTION ───────────── */}
-              {currentPage === 4 && (
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 12,
-                  }}
-                >
-                  <div
-                    style={{
-                      background: 'var(--bg-subtle)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '14px 16px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 10,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                        Dual Protocol Prescription
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '0.68rem',
-                          fontWeight: 800,
-                          color: '#dc2626',
-                          background: 'rgba(239, 68, 68, 0.12)',
-                          padding: '2px 8px',
-                          borderRadius: 9999,
-                        }}
-                      >
-                        Action within 48 Hours
-                      </span>
-                    </div>
-
-                    {/* Organic remediation */}
-                    <div
-                      style={{
-                        padding: '8px 10px',
-                        background: 'rgba(34, 197, 94, 0.08)',
-                        borderLeft: '3px solid #16a34a',
-                        borderRadius: 4,
-                      }}
-                    >
-                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#16a34a' }}>
-                        ORGANIC BIOCONTROL (RECOMMENDED FIRST)
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-main)', marginTop: 2 }}>
-                        Neem seed kernel extract 5% + Trichoderma viride @ 5g/L foliar spray.
-                      </div>
-                    </div>
-
-                    {/* Chemical remediation */}
-                    <div
-                      style={{
-                        padding: '8px 10px',
-                        background: 'rgba(234, 179, 8, 0.08)',
-                        borderLeft: '3px solid #eab308',
-                        borderRadius: 4,
-                      }}
-                    >
-                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#ca8a04' }}>
-                        TARGETED CHEMICAL CONTROL (IF SPREAD &gt; 5%)
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-main)', marginTop: 2 }}>
-                        Mancozeb 75% WP @ 2.5g/L water. Withholding interval: 7 days.
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SMS Share Action */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 'auto' }}>
+                    {/* Dispatch SMS */}
                     <button
                       onClick={sendAdvisorySms}
                       type="button"
                       className="btn-primary"
                       style={{
-                        flex: 1,
-                        padding: '0.65rem 1rem',
-                        fontSize: '0.85rem',
+                        padding: '0.55rem 0.9rem',
+                        fontSize: '0.8rem',
                         borderRadius: 'var(--radius-sm)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 8,
+                        gap: 6,
+                        marginTop: 'auto',
                       }}
                     >
-                      <Send size={15} />
-                      {smsSent ? '✓ SMS Dispatched to Field Technician!' : 'Dispatch Advisory SMS to Grower'}
+                      <Send size={14} />
+                      {smsSent
+                        ? '✓ Advisory SMS Dispatched to Field Technician!'
+                        : 'Dispatch Advisory SMS to Field Worker'}
                     </button>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Bottom Page Turn Controls */}
-              <div
-                style={{
-                  marginTop: 'auto',
-                  paddingTop: 12,
-                  borderTop: '1px solid var(--border-subtle)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <button
-                  onClick={prevPage}
-                  disabled={currentPage === 0}
+                {/* Bottom Dog-Ear Page Turn Controls */}
+                <div
                   style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: currentPage === 0 ? 'var(--text-light)' : 'var(--text-main)',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
+                    marginTop: 'auto',
+                    paddingTop: 8,
+                    borderTop: '1px solid var(--border-subtle)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
-                    cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  <ChevronLeft size={14} /> Previous Chapter
-                </button>
+                  <button
+                    onClick={prevPage}
+                    disabled={currentPage === 0}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: currentPage === 0 ? 'var(--text-light)' : 'var(--text-main)',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    <ChevronLeft size={13} /> Turn Back
+                  </button>
 
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  Interactive Leaf Binder
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                    {scrollProgress > 0 && `${Math.round(scrollProgress * 100)}% read · `}Scroll to
+                    flip
+                  </div>
+
+                  <button
+                    onClick={nextPage}
+                    disabled={currentPage === CHAPTERS.length - 1}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color:
+                        currentPage === CHAPTERS.length - 1
+                          ? 'var(--text-light)'
+                          : 'var(--primary-600)',
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      cursor: currentPage === CHAPTERS.length - 1 ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    Turn Next Page <ChevronRight size={13} />
+                  </button>
                 </div>
-
-                <button
-                  onClick={nextPage}
-                  disabled={currentPage === CHAPTERS.length - 1}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color:
-                      currentPage === CHAPTERS.length - 1
-                        ? 'var(--text-light)'
-                        : 'var(--primary-600)',
-                    fontSize: '0.8rem',
-                    fontWeight: 800,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    cursor: currentPage === CHAPTERS.length - 1 ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  Next Chapter <ChevronRight size={14} />
-                </button>
               </div>
             </div>
           </div>
@@ -1361,22 +1398,27 @@ const AgronomyWorkflow = () => {
           50% { top: 80%; opacity: 1; }
         }
         @keyframes laserFast {
-          0%, 100% { top: 10%; opacity: 1; }
+          0%, 100% { top: 8%; opacity: 1; }
           50% { top: 88%; opacity: 1; }
         }
-        @keyframes pageCurlIn {
+        @keyframes bookPageTurn {
           0% {
-            opacity: 0;
-            transform: translateX(12px) rotateY(-4deg);
+            opacity: 0.3;
+            transform: rotateY(-35deg) scale(0.97);
+            box-shadow: -15px 0 25px rgba(0,0,0,0.3);
           }
           100% {
             opacity: 1;
-            transform: translateX(0) rotateY(0);
+            transform: rotateY(0deg) scale(1);
+            box-shadow: none;
           }
         }
-        @media (max-width: 900px) {
-          .field-notebook-desk {
+        @media (max-width: 860px) {
+          .book-paper-spread {
             grid-template-columns: 1fr !important;
+          }
+          .notebook-center-spine {
+            display: none !important;
           }
         }
       `}</style>
