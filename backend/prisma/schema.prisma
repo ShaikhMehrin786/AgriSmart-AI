@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite" // Change to "postgresql" for production
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -30,4 +30,15 @@ model Prediction {
   severity    String
   heatmapPath String?
   createdAt   DateTime @default(now())
+}
+
+model WeatherLog {
+  id              String   @id @default(uuid())
+  latitude        Float
+  longitude       Float
+  temperature     Float
+  humidity        Float
+  rainProbability Float
+  windSpeed       Float
+  recordedAt      DateTime @default(now())
 }
