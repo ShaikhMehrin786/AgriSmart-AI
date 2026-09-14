@@ -345,6 +345,10 @@ function buildSystemPromptEnvelope(diagnosisContext, weatherContext, language) {
   const diagnosticState = diagnosisContext?.diagnosticState ||
     resolveDiagnosticState(rawDisease, diagnosisContext?.isHealthy, null);
 
+  const imageQuality = diagnosisContext?.imageQuality || null;
+  const qualityIssues = Array.isArray(imageQuality?.issues) && imageQuality.issues.length > 0 ? imageQuality.issues.join(', ') : 'None';
+  const requiresBetterImage = diagnosisContext?.requiresBetterImage || isUncertain || imageQuality?.level === 'POOR';
+
   const temp = weatherContext?.temperature ?? weatherContext?.temp ?? '26';
   const humidity = weatherContext?.humidity ?? '65';
   const rainProb = Number(weatherContext?.rainProbability ?? weatherContext?.rainProb ?? '20');

@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { predictCropDisease } = require('./onnxInferenceService');
 const { generateGradCamOverlay } = require('./gradCamService');
+const { assessImageQuality } = require('./imageQualityService');
 
 /**
  * Run ML disease prediction on an image (file path or Buffer)
@@ -23,10 +24,13 @@ const predictDisease = async (imageInput) => {
       throw new Error('Invalid image input: expected file path string or Buffer');
     }
 
-    // Run ONNX inference
+    // 1. Run deterministic advisory image quality check (non-blocking)
+    const imageQuality = await assessImageQuality(imageBuffer);
+
+    // 2. Run ONNX inference
     const prediction = await predictCropDisease(imageBuffer);
 
-    // Determine lesion severity based on condition and confidence
+    // 3. Determine lesion severity based on condition and confidence
     let severity = 'Low';
     if (prediction.isHealthy) {
       severity = 'None';
@@ -36,7 +40,12 @@ const predictDisease = async (imageInput) => {
       severity = 'Moderate';
     }
 
-    // Generate Grad-CAM activation heatmap overlay
+    // 4. Combine quality and confidence for image capture recommendation
+    const isLowConfidence = prediction.confidence < 45.0;
+    const isPoorQuality = imageQuality.level === 'POOR';
+    const requiresBetterImage = isLowConfidence || isPoorQuality;
+
+    // 5. Generate Grad-CAM activation heatmap overlay
     let heatmapPath = null;
     try {
       heatmapPath = await generateGradCamOverlay(imageBuffer);
@@ -49,8 +58,14 @@ const predictDisease = async (imageInput) => {
       disease: prediction.disease,
       confidence: prediction.confidence,
       confidenceLevel: prediction.confidenceLevel || 'Moderate',
+      diagnosticState: prediction.diagnosticState || (prediction.confidence >= 45.0 ? (prediction.isHealthy ? 'HEALTHY' : 'DISEASE') : 'UNKNOWN'),
+      predictionMargin: prediction.predictionMargin ?? 100.0,
+      secondCandidate: prediction.secondCandidate || null,
+      isAmbiguous: prediction.isAmbiguous || false,
       isUncertain: prediction.isUncertain || false,
       uncertaintyReason: prediction.uncertaintyReason || null,
+      requiresBetterImage,
+      imageQuality,
       top3: prediction.top3 || [],
       allPredictions: prediction.allPredictions || [],
       crop: prediction.crop,

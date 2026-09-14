@@ -120,6 +120,77 @@ async function runOnnxIntegrationTests() {
     assert(probs[0] > probs[1] && probs[1] > probs[2], 'Ordering must be preserved');
   });
 
+  // 7. Confidence Level Thresholds
+  const { getConfidenceLevel } = require('../services/onnxInferenceService');
+  await test('getConfidenceLevel accurately maps HIGH (>=70%), MODERATE (45-69.99%), and LOW (<45%)', () => {
+    assert.strictEqual(getConfidenceLevel(95.5), 'High', '>=70 should be High');
+    assert.strictEqual(getConfidenceLevel(70.0), 'High', '70.0 should be High');
+    assert.strictEqual(getConfidenceLevel(69.9), 'Moderate', '69.9 should be Moderate');
+    assert.strictEqual(getConfidenceLevel(45.0), 'Moderate', '45.0 should be Moderate');
+    assert.strictEqual(getConfidenceLevel(44.46), 'Low', '44.46 should be Low');
+    assert.strictEqual(getConfidenceLevel(12.0), 'Low', '12.0 should be Low');
+  });
+
+  // 8. Image Quality Assessment Heuristics
+  const sharp = require('sharp');
+  const { assessImageQuality } = require('../services/imageQualityService');
+  await test('assessImageQuality detects tiny, dark, bright, and low-contrast images', async () => {
+    // A. Tiny image (<100px)
+    const tinyBuf = await sharp({ create: { width: 60, height: 60, channels: 3, background: { r: 120, g: 120, b: 120 } } }).jpeg().toBuffer();
+    const tinyRes = await assessImageQuality(tinyBuf);
+    assert(tinyRes.issues.includes('IMAGE_TOO_SMALL'), 'Tiny image must trigger IMAGE_TOO_SMALL');
+    assert.strictEqual(tinyRes.level, 'POOR', 'Tiny image level must be POOR');
+
+    // B. Dark image (mean luminance < 35)
+    const darkBuf = await sharp({ create: { width: 250, height: 250, channels: 3, background: { r: 15, g: 15, b: 15 } } }).jpeg().toBuffer();
+    const darkRes = await assessImageQuality(darkBuf);
+    assert(darkRes.issues.includes('TOO_DARK'), 'Dark image must trigger TOO_DARK');
+
+    // C. Bright image (mean luminance > 230)
+    const brightBuf = await sharp({ create: { width: 250, height: 250, channels: 3, background: { r: 245, g: 245, b: 245 } } }).jpeg().toBuffer();
+    const brightRes = await assessImageQuality(brightBuf);
+    assert(brightRes.issues.includes('TOO_BRIGHT'), 'Bright image must trigger TOO_BRIGHT');
+
+    // D. Normal Field Image
+    const normalBuf = await fs.promises.readFile(testImagePath);
+    const normalRes = await assessImageQuality(normalBuf);
+    assert(['GOOD', 'FAIR'].includes(normalRes.level), `Normal field image should be GOOD or FAIR, got ${normalRes.level}`);
+  });
+
+  // 9. Raw Prediction Transparency & Diagnostic State for LOW Confidence
+  await test('predictDisease preserves raw prediction name and exact confidence when confidence is LOW', async () => {
+    const result = await predictDisease(testImagePath);
+    assert(result.disease && typeof result.disease === 'string', 'Raw disease must be preserved');
+    assert(result.crop && typeof result.crop === 'string', 'Raw crop must be preserved');
+    assert(typeof result.confidence === 'number', 'Confidence must be numeric');
+    assert(['HIGH', 'MODERATE', 'LOW', 'High', 'Moderate', 'Low'].includes(result.confidenceLevel), 'Valid confidence level');
+    assert(['HEALTHY', 'DISEASE', 'UNKNOWN'].includes(result.diagnosticState), 'Valid diagnosticState');
+    assert(typeof result.requiresBetterImage === 'boolean', 'requiresBetterImage must be boolean');
+  });
+
+  // 10. Prediction Margin Transparency & Second Candidate
+  await test('Inference exposes predictionMargin, secondCandidate, and isAmbiguous flag', async () => {
+    const imageBuffer = await fs.promises.readFile(testImagePath);
+    const result = await predictCropDisease(imageBuffer);
+    assert(typeof result.predictionMargin === 'number', 'predictionMargin must be a number');
+    assert(typeof result.isAmbiguous === 'boolean', 'isAmbiguous must be boolean');
+    if (result.top3.length > 1) {
+      assert(result.secondCandidate !== null, 'secondCandidate must be present when top3 > 1');
+      assert.strictEqual(typeof result.secondCandidate.disease, 'string', 'secondCandidate disease must be string');
+      assert(typeof result.secondCandidate.confidence === 'number', 'secondCandidate confidence must be number');
+    }
+  });
+
+  // 11. POOR Image non-blocking execution
+  await test('POOR image triggers requiresBetterImage=true without blocking inference', async () => {
+    const tinyBuf = await sharp({ create: { width: 80, height: 80, channels: 3, background: { r: 20, g: 150, b: 40 } } }).jpeg().toBuffer();
+    const result = await predictDisease(tinyBuf);
+    assert(result, 'Inference must succeed on poor quality image');
+    assert.strictEqual(result.requiresBetterImage, true, 'Poor quality must set requiresBetterImage to true');
+    assert.strictEqual(result.imageQuality.level, 'POOR', 'Quality level must be POOR');
+    assert(result.disease && result.confidence > 0, 'Inference must still produce prediction');
+  });
+
   console.log('\n====================================================');
   console.log(` TEST RUN COMPLETED: ${passed} PASSED, ${failed} FAILED `);
   console.log('====================================================\n');

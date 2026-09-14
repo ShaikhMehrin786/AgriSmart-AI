@@ -42,8 +42,14 @@ const createPrediction = async (req, res) => {
     const enrichedPrediction = {
       ...prediction,
       confidenceLevel: result.confidenceLevel || 'Moderate',
+      diagnosticState: result.diagnosticState || (result.confidence >= 45.0 ? (result.isHealthy ? 'HEALTHY' : 'DISEASE') : 'UNKNOWN'),
+      predictionMargin: result.predictionMargin ?? 100.0,
+      secondCandidate: result.secondCandidate || null,
+      isAmbiguous: result.isAmbiguous || false,
       isUncertain: result.isUncertain || false,
       uncertaintyReason: result.uncertaintyReason || null,
+      requiresBetterImage: result.requiresBetterImage || false,
+      imageQuality: result.imageQuality || null,
       top3: result.top3 || [],
       rawClass: result.rawClass,
       inferenceTimeMs: result.inferenceTimeMs,
@@ -56,9 +62,15 @@ const createPrediction = async (req, res) => {
       success: true,
       prediction: enrichedPrediction,
       top3: result.top3 || [],
-      confidenceLevel: result.confidenceLevel || 'Moderate',
-      isUncertain: result.isUncertain || false,
-      uncertaintyReason: result.uncertaintyReason || null,
+      confidenceLevel: enrichedPrediction.confidenceLevel,
+      diagnosticState: enrichedPrediction.diagnosticState,
+      predictionMargin: enrichedPrediction.predictionMargin,
+      secondCandidate: enrichedPrediction.secondCandidate,
+      isAmbiguous: enrichedPrediction.isAmbiguous,
+      isUncertain: enrichedPrediction.isUncertain,
+      uncertaintyReason: enrichedPrediction.uncertaintyReason,
+      requiresBetterImage: enrichedPrediction.requiresBetterImage,
+      imageQuality: enrichedPrediction.imageQuality,
       advisory,
       recommendations,
       safetyDisclaimer: SAFETY_DISCLAIMER
@@ -90,19 +102,26 @@ const getPredictionById = async (req, res) => {
     const advisory = getDiseaseKnowledge(prediction.disease);
     const confidenceLevel = prediction.confidence >= 70 ? 'High' : prediction.confidence >= 45 ? 'Moderate' : 'Low';
     const isUncertain = prediction.confidence < 45;
+    const isHealthy = prediction.disease?.toLowerCase().includes('healthy');
+    const diagnosticState = !isUncertain ? (isHealthy ? 'HEALTHY' : 'DISEASE') : 'UNKNOWN';
+    const requiresBetterImage = isUncertain;
 
     res.json({
       success: true,
       prediction: {
         ...prediction,
         confidenceLevel,
+        diagnosticState,
         isUncertain,
+        requiresBetterImage,
         advisory,
         safetyDisclaimer: SAFETY_DISCLAIMER
       },
       advisory,
       confidenceLevel,
-      isUncertain
+      diagnosticState,
+      isUncertain,
+      requiresBetterImage
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

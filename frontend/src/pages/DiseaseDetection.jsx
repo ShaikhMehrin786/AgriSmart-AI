@@ -36,9 +36,30 @@ const SEVERITY_META = {
 
 const CONFIDENCE_LEVEL_META = {
   High:     { label: 'High Confidence', color: '#16a34a', bg: 'rgba(34, 197, 94, 0.15)', border: 'rgba(34, 197, 94, 0.3)' },
-  Moderate: { label: 'Moderate Confidence', color: '#d97706', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.3)' },
+  HIGH:     { label: 'High Confidence', color: '#16a34a', bg: 'rgba(34, 197, 94, 0.15)', border: 'rgba(34, 197, 94, 0.3)' },
+  Moderate: { label: 'Possible Diagnosis (Moderate)', color: '#d97706', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.3)' },
+  MODERATE: { label: 'Possible Diagnosis (Moderate)', color: '#d97706', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.3)' },
   Low:      { label: 'Low Confidence (Uncertain)', color: '#dc2626', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.3)' },
+  LOW:      { label: 'Low Confidence (Uncertain)', color: '#dc2626', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.3)' },
 };
+
+const QUALITY_ISSUE_LABELS = {
+  IMAGE_TOO_SMALL: 'Image dimensions are very small (<100px)',
+  IMAGE_LOW_RESOLUTION: 'Image resolution is low (<180px)',
+  TOO_DARK: 'Image is underexposed / dark (<35 luminance)',
+  TOO_BRIGHT: 'Image is overexposed / bright glare (>230 luminance)',
+  LOW_CONTRAST: 'Low contrast / washed out features',
+  LIKELY_BLURRY: 'Possible motion blur / out of focus',
+  INVALID_BUFFER: 'Corrupted image file'
+};
+
+const CAPTURE_GUIDANCE_STEPS = [
+  { icon: '☀️', title: 'Good Natural Daylight', desc: 'Capture under bright, diffuse natural daylight; avoid deep shadows or direct harsh flash.' },
+  { icon: '🍃', title: 'Single Leaf in Frame', desc: 'Focus squarely on a single diseased leaf showing representative symptoms.' },
+  { icon: '📐', title: 'Fill 70%+ of Frame', desc: 'Position camera close enough that the leaf fills most of the viewfinder.' },
+  { icon: '🔍', title: 'Sharp Focus (No Blur)', desc: 'Hold camera steady and tap the screen to ensure lesion spots are in crisp focus.' },
+  { icon: '🌿', title: 'Clean Background', desc: 'Avoid dense background clutter or overlapping leaves from neighboring plants.' }
+];
 
 const DiseaseDetection = () => {
   const navigate = useNavigate();
@@ -248,26 +269,73 @@ const DiseaseDetection = () => {
         /* ── Rich Diagnostic Result Section ── */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-          {/* Low Confidence Uncertainty Warning Banner */}
+          {/* Low Confidence Uncertainty Warning Banner & Capture Guidance */}
           {isUncertain && (
             <div style={{
               display: 'flex',
-              alignItems: 'flex-start',
+              flexDirection: 'column',
               gap: 12,
-              padding: '1rem 1.25rem',
+              padding: '1.25rem',
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(239, 68, 68, 0.10)',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
+              background: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
               color: 'var(--text-primary)'
             }}>
-              <AlertCircle size={24} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
-              <div style={{ fontSize: '0.88rem', lineHeight: 1.55 }}>
-                <strong style={{ color: '#ef4444', display: 'block', marginBottom: 2 }}>
-                  AI Uncertainty Notice ({confidenceLevel})
-                </strong>
-                <span>
-                  The model confidence for this image is <strong>{confidencePct}%</strong>.
-                  AI is uncertain about this result. Upload a clearer close-up image of the affected leaf taken under diffuse natural lighting for higher diagnostic certainty.
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <AlertCircle size={24} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div style={{ fontSize: '0.88rem', lineHeight: 1.55 }}>
+                  <strong style={{ color: '#ef4444', display: 'block', fontSize: '0.95rem', marginBottom: 2 }}>
+                    ⚠️ Low Diagnostic Confidence ({confidencePct}%)
+                  </strong>
+                  <span>
+                    The current prediction <strong>{result.disease}</strong> is <strong>unconfirmed</strong> due to low feature confidence ({confidencePct}% &lt; 45%).
+                    Please inspect the crop closely and capture a clearer close-up photograph.
+                  </span>
+                </div>
+              </div>
+
+              {/* 5-Step Image Capture Checklist */}
+              <div style={{
+                marginTop: 4,
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-subtle)'
+              }}>
+                <div style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: 6, color: 'var(--text-primary)' }}>
+                  📸 Recommended Image Capture Practices for Reliable Diagnosis:
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '8px', fontSize: '0.78rem' }}>
+                  {CAPTURE_GUIDANCE_STEPS.map((step, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                      <span style={{ fontSize: '1rem' }}>{step.icon}</span>
+                      <div>
+                        <strong>{step.title}:</strong> <span style={{ color: 'var(--text-muted)' }}>{step.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Advisory Image Quality Alert if issues detected */}
+          {result.imageQuality && Array.isArray(result.imageQuality.issues) && result.imageQuality.issues.length > 0 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-sm)',
+              background: result.imageQuality.level === 'POOR' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(59, 130, 246, 0.08)',
+              border: result.imageQuality.level === 'POOR' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(59, 130, 246, 0.25)',
+              fontSize: '0.84rem'
+            }}>
+              <Camera size={18} color={result.imageQuality.level === 'POOR' ? '#d97706' : '#3b82f6'} style={{ flexShrink: 0 }} />
+              <div>
+                <strong>Image Quality Advisory ({result.imageQuality.level}):</strong>{' '}
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {result.imageQuality.issues.map(iss => QUALITY_ISSUE_LABELS[iss] || iss).join(' • ')}
                 </span>
               </div>
             </div>
@@ -294,28 +362,33 @@ const DiseaseDetection = () => {
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 14px', borderRadius: 'var(--radius-sm)',
-                background: isHealthy ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                border: isHealthy ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(239, 68, 68, 0.25)',
+                background: isHealthy ? 'rgba(34, 197, 94, 0.12)' : (isUncertain ? 'rgba(245, 158, 11, 0.12)' : 'rgba(239, 68, 68, 0.12)'),
+                border: isHealthy ? '1px solid rgba(34, 197, 94, 0.25)' : (isUncertain ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(239, 68, 68, 0.25)'),
               }}>
                 {isHealthy
                   ? <CheckCircle2 size={20} color="var(--primary-500)" />
-                  : <AlertTriangle size={20} color="#ef4444" />}
-                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: isHealthy ? 'var(--primary-400)' : '#f87171' }}>
-                  {isHealthy ? 'Crop Foliage is Healthy' : 'Disease Condition Detected'}
+                  : (isUncertain ? <AlertCircle size={20} color="#d97706" /> : <AlertTriangle size={20} color="#ef4444" />)}
+                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: isHealthy ? 'var(--primary-400)' : (isUncertain ? '#d97706' : '#f87171') }}>
+                  {isHealthy ? 'Crop Foliage is Healthy' : (isUncertain ? 'Possible Foliar Condition (Unconfirmed)' : 'Disease Condition Detected')}
                 </span>
               </div>
 
               <div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  Top-1 Diagnosis
+                  {isUncertain ? 'Possible Result (Unconfirmed)' : 'Top-1 Diagnosis'}
                 </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: isHealthy ? '#16a34a' : '#dc2626', marginTop: 2 }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: isHealthy ? '#16a34a' : (isUncertain ? '#d97706' : '#dc2626'), marginTop: 2 }}>
                   {result.disease}
                 </div>
                 {result.crop && (
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 2 }}>
                     Target Crop: <strong style={{ color: 'var(--text-primary)' }}>{result.crop}</strong>
                     {advisory.pathogenType && <span> • Pathogen: <em>{advisory.pathogenType}</em></span>}
+                    {result.isAmbiguous && result.secondCandidate && (
+                      <span style={{ display: 'block', fontSize: '0.78rem', color: '#d97706', marginTop: 2 }}>
+                        ⚠️ Ambiguous margin ({result.predictionMargin}%) with <em>{result.secondCandidate.disease}</em>
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

@@ -137,15 +137,33 @@ async function predictCropDisease(imageBuffer) {
     };
 
     const top3 = ranked.slice(0, 3);
-    const marginToSecond = top3.length > 1 ? (top3[0].confidence - top3[1].confidence) : 100.0;
-    const isUncertain = top1.confidence < 45.0 || marginToSecond < 10.0;
+    const second = top3.length > 1 ? top3[1] : null;
+    const predictionMargin = second ? +(top1.confidence - second.confidence).toFixed(2) : 100.0;
+    const isAmbiguous = predictionMargin < 10.0;
+    const isUncertain = top1.confidence < 45.0 || isAmbiguous;
+
+    // Diagnostic State according to confidence-aware abstention rules
+    let diagnosticState = 'UNKNOWN';
+    if (top1.confidence >= 45.0) {
+      diagnosticState = top1.isHealthy ? 'HEALTHY' : 'DISEASE';
+    } else {
+      diagnosticState = 'UNKNOWN';
+    }
 
     let uncertaintyReason = null;
     if (top1.confidence < 45.0) {
       uncertaintyReason = 'Top prediction confidence is below 45% threshold. Field lighting or angle may be sub-optimal.';
-    } else if (marginToSecond < 10.0) {
-      uncertaintyReason = `Close probability margin (${marginToSecond.toFixed(1)}%) between top predictions '${top3[0].disease}' and '${top3[1].disease}'.`;
+    } else if (isAmbiguous) {
+      uncertaintyReason = `Close probability margin (${predictionMargin.toFixed(1)}%) between top predictions '${top3[0].disease}' and '${top3[1].disease}'.`;
     }
+
+    const secondCandidate = second ? {
+      crop: second.crop,
+      disease: second.disease,
+      confidence: second.confidence,
+      confidenceLevel: second.confidenceLevel,
+      rawClass: second.rawClass
+    } : null;
 
     return {
       crop: top1.crop,
@@ -153,7 +171,12 @@ async function predictCropDisease(imageBuffer) {
       isHealthy: top1.isHealthy,
       confidence: top1.confidence,
       confidenceLevel: top1.confidenceLevel,
+      diagnosticState,
+      predictionMargin,
+      secondCandidate,
+      isAmbiguous,
       isUncertain,
+      requiresBetterImage: top1.confidence < 45.0,
       uncertaintyReason,
       top3,
       allPredictions: ranked,
