@@ -88,17 +88,22 @@ const getIrrigation = async (req, res) => {
   }
 };
 
+const { calculateSustainabilityScore } = require('../services/sustainabilityService');
+
 const getSustainability = async (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      score: 85, level: 'Excellent',
-      factors: [
-        { name: 'Water Efficiency', score: 92 },
-        { name: 'Disease Management', score: 78 }
-      ]
-    }
-  });
+  try {
+    const sustainability = calculateSustainabilityScore(req.query || {});
+    res.json({
+      success: true,
+      data: sustainability
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to calculate sustainability score',
+      error: error.message
+    });
+  }
 };
 
 const { generateRecommendations } = require('../services/recommendationService');

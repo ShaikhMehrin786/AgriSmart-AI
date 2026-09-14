@@ -49,12 +49,12 @@ AgriSmart AI bridges the lab-to-field gap through:
 
 | Feature | Description | Status |
 |---|---|:---:|
-| 🍃 **Crop & Disease Detection** | Upload leaf images to diagnose 38+ crop-disease conditions or identify healthy foliage with confidence scoring. | ✅ Production |
-| 🔍 **Explainable AI (Grad-CAM)** | Visual attention heatmaps highlight the exact morphological lesions that triggered the diagnosis, fostering farmer trust. | ✅ Production |
+| 🍃 **Crop & Disease Detection** | Upload leaf images to diagnose **28 canonical crop-disease conditions** (17 diseases + 11 healthy) with confidence-aware abstention and quality scoring. | ✅ Production |
+| 🔍 **Explainable AI (Grad-CAM)** | Visual attention heatmap colormaps highlight infection loci on foliar uploads, fostering farmer transparency. | ✅ Production |
 | 🌦️ **Weather-Grounded Pathogen Risk** | Correlates ambient humidity, rainfall probability, and temperature to calculate imminent fungal/bacterial proliferation risk. | ✅ Production |
-| 💧 **Smart Irrigation Advisory** | Synthesizes crop coefficient ($K_c$), soil moisture, and 48-hour precipitation forecasts to prevent over/under-watering. | ✅ Production |
-| 🌱 **Sustainability Index (0–100)** | Audits farm management efficiency across water conservation, chemical pesticide reduction, and preventive habits. | ✅ Production |
-| 🤖 **Grounded GenAI Agronomist** | Interactive multi-turn assistant grounded in verified diagnosis monographs, leaf scans, and local weather context. | ✅ Production |
+| 💧 **Smart Irrigation Advisory** | Synthesizes crop coefficient ($K_c$), soil moisture, and precipitation forecasts to prevent over/under-watering. | ✅ Production |
+| 🌱 **Sustainability Index (0–100)** | Audits farm management efficiency across water conservation, chemical reduction, disease scouting, and soil optimization. | ✅ Production |
+| 🤖 **Grounded GenAI Agronomist** | Interactive multi-turn assistant grounded in verified diagnosis monographs, leaf scans, and weather context with strict healthy guardrails & multilingual support (English, Hindi, Hinglish). | ✅ Production |
 | 📖 **Interactive Agronomy Workflow** | Scroll-driven chapter book showcasing platform solutions with fluid physics, page-turn animations, and progress tracking. | ✅ Production |
 | 🌓 **Adaptive Dark / Light Theme** | Instant theme toggling across all dashboard views and landing page with custom HSL tokens and high contrast. | ✅ Production |
 | 🛡️ **Enterprise Security (RBAC & Limits)** | Password hashing (Bcrypt-10), JWT tokens, Role-Based Access Control, brute-force rate limiters, Helmet headers, and 401 auto-logout. | ✅ Production |
@@ -174,11 +174,12 @@ AgriSmart AI follows defense-in-depth security principles across both frontend a
 
 ## 🧠 Core Engine & Advisory Logic
 
-### 1. Disease Detection & Explainable AI Pipeline
+### 1. Disease Detection & Explainability Pipeline
 1. **Ingestion & Validation:** Multipart image upload validated via Multer for mime-types (`jpeg`, `jpg`, `png`, `webp`) and clamped to 5MB.
-2. **Tensor Preprocessing:** Sharp resizes images to `224x224x3`, normalizes to ImageNet statistics ($\mu = [0.485, 0.456, 0.406]$, $\sigma = [0.229, 0.224, 0.225]$), and builds Float32Array tensors.
-3. **ONNX Inference:** `onnxruntime-node` runs the neural network model; softmax computes class probability distributions across 38+ crop conditions.
-4. **Grad-CAM Localization:** Activation gradients from the final convolutional layer are mapped to pixel coordinates, generating visual heatmap overlays of infection loci.
+2. **Advisory Image Quality Assessment:** Deterministic Sharp heuristics evaluate image dimensions, luminance (underexposure $< 35$, overexposure $> 230$), contrast standard deviation ($< 12$), and Laplacian blur ($< 8.0$) to guide farmers without blocking execution.
+3. **Tensor Preprocessing:** Sharp resizes images to `224x224x3`, normalizes to ImageNet statistics ($\mu = [0.485, 0.456, 0.406]$, $\sigma = [0.229, 0.224, 0.225]$), and builds planar Float32Array tensors.
+4. **ONNX Inference & Abstention:** `onnxruntime-node` runs the `EfficientNet-B0` model; softmax computes class probability distributions across **28 canonical classes**. Predictions are categorized as `HIGH` ($\ge 70\%$), `MODERATE` ($45\%-70\%$), or `LOW` ($< 45\%$). Low-confidence predictions abstain from claiming confirmed diagnoses and trigger a 5-point capture guidance checklist while preserving raw model transparency.
+5. **Visual Attention (Grad-CAM Overlay):** Colormap overlays (Jet/Turbo colormaps) visually map localized infection loci on the leaf to aid farmer inspection.
 
 ### 2. Weather Intelligence Integration
 - Queries live meteorological conditions (temperature, humidity, precipitation probability, wind speed) based on farmer geolocation.
@@ -187,22 +188,22 @@ AgriSmart AI follows defense-in-depth security principles across both frontend a
 - Flags imminent risk for fungal blights, rusts, and powdery mildews.
 
 ### 3. Smart Irrigation Heuristic
-Correlates crop stage evapotranspiration ($K_c$), soil moisture percentage, and 48-hour precipitation forecasts:
+Correlates crop stage evapotranspiration ($K_c$), soil moisture percentage, and precipitation forecasts:
 - If soil moisture is moderate ($\ge 40\%$) and rain probability $> 65\%$, system prompts:  
   **"Delay Irrigation: Natural precipitation forecasted within 24h"** to save water and prevent root rot.
 
 ### 4. Sustainability Score Algorithm (Scale: 0 - 100)
 $$\text{Score} = (0.35 \times W_{eff}) + (0.30 \times P_{bio}) + (0.20 \times D_{prev}) + (0.15 \times R_{opt})$$
-- $W_{eff}$: Weather-aligned irrigation efficiency.
-- $P_{bio}$: Prioritization of biological/organic fungicides over synthetic chemicals.
-- $D_{prev}$: Timely removal of diseased host foliage.
-- $R_{opt}$: Optimal soil nutrient and moisture retention habits.
+- $W_{eff}$: Weather-aligned irrigation efficiency (35%).
+- $P_{bio}$: Prioritization of biological/organic fungicides over synthetic chemicals (30%).
+- $D_{prev}$: Timely disease scouting and preventive field habits (20%).
+- $R_{opt}$: Optimal soil nutrient and moisture retention management (15%).
 
 ---
 
 ## 🗄️ Database Schema
 
-Implemented with PostgreSQL and Prisma ORM in [`backend/prisma/schema.prisma`](file:///c:/E%20drive/AgriSmart-AI/backend/prisma/schema.prisma):
+Implemented with PostgreSQL and Prisma ORM in `backend/prisma/schema.prisma`:
 
 ```prisma
 generator client {
@@ -431,8 +432,8 @@ DATABASE_URL="postgresql://postgres:your_password@localhost:5432/agrismart_db?sc
 JWT_SECRET="your_super_secret_jwt_key_here"
 OPENWEATHER_API_KEY="your_openweather_api_key"
 GEMINI_API_KEY="your_gemini_api_key"
-ONNX_MODEL_PATH="./src/models/agrismart_model.onnx"
-CLASS_LABELS_PATH="./src/models/class_labels.json"
+ONNX_MODEL_PATH="./src/models/agrismart_efficientnet_b0.onnx"
+CLASS_LABELS_PATH="./src/models/class_labels_public.json"
 ```
 
 Push database schema to PostgreSQL:
@@ -481,28 +482,33 @@ pip install -r requirements.txt
 # Run training across combined PlantVillage + PlantDoc datasets
 python src/train.py --model efficientnet_b0 --epochs 25 --batch-size 32
 
-# Export best checkpoint to ONNX with dynamic batch sizing
+# Export best checkpoint to ONNX
 python src/export_onnx.py \
   --checkpoint ./checkpoints/best_model.pth \
-  --output ../backend/src/models/agrismart_model.onnx
+  --output ../backend/src/models/agrismart_efficientnet_b0.onnx
 ```
 
 ---
 
 ## 🏆 SIH Hackathon Evaluation & Presentation Strategy
 
-When pitching to the Smart India Hackathon jury, highlight these four differentiating pillars:
+### 📊 Benchmark Score vs. Official Organizer Evaluation Protocol
+
+> [!IMPORTANT]
+> **Evaluation Protocol Clarity:**
+> - **Internal / Public Field Benchmark:** Evaluated on the held-out in-situ PlantDoc test set ($N=236$ real-world field images across 28 canonical classes, yielding a baseline Macro-F1 of $0.2694$ under extreme cross-domain laboratory-to-field shift).
+> - **Official SIH Competition Score:** Determined exclusively by the **SIH Organizer's Unseen Held-Out Evaluation Dataset** during live jury assessment. Local PlantDoc metrics serve strictly as public validation and cross-split leakage audit baselines.
+
+When pitching to the Smart India Hackathon jury, highlight these key pillars:
 
 1. **Production-Ready Single-Runtime Architecture:**
    - *Judge Question:* "Why isn't there a separate Python FastAPI microservice?"
    - *Winning Answer:* "By converting our fine-tuned vision model to the universal open standard **ONNX** and executing inference via `onnxruntime-node`, we eliminated inter-process network overhead, halved memory footprint, and ensured our platform can run seamlessly on affordable edge servers."
-2. **True Field Generalization Over Sterile Benchmarks:**
-   - Demonstrating robust predictions on raw smartphone photos taken in natural field sunlight, rather than relying solely on sterile laboratory leaf cutouts.
-3. **Transparent & Trustworthy AI (Grad-CAM):**
-   - Visual heatmap overlays validate that the neural network inspects diseased fungal spots and chlorotic lesions rather than background artifacts.
-4. **Holistic "See → Understand → Act" Agricultural Decision Support:**
-   - Moves beyond simple classification by tying diagnoses directly into weather predictions, irrigation conservation, and an interactive grounded GenAI advisor.
-5. **Enterprise-Grade Security Baseline:**
+2. **Honest Confidence-Aware Abstention & Image Quality Assessment:**
+   - Rather than overconfidently misdiagnosing degraded images, AgriSmart AI assesses lighting, contrast, and blur, and abstains on low-confidence inputs ($< 45\%$) with actionable 5-step capture guidance while maintaining full model transparency.
+3. **Multi-Vector "See → Understand → Act" Agricultural Decision Support:**
+   - Moves beyond simple classification by tying diagnoses directly into weather predictions, pathogen proliferation risks, smart irrigation conservation, and an interactive grounded GenAI advisor.
+4. **Enterprise-Grade Security Baseline:**
    - Highlight brute-force rate limiters, RBAC, Helmet headers, IDOR-protected tenant scoping, and 401 auto-logout session handling.
 
 ---
