@@ -61,6 +61,17 @@ const App = () => (
               <Route path="profile"       element={<Profile />} />
             </Route>
 
+            {/* ── Direct Protected /assistant Route ── */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/assistant" element={<AIAssistant />} />
+            </Route>
+
             {/* ── Fallback ── */}
             <Route path="*" element={<NotFound />} />
           </Routes>

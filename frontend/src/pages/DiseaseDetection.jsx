@@ -735,7 +735,7 @@ const DiseaseDetection = () => {
               </div>
               <button
                 type="button"
-                onClick={() => navigate('/assistant')}
+                onClick={() => navigate('/assistant', { state: { disease: result.disease, crop: result.crop, advisory } })}
                 className="btn-primary"
                 style={{
                   display: 'flex',

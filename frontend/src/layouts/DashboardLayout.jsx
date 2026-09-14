@@ -24,7 +24,7 @@ const navItems = [
   { name: 'Weather Advisory',  path: '/dashboard/weather',        icon: Cloud },
   { name: 'Smart Irrigation',  path: '/dashboard/irrigation',     icon: Droplets },
   { name: 'Sustainability',    path: '/dashboard/sustainability', icon: BarChart2 },
-  { name: 'AI Agronomist Chat',path: '/dashboard/assistant',      icon: Bot },
+  { name: 'AI Agronomist Chat',path: '/assistant',                icon: Bot },
   { name: 'Scan History',      path: '/dashboard/history',        icon: History },
   { name: 'Profile & Settings',path: '/dashboard/profile',        icon: User },
 ];
@@ -49,10 +49,15 @@ const DashboardLayout = () => {
         .slice(0, 2)
     : 'AG';
 
-  const isActive = (path) =>
-    path === '/dashboard'
-      ? location.pathname === '/dashboard'
-      : location.pathname.startsWith(path);
+  const isActive = (path) => {
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard';
+    }
+    if (path === '/assistant') {
+      return location.pathname === '/assistant' || location.pathname === '/dashboard/assistant';
+    }
+    return location.pathname.startsWith(path);
+  };
 
   const currentNav = navItems.find((item) => isActive(item.path)) || {
     name: 'AgriSmart Platform',

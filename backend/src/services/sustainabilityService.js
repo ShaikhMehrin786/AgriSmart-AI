@@ -1,4 +1,4 @@
-﻿// Sustainability Index Calculator Service
+// Sustainability Index Calculator Service
 // Scale: 0 - 100 based on Water, Bio-control, Disease Prevention, and Resource Optimization
 // Formula: Score = (0.35 * W_eff) + (0.30 * P_bio) + (0.20 * D_prev) + (0.15 * R_opt)
 
@@ -53,7 +53,7 @@ function calculateSustainabilityScore(params = {}) {
     grade,
     level,
     factors,
-    summary: Your farm achieves a Sustainability Index of /100 (, Grade ).
+    summary: `Your farm achieves a Sustainability Index of ${score}/100 (${level}, Grade ${grade}).`
   };
 }
 

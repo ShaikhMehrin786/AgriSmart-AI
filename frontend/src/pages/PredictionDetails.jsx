@@ -182,7 +182,8 @@ const PredictionDetails = () => {
               </div>
 
               {/* Ask assistant CTA */}
-              <Link to="/dashboard/assistant"
+              <Link to="/assistant"
+                state={{ disease: prediction.disease, crop: prediction.crop }}
                 className="btn-primary"
                 style={{ textDecoration: 'none', justifyContent: 'center', marginTop: 'auto' }}>
                 Ask AI Assistant about this diagnosis

@@ -12,7 +12,7 @@ const quickLinks = [
   { label: 'Scan a Crop',      path: '/dashboard/detect',       icon: Leaf,     color: '#16a34a', bg: '#dcfce7' },
   { label: 'Check Weather',    path: '/dashboard/weather',      icon: Cloud,    color: '#2563eb', bg: '#dbeafe' },
   { label: 'Irrigate Smarter', path: '/dashboard/irrigation',   icon: Droplets, color: '#0891b2', bg: '#cffafe' },
-  { label: 'AI Assistant',     path: '/dashboard/assistant',    icon: Bot,      color: '#7c3aed', bg: '#ede9fe' },
+  { label: 'AI Assistant',     path: '/assistant',              icon: Bot,      color: '#7c3aed', bg: '#ede9fe' },
 ];
 
 const Skeleton = ({ h = 20, w = '100%' }) => (

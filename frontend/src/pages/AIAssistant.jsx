@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Send, Bot, User, Trash2, Loader2, Sparkles, ShieldCheck, CloudRain } from 'lucide-react';
 import api from '../services/api';
 
@@ -13,10 +14,15 @@ const QUICK = [
 const fmt = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 const AIAssistant = () => {
-  const [messages, setMessages] = useState([
+  const location = useLocation();
+  const stateContext = location.state || {};
+
+  const [messages, setMessages] = useState(() => [
     {
       role: 'assistant',
-      content: 'Hello! I am your AgriSmart AI agronomist, powered by Gemini AI and grounded in your real-time field scans and weather forecasts. Ask me anything in English, Hindi, or Hinglish.',
+      content: stateContext.disease
+        ? `Hello! I see you recently diagnosed ${stateContext.crop || 'your crop'} with "${stateContext.disease}". How can I help you with treatment plans, spraying safety, or organic remedies today?`
+        : 'Hello! I am your AgriSmart AI agronomist, powered by Gemini AI and grounded in your real-time field scans and weather forecasts. Ask me anything in English, Hindi, or Hinglish.',
       source: 'gemini',
       contextual: true,
       time: new Date(),
