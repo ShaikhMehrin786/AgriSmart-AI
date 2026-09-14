@@ -89,18 +89,128 @@ const getIrrigation = async (req, res) => {
 };
 
 const { calculateSustainabilityScore } = require('../services/sustainabilityService');
+const { getDiseaseMonograph, getAllDiseases, getSupportedCrops } = require('../services/diseaseService');
 
 const getSustainability = async (req, res) => {
   try {
-    const sustainability = calculateSustainabilityScore(req.query || {});
+    const inputData = req.method === 'POST' ? req.body : req.query;
+
+    // Direct metric parameters (teammate support)
+    if (inputData.waterEfficiency !== undefined || inputData.bioControlRatio !== undefined) {
+      const sustainability = calculateSustainabilityScore(inputData);
+      return res.json({
+        success: true,
+        data: sustainability
+      });
+    }
+
+    const {
+      crop = 'Tomato',
+      soilMoisture,
+      lat,
+      lon,
+      disease,
+      stage = 'Vegetative',
+      soilType = 'Loamy',
+      area = 1.0
+    } = inputData;
+
+    // Validate soilMoisture if explicitly provided
+    let numSoilMoisture = null;
+    if (soilMoisture !== undefined && soilMoisture !== null && soilMoisture !== '') {
+      numSoilMoisture = Number(soilMoisture);
+      if (isNaN(numSoilMoisture) || numSoilMoisture < 0 || numSoilMoisture > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid input: soilMoisture must be a valid number between 0% and 100%.'
+        });
+      }
+    }
+
+    // Obtain current local weather
+    let weather = null;
+    try {
+      weather = await getWeatherData(lat, lon);
+    } catch (wErr) {
+      console.warn('Weather service failed in sustainability controller, using fallback:', wErr.message);
+      weather = { temperature: 25, humidity: 60, rainProbability: 20, condition: 'Clear' };
+    }
+
+    // Evaluate irrigation plan if soil moisture is available
+    let irrigation = null;
+    if (numSoilMoisture !== null) {
+      try {
+        irrigation = evaluateIrrigation(crop, numSoilMoisture, weather, { stage, soilType, area: Number(area) || 1.0 });
+      } catch (iErr) {
+        console.warn('Irrigation evaluation failed in sustainability controller:', iErr.message);
+      }
+    }
+
+    // Calculate deterministic sustainability metrics
+    const sustainability = calculateSustainabilityScore({
+      crop,
+      soilMoisture: numSoilMoisture,
+      weather,
+      irrigation,
+      disease
+    });
+
     res.json({
       success: true,
       data: sustainability
     });
   } catch (error) {
+    console.error('Error in getSustainability controller:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to calculate sustainability score',
+      error: error.message
+    });
+  }
+};
+
+const getDiseases = async (req, res) => {
+  try {
+    const { crop, severity } = req.query;
+    const diseases = getAllDiseases({ crop, severity });
+    res.json({
+      success: true,
+      count: diseases.length,
+      data: diseases
+    });
+  } catch (error) {
+    console.error('Error in getDiseases controller:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve disease catalog',
+      error: error.message
+    });
+  }
+};
+
+const getDiseaseByName = async (req, res) => {
+  try {
+    const { diseaseName } = req.params;
+    const { crop } = req.query;
+    const monograph = getDiseaseMonograph(diseaseName, crop);
+
+    if (!monograph || !monograph.found) {
+      return res.status(404).json({
+        success: false,
+        message: `No cataloged monograph found matching "${diseaseName}". General guidance returned.`,
+        data: monograph
+      });
+    }
+
+    res.json({
+      success: true,
+      data: monograph
+    });
+  } catch (error) {
+    console.error('Error in getDiseaseByName controller:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve disease monograph',
       error: error.message
     });
   }
@@ -158,4 +268,12 @@ const getDiseaseAdvisory = async (req, res) => {
   }
 };
 
-module.exports = { getWeather, getIrrigation, getSustainability, getRecommendations, getDiseaseAdvisory };
+module.exports = {
+  getWeather,
+  getIrrigation,
+  getSustainability,
+  getRecommendations,
+  getDiseases,
+  getDiseaseByName,
+  getDiseaseAdvisory
+};

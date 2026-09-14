@@ -1,47 +1,93 @@
 import React from 'react';
-import { Leaf, Award } from 'lucide-react';
+import { Leaf, Award, ShieldCheck } from 'lucide-react';
 
 export default function SustainabilityGauge({ sustainability }) {
   if (!sustainability) return null;
 
-  const { totalScore, grade, breakdown } = sustainability;
+  const score = sustainability.totalScore ?? sustainability.sustainabilityScore ?? sustainability.score ?? 80;
+  const grade = sustainability.grade || (score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D');
+  const level = sustainability.level || sustainability.rating || 'Good Stewardship';
+  
+  // Support both breakdown and factors
+  const items = sustainability.breakdown || (sustainability.factors ? sustainability.factors.map(f => ({
+    category: f.name,
+    score: f.score,
+    max: f.max || 100,
+    status: f.score >= 80 ? 'Optimal' : f.score >= 60 ? 'Good' : 'Moderate'
+  })) : []);
+
+  const gradeColor = grade === 'A' ? '#16a34a' : grade === 'B' ? '#65a30d' : grade === 'C' ? '#d97706' : '#dc2626';
 
   return (
-    <div className="glass-panel">
-      <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
-        <div className="flex items-center gap-4">
-          <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '8px', borderRadius: '8px' }}>
-            <Leaf size={20} color="#34d399" />
+    <div className="card" style={{ padding: '1.25rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            background: 'rgba(34, 197, 94, 0.12)',
+            padding: 8,
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Leaf size={20} color="#16a34a" />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Sustainability Index</h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Ecological stewardship & efficiency score</p>
+            <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>Farm Sustainability Index</h3>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>
+              Resource efficiency & ecological stewardship
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Award size={18} color="#fbbf24" />
-          <span style={{ fontWeight: 800, fontSize: '1.25rem', color: '#34d399' }}>{totalScore} / 100</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            fontSize: '0.8rem',
+            fontWeight: 800,
+            color: gradeColor,
+            background: `${gradeColor}20`,
+            padding: '2px 10px',
+            borderRadius: 6
+          }}>
+            Grade {grade}
+          </span>
+          <span style={{ fontWeight: 800, fontSize: '1.2rem', color: gradeColor }}>
+            {score} / 100
+          </span>
         </div>
       </div>
 
-      <div className="flex-col gap-4">
-        {breakdown?.map((item, idx) => (
-          <div key={idx} style={{ marginBottom: '10px' }}>
-            <div className="flex justify-between" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>
-              <span>{item.category}</span>
-              <span style={{ color: 'var(--text-muted)' }}>{item.score} / {item.max} pts ({item.status})</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.map((item, idx) => {
+          const pct = Math.min(100, Math.round((item.score / (item.max || 100)) * 100));
+          const barColor = pct >= 75 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626';
+          return (
+            <div key={idx}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
+                <span style={{ fontWeight: 600 }}>{item.category}</span>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {item.score} / {item.max || 100} pts {item.status ? `(${item.status})` : ''}
+                </span>
+              </div>
+              <div className="confidence-bar-track">
+                <div
+                  className="confidence-bar-fill"
+                  style={{ width: `${pct}%`, background: barColor }}
+                />
+              </div>
             </div>
-            <div style={{ background: 'rgba(255, 255, 255, 0.08)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{
-                width: `${(item.score / item.max) * 100}%`,
-                background: 'linear-gradient(90deg, #10b981, #34d399)',
-                height: '100%'
-              }} />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {sustainability.explanation && (
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+          <ShieldCheck size={14} color="#16a34a" style={{ flexShrink: 0, marginTop: 2 }} />
+          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            {sustainability.explanation}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

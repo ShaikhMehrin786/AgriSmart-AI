@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, AlertTriangle, Calendar, Leaf, BarChart2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertTriangle, Calendar, Leaf, BarChart2, BookOpen, ShieldCheck, Sparkles } from 'lucide-react';
 import api from '../services/api';
+import SustainabilityGauge from '../components/SustainabilityGauge';
 
 const Skeleton = ({ h = 20, mb = 8 }) => (
   <div className="skeleton" style={{ height: h, marginBottom: mb, borderRadius: 6 }} />
@@ -276,6 +277,76 @@ const PredictionDetails = () => {
                   : `${prediction.disease} has been detected. Consider consulting your agronomist or using the AI Assistant for specific organic and chemical treatment options tailored to your conditions.`}
               </p>
             </div>
+          )}
+
+          {/* Verified Agronomic Monograph Knowledge Card */}
+          {advisory?.diseaseMonograph && (
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ background: 'rgba(37, 99, 235, 0.12)', padding: 8, borderRadius: 8 }}>
+                    <BookOpen size={20} color="#2563eb" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontWeight: 800, fontSize: '1.05rem', margin: 0 }}>
+                      Agronomic Disease Monograph: {advisory.diseaseMonograph.diseaseName}
+                    </h3>
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '2px 0 0', fontStyle: 'italic' }}>
+                      {advisory.diseaseMonograph.scientificName !== 'N/A' ? advisory.diseaseMonograph.scientificName : 'General Plant Health'} · ICAR Standard
+                    </p>
+                  </div>
+                </div>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563eb', background: 'rgba(37, 99, 235, 0.1)', padding: '3px 8px', borderRadius: 6 }}>
+                  Database Grounded
+                </span>
+              </div>
+
+              {advisory.diseaseMonograph.symptoms && (
+                <div style={{ background: 'var(--bg-subtle)', padding: '10px 14px', borderRadius: 'var(--radius-sm)' }}>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 3 }}>
+                    Clinical Symptoms
+                  </div>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--text-main)', margin: 0, lineHeight: 1.5 }}>
+                    {advisory.diseaseMonograph.symptoms}
+                  </p>
+                </div>
+              )}
+
+              {/* Remedies Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+                <div style={{ padding: '12px 14px', borderRadius: 'var(--radius-sm)', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <Leaf size={16} color="#16a34a" />
+                    <strong style={{ fontSize: '0.86rem', color: '#166534' }}>Verified Organic Treatment</strong>
+                  </div>
+                  <p style={{ fontSize: '0.82rem', color: '#14532d', margin: 0, lineHeight: 1.5 }}>
+                    {advisory.diseaseMonograph.organicRemedy}
+                  </p>
+                </div>
+
+                <div style={{ padding: '12px 14px', borderRadius: 'var(--radius-sm)', background: '#f8fafc', border: '1px solid #cbd5e1' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <ShieldCheck size={16} color="#475569" />
+                    <strong style={{ fontSize: '0.86rem', color: '#334155' }}>Approved Chemical Control</strong>
+                  </div>
+                  <p style={{ fontSize: '0.82rem', color: '#1e293b', margin: 0, lineHeight: 1.5 }}>
+                    {advisory.diseaseMonograph.chemicalControl}
+                  </p>
+                </div>
+              </div>
+
+              {advisory.diseaseMonograph.prevention && (
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', gap: 6 }}>
+                  <span>🛡️ <strong>Prevention:</strong></span>
+                  <span>{advisory.diseaseMonograph.prevention}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Farm Sustainability Gauge */}
+          {advisory?.sustainability && (
+            <SustainabilityGauge sustainability={advisory.sustainability} />
           )}
         </>
       )}

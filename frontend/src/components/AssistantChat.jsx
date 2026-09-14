@@ -29,7 +29,8 @@ export default function AssistantChat({ prediction, weather }) {
 
     try {
       const response = await sendAssistantQuery(textToSend, prediction, weather);
-      setMessages(prev => [...prev, { role: 'assistant', text: response.answer }]);
+      const replyText = response?.reply || response?.answer || 'Response received.';
+      setMessages(prev => [...prev, { role: 'assistant', text: replyText, data: response }]);
     } catch (error) {
       setMessages(prev => [...prev, {
         role: 'assistant',
