@@ -1,4 +1,5 @@
 // ONNX Runtime Session Loader & Model Artifact Cache
+require('dotenv').config();
 const ort = require('onnxruntime-node');
 const path = require('path');
 const fs = require('fs');
@@ -6,7 +7,7 @@ const fs = require('fs');
 let session = null;
 let classLabels = [];
 
-function resolveArtifactPath(envVarValue, defaultRelativePath) {
+function resolveArtifactPath(envVarValue, defaultRelativePath, fallbackRelativePath = null) {
   if (envVarValue) {
     if (path.isAbsolute(envVarValue)) return envVarValue;
     const fromCwd = path.resolve(process.cwd(), envVarValue);
@@ -15,12 +16,18 @@ function resolveArtifactPath(envVarValue, defaultRelativePath) {
     if (fs.existsSync(fromDirname)) return fromDirname;
     return fromCwd;
   }
-  return path.join(__dirname, defaultRelativePath);
+  const defaultPath = path.join(__dirname, defaultRelativePath);
+  if (fs.existsSync(defaultPath)) return defaultPath;
+  if (fallbackRelativePath) {
+    const fallbackPath = path.join(__dirname, fallbackRelativePath);
+    if (fs.existsSync(fallbackPath)) return fallbackPath;
+  }
+  return defaultPath;
 }
 
 async function initOnnxSession() {
-  const modelPath = resolveArtifactPath(process.env.ONNX_MODEL_PATH, '../models/agrismart_efficientnet_b0.onnx');
-  const labelsPath = resolveArtifactPath(process.env.CLASS_LABELS_PATH, '../models/class_labels_public.json');
+  const modelPath = resolveArtifactPath(process.env.ONNX_MODEL_PATH, '../models/agrismart_model.onnx', '../models/agrismart_efficientnet_b0.onnx');
+  const labelsPath = resolveArtifactPath(process.env.CLASS_LABELS_PATH, '../models/class_labels.json', '../models/class_labels_public.json');
 
   try {
     // Load class labels

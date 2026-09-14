@@ -221,6 +221,78 @@ const DISEASE_MONOGRAPHS = [
     organicRemedy: 'Neem-based formulations (Azadirachtin 0.15%) to suppress early pustule sporulation.',
     chemicalControl: 'Azoxystrobin 18.2% + Difenoconazole 11.4% SC @ 1ml/liter water.',
     immediateActions: 'Evaluate leaf area affected on ear leaves. If pustules appear before silking on susceptible hybrids, schedule fungicide application.'
+  },
+  {
+    id: 'corn-northern-leaf-blight',
+    crop: 'Corn',
+    diseaseName: 'Corn Northern Leaf Blight',
+    scientificName: 'Exserohilum turcicum / Setosphaeria turcica',
+    pathogenType: 'Fungal',
+    severityDefault: 'Moderate',
+    symptoms: 'Long, elliptical, cigar-shaped grayish-green to tan lesions (2.5 to 15 cm long) not restricted by leaf veins. Dark olive-black spores form inside lesions in humid weather.',
+    causes: 'Fungal pathogen surviving on corn residue on soil surface, splashing up to lower leaves in wet humid conditions.',
+    environmentalConditions: {
+      optimalTempMin: 18.0,
+      optimalTempMax: 27.0,
+      optimalHumidityMin: 75.0,
+      conduciveWeather: 'Moderate temperatures (18-27°C) with 6-12 hours of dew or leaf wetness and overcast humid skies.'
+    },
+    prevention: 'Plant resistant hybrids with Ht gene resistance; rotate with non-grass crops; practice conservation tillage or residue shredding.',
+    recommendedActions: [
+      'Scout the ear leaf and leaves above it from V10 through grain fill.',
+      'Maintain field drainage and avoid sprinkler irrigation that wets leaves overnight.'
+    ],
+    organicRemedy: 'Bio-fungicide sprays containing Bacillus subtilis (Serenade) or Copper Hydroxide @ 2.5g/L during early vegetative stages.',
+    chemicalControl: 'Azoxystrobin 18.2% + Difenoconazole 11.4% SC @ 1ml/L or Pyraclostrobin + Fluxapyroxad @ 1ml/L before tasseling (VT) if lesions reach lower canopy.',
+    immediateActions: 'Assess if lesions are threatening the ear leaf at VT/R1 stage. If present on ear leaf before silking, apply targeted protective fungicide.'
+  },
+  {
+    id: 'corn-cercospora-leaf-spot',
+    crop: 'Corn',
+    diseaseName: 'Corn Cercospora leaf spot',
+    scientificName: 'Cercospora zeae-maydis',
+    pathogenType: 'Fungal',
+    severityDefault: 'Moderate',
+    symptoms: 'Narrow, rectangular, vein-delimited tan-to-brown lesions running parallel between secondary veins (blocky appearance, 1-6 cm long).',
+    causes: 'Cercospora fungal spores surviving in corn stubble, windblown into lower canopies during prolonged humid weather.',
+    environmentalConditions: {
+      optimalTempMin: 22.0,
+      optimalTempMax: 30.0,
+      optimalHumidityMin: 85.0,
+      conduciveWeather: 'Warm, humid weather (>85% RH) with dense canopies and extended periods of fog or morning dew.'
+    },
+    prevention: 'Select Gray Leaf Spot (GLS) tolerant hybrids; practice 2-year crop rotation; avoid high plant density that limits airflow.',
+    recommendedActions: [
+      'Inspect lower canopy at V8-V10 stage for small rectangular spots.',
+      'Ensure balanced nitrogen and potassium fertilization to prevent leaf tissue stress.'
+    ],
+    organicRemedy: 'Trichoderma harzianum or Bacillus amyloliquefaciens foliar bio-protective sprays.',
+    chemicalControl: 'Propiconazole 25% EC @ 1ml/L or Azoxystrobin + Tebuconazole @ 1ml/L applied at tasseling (VT).',
+    immediateActions: 'Monitor upper canopy leaves (ear leaf + 2 above). Spray if disease is moving up into ear leaf prior to pollination.'
+  },
+  {
+    id: 'corn-healthy',
+    crop: 'Corn',
+    diseaseName: 'Corn Healthy',
+    scientificName: 'N/A',
+    pathogenType: 'None',
+    severityDefault: 'None',
+    symptoms: 'Lush, vibrant green foliage with unbroken leaf margins, clear parallel venation, and zero fungal pustules or necrotic lesions.',
+    causes: 'Optimal soil nutrition, proper moisture management, and disease-free hybrid stock.',
+    environmentalConditions: {
+      optimalTempMin: 20.0,
+      optimalTempMax: 32.0,
+      optimalHumidityMin: 50.0,
+      conduciveWeather: 'Warm sunny weather with balanced root-zone soil moisture (40-60%) and good air circulation.'
+    },
+    prevention: 'Continue routine field scouting and balanced fertilization with nitrogen, phosphorus, and zinc.',
+    recommendedActions: [
+      'Conduct routine scouting during critical growth stages (V6, VT/tasseling, R1/silking).',
+      'Maintain drip or furrow irrigation to keep foliar canopy dry.'
+    ],
+    organicRemedy: 'None required. Healthy crop needs no chemical or biological pesticide treatment.',
+    chemicalControl: 'None. Do NOT spray fungicides or chemicals on healthy corn crops.',
+    immediateActions: 'Maintain current crop management practices. Avoid unnecessary fungicide applications to save cost and protect soil ecology.'
   }
 ];
 
