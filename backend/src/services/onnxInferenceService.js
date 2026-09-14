@@ -2,14 +2,14 @@
 // Zero Python runtime in live execution
 const ort = require('onnxruntime-node');
 const sharp = require('sharp');
-const { getOnnxSession, getClassLabels } = require('../config/onnxConfig');
+const { initOnnxSession, getOnnxSession, getClassLabels } = require('../config/onnxConfig');
 
-// ImageNet normalization constants
+// ImageNet normalization constants (Mean & Std Dev for RGB channels)
 const MEAN = [0.485, 0.456, 0.406];
 const STD = [0.229, 0.224, 0.225];
 
 /**
- * Preprocess image buffer to Float32Array tensor [1, 3, 224, 224]
+ * Preprocess image buffer to Float32Array tensor [1, 3, 224, 224] (RGB, Planar CHW)
  */
 async function preprocessImage(imageBuffer) {
   const { data, info } = await sharp(imageBuffer)
@@ -48,27 +48,33 @@ function softmax(logits) {
 }
 
 /**
- * Run inference on uploaded image buffer
+ * Run inference on uploaded image buffer using the loaded ONNX model session
  */
 async function predictCropDisease(imageBuffer) {
-  const session = getOnnxSession();
-  const classLabels = getClassLabels();
+  let session = getOnnxSession();
+  let classLabels = getClassLabels();
 
   if (!session) {
-    // Development/Fallback Simulation Mode if ONNX weights not yet generated
+    await initOnnxSession();
+    session = getOnnxSession();
+    classLabels = getClassLabels();
+  }
+
+  if (!session) {
+    // Development/Fallback Simulation Mode if ONNX session fails to initialize
     return runSimulationInference(classLabels);
   }
 
   try {
     const tensor = await preprocessImage(imageBuffer);
-    const inputName = session.inputNames[0] || 'input';
+    const inputName = (session.inputNames && session.inputNames.length > 0) ? session.inputNames[0] : 'input';
     const feeds = { [inputName]: tensor };
 
     const startTime = Date.now();
     const results = await session.run(feeds);
     const inferenceTimeMs = Date.now() - startTime;
 
-    const outputName = session.outputNames[0] || 'output';
+    const outputName = (session.outputNames && session.outputNames.length > 0) ? session.outputNames[0] : 'output';
     const outputTensor = results[outputName];
     const logits = Array.from(outputTensor.data);
     const probabilities = softmax(logits);
@@ -83,19 +89,27 @@ async function predictCropDisease(imageBuffer) {
       }
     });
 
-    const predictedRawLabel = classLabels[maxIdx] || 'Tomato___Early_blight';
-    const [rawCrop, rawDisease] = predictedRawLabel.split('___');
-    const cropName = rawCrop.replace('_', ' ');
+    const fallbackLabel = (classLabels && classLabels.length > 0) ? classLabels[0] : 'Tomato___Early_blight';
+    const predictedRawLabel = (classLabels && classLabels[maxIdx]) ? classLabels[maxIdx] : fallbackLabel;
+
+    // Parse crop and disease names
+    const parts = predictedRawLabel.split('___');
+    const rawCrop = parts[0] || 'Plant';
+    const rawDisease = parts[1] || 'healthy';
+
+    const cropName = rawCrop.replace(/_/g, ' ');
     const diseaseName = rawDisease ? rawDisease.replace(/_/g, ' ') : 'Healthy';
+    const isHealthy = diseaseName.toLowerCase() === 'healthy';
 
     return {
       crop: cropName,
-      disease: diseaseName === 'healthy' ? `${cropName} Healthy` : `${cropName} ${diseaseName}`,
-      isHealthy: diseaseName.toLowerCase() === 'healthy',
+      disease: isHealthy ? `${cropName} Healthy` : `${cropName} ${diseaseName}`,
+      isHealthy,
       confidence: parseFloat((maxProb * 100).toFixed(2)),
       inferenceTimeMs,
-      modelVersion: 'v1.0-onnx',
-      rawClass: predictedRawLabel
+      modelVersion: 'efficientnet_b0-onnx',
+      rawClass: predictedRawLabel,
+      classIndex: maxIdx
     };
   } catch (error) {
     console.error('Error during ONNX inference:', error);
@@ -104,10 +118,10 @@ async function predictCropDisease(imageBuffer) {
 }
 
 /**
- * Fallback simulation for testing before training is finalized
+ * Fallback simulation for testing before model session is ready
  */
 function runSimulationInference(classLabels) {
-  const fallbackLabel = classLabels[29] || 'Tomato___Early_blight';
+  const fallbackLabel = (classLabels && classLabels.length > 0) ? classLabels[0] : 'Tomato___Early_blight';
   return {
     crop: 'Tomato',
     disease: 'Tomato Early Blight',
@@ -115,11 +129,13 @@ function runSimulationInference(classLabels) {
     confidence: 94.20,
     inferenceTimeMs: 38,
     modelVersion: 'v1.0-simulated-onnx',
-    rawClass: fallbackLabel
+    rawClass: fallbackLabel,
+    classIndex: 0
   };
 }
 
 module.exports = {
   predictCropDisease,
-  preprocessImage
+  preprocessImage,
+  softmax
 };

@@ -35,13 +35,13 @@ The AgriSmart AI Disease Detection Engine is a transfer-learning deep neural net
 
 | Artifact | File Path | Description |
 |---|---|---|
-| **Trained Checkpoint** | [`ml-pipeline/checkpoints/best_model.pth`](file:///d:/AgriSmart%20AI/ml-pipeline/checkpoints/best_model.pth) | PyTorch model weights state dict for feature map activation hook & Grad-CAM derivation. |
-| **Model Configuration** | [`ml-pipeline/checkpoints/model_config.json`](file:///d:/AgriSmart%20AI/ml-pipeline/checkpoints/model_config.json) | Metadata containing backbone type, input dimensions, and ImageNet normalization stats. |
-| **Public Target Class Labels** | [`backend/src/models/class_labels_public.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels_public.json) | Shared PlantVillage + PlantDoc class label array (28 classes: 17 diseases + 11 healthy). |
-| **Baseline Target Class Labels** | [`backend/src/models/class_labels.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels.json) | 38-class baseline class label array. |
-| **Class Intersection Report** | [`ml-pipeline/data/class_intersection_report.json`](file:///d:/AgriSmart%20AI/ml-pipeline/data/class_intersection_report.json) | Detailed cross-dataset mapping of PlantVillage vs PlantDoc. |
-| **Dataset Validator** | [`ml-pipeline/src/datasets/validate_dataset.py`](file:///d:/AgriSmart%20AI/ml-pipeline/src/datasets/validate_dataset.py) | SIH dataset validator and data leakage auditor. |
-| **Evaluation Suite** | [`ml-pipeline/src/evaluate.py`](file:///d:/AgriSmart%20AI/ml-pipeline/src/evaluate.py) | Evaluation pipeline for computing accuracy, Macro-F1, per-class metrics, and confusion matrix. |
+| **Trained Checkpoint** | [`checkpoints/best_model.pth`](checkpoints/best_model.pth) | PyTorch model weights state dict for feature map activation hook & Grad-CAM derivation. |
+| **Model Configuration** | [`checkpoints/model_config.json`](checkpoints/model_config.json) | Metadata containing backbone type, input dimensions, and ImageNet normalization stats. |
+| **Public Target Class Labels** | [`../backend/src/models/class_labels_public.json`](../backend/src/models/class_labels_public.json) | Shared PlantVillage + PlantDoc class label array (28 classes: 17 diseases + 11 healthy). |
+| **Baseline Target Class Labels** | [`../backend/src/models/class_labels.json`](../backend/src/models/class_labels.json) | 38-class baseline class label array. |
+| **Class Intersection Report** | [`data/class_intersection_report.json`](data/class_intersection_report.json) | Detailed cross-dataset mapping of PlantVillage vs PlantDoc. |
+| **Dataset Validator** | [`src/datasets/validate_dataset.py`](src/datasets/validate_dataset.py) | SIH dataset validator and data leakage auditor. |
+| **Evaluation Suite** | [`src/evaluate.py`](src/evaluate.py) | Evaluation pipeline for computing accuracy, Macro-F1, per-class metrics, and confusion matrix. |
 
 ---
 
@@ -49,9 +49,32 @@ The AgriSmart AI Disease Detection Engine is a transfer-learning deep neural net
 
 | Artifact | File Path | Description |
 |---|---|---|
-| **Production ONNX Model** | [`backend/src/models/agrismart_model.onnx`](file:///d:/AgriSmart%20AI/backend/src/models/agrismart_model.onnx) | Validated ONNX graph ready for zero-Python Node.js in-memory inference. |
-| **Class Index Mapping** | [`backend/src/models/class_labels_public.json`](file:///d:/AgriSmart%20AI/backend/src/models/class_labels_public.json) | Ordered JSON array mapping output logit index $0 \dots N-1$ to class names. |
-| **Parity Verification Script** | [`ml-pipeline/src/verify_onnx_parity.py`](file:///d:/AgriSmart%20AI/ml-pipeline/src/verify_onnx_parity.py) | Verification utility to ensure zero prediction drift between PyTorch CPU and ONNX Runtime. |
+| **Production ONNX Model** | [`../backend/src/models/agrismart_efficientnet_b0.onnx`](../backend/src/models/agrismart_efficientnet_b0.onnx) | Validated ONNX graph ready for zero-Python Node.js in-memory inference. |
+| **Baseline ONNX Model** | [`../backend/src/models/agrismart_model.onnx`](../backend/src/models/agrismart_model.onnx) | Earlier 38-class baseline model weights. |
+| **Class Index Mapping** | [`../backend/src/models/class_labels_public.json`](../backend/src/models/class_labels_public.json) | Ordered JSON array mapping output logit index $0 \dots N-1$ to class names. |
+| **Parity Verification Script** | [`src/verify_onnx_parity.py`](src/verify_onnx_parity.py) | Verification utility to ensure zero prediction drift between PyTorch CPU and ONNX Runtime. |
+
+---
+
+## 🔬 Training Augmentation Pipeline Specification (`src/augmentations/transforms.py`)
+
+The field-domain augmentation pipeline is designed to bridge the lab-to-field domain gap without distorting disease-critical color/structural cues:
+
+1. **Spatial / Viewpoint Variation:**
+   - `RandomResizedCrop(size=(224, 224), scale=(0.8, 1.0))` — simulates handheld framing and leaf distances.
+   - `HorizontalFlip(p=0.5)` — realistic mirror symmetry.
+   - `Affine(scale=(0.85, 1.15), translate_percent=(-0.1, 0.1), rotate=(-20, 20), p=0.6)` — natural handheld camera orientation.
+2. **Illumination & Shadow Simulation:**
+   - `RandomShadow(shadow_roi=(0.0, 0.0, 1.0, 1.0), num_shadows_limit=(1, 2), shadow_intensity_range=(0.4, 0.7), p=0.35)` — natural canopy/hand shadows.
+3. **Lens & Camera Degradation:**
+   - `ImageCompression(compression_type="jpeg", quality_range=(60, 95), p=0.4)` — phone camera & messaging app compression.
+   - `GaussianBlur(blur_limit=(3, 5), p=0.2)` — camera shake and slight out-of-focus blur.
+4. **Color / Photometric Variation:**
+   - `ColorJitter(brightness=0.25, contrast=0.25, saturation=0.20, hue=0.04, p=0.6)` — variable sunlight while strictly preserving disease hues.
+5. **Normalization:**
+   - `Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])` followed by `ToTensorV2()`.
+
+*Deliberately excluded:* `VerticalFlip`, `ElasticTransform`, `CoarseDropout`, `CLAHE`, `RandomSunFlare`.
 
 ---
 
@@ -79,7 +102,7 @@ Node.js preprocessing MUST match the PyTorch validation pipeline (`get_val_trans
 ## 📊 Output Tensor Format
 
 - **Output Node Name:** `"output"`
-- **Logit Shape:** `[1, N]` Float32 values ($N = 31$ public benchmark classes or $N = 38$ baseline classes)
+- **Logit Shape:** `[1, N]` Float32 values ($N = 28$ public benchmark classes or $N = 38$ baseline classes)
 - **Activation:** Apply Softmax to convert raw logits to probabilities:
   $$P(y = c | X) = \frac{\exp(z_c)}{\sum_{j=1}^{N} \exp(z_j)}$$
 - **Top-1 Prediction:** Class corresponding to $\arg\max_{c} P(y=c|X)$.

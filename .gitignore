@@ -52,3 +52,7 @@ ml-pipeline/data/processed/
 
 # Local database
 backend/prisma/*.db
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
