@@ -272,7 +272,7 @@ async function answerFarmerQuery({ question, diagnosisContext = null, weatherCon
   }
 
   // Assemble Grounded System Prompt
-  const systemPrompt = buildSystemPromptEnvelope(diagnosisContext, weatherContext, language);
+  const systemPrompt = buildSystemPromptEnvelope(diagnosisContext, weatherContext, language, question);
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
@@ -286,7 +286,7 @@ async function answerFarmerQuery({ question, diagnosisContext = null, weatherCon
         }
       ],
       generationConfig: {
-        temperature: 0.2, // Low temperature for strict factual adherence
+        temperature: 0.2, // Low temperature for factual agricultural precision
         maxOutputTokens: 800,
       }
     };
@@ -317,7 +317,7 @@ async function answerFarmerQuery({ question, diagnosisContext = null, weatherCon
     };
   } catch (error) {
     const errMsg = error.response?.data?.error?.message || error.message;
-    console.warn(`Gemini API error (${error.response?.status || 'network'}): ${errMsg}; using grounded fallback.`);
+    console.warn(`Gemini API call returned status ${error.response?.status || 'network'}: ${errMsg}; activating grounded fallback.`);
 
     const fallbackReply = generateGroundedFallbackResponse(question, diagnosisContext, weatherContext, language);
     return {
@@ -329,25 +329,22 @@ async function answerFarmerQuery({ question, diagnosisContext = null, weatherCon
 }
 
 /**
- * Builds the strict RAG system prompt envelope with hard guardrails and multilingual support
+ * Builds the strict RAG system prompt envelope with conversational freedom for general agronomy
+ * and strict guardrails for spray/diagnosis questions.
  */
-function buildSystemPromptEnvelope(diagnosisContext, weatherContext, language) {
-  const targetLang = resolveLanguage('', language);
-  const rawDisease = diagnosisContext?.disease || 'Unspecified';
-  const crop = diagnosisContext?.crop || 'Unspecified Crop';
+function buildSystemPromptEnvelope(diagnosisContext, weatherContext, language, question) {
+  const targetLang = resolveLanguage(question || '', language);
+  const rawDisease = diagnosisContext?.disease || null;
+  const crop = diagnosisContext?.crop || null;
 
-  // Resolve state and confidence
   const confMeta = resolveConfidenceMeta(diagnosisContext?.confidence);
-  const confidence = confMeta.percent !== null ? `${confMeta.percent}%` : 'N/A';
+  const confidence = confMeta.percent !== null ? `${confMeta.percent}%` : null;
   const confidenceLevel = diagnosisContext?.confidenceLevel || confMeta.level;
   const isUncertain = confMeta.isUncertain || confidenceLevel === 'LOW';
 
-  const diagnosticState = diagnosisContext?.diagnosticState ||
-    resolveDiagnosticState(rawDisease, diagnosisContext?.isHealthy, null);
-
-  const imageQuality = diagnosisContext?.imageQuality || null;
-  const qualityIssues = Array.isArray(imageQuality?.issues) && imageQuality.issues.length > 0 ? imageQuality.issues.join(', ') : 'None';
-  const requiresBetterImage = diagnosisContext?.requiresBetterImage || isUncertain || imageQuality?.level === 'POOR';
+  const diagnosticState = diagnosisContext
+    ? (diagnosisContext.diagnosticState || resolveDiagnosticState(rawDisease, diagnosisContext.isHealthy, null))
+    : null;
 
   const temp = weatherContext?.temperature ?? weatherContext?.temp ?? '26';
   const humidity = weatherContext?.humidity ?? '65';
@@ -355,132 +352,85 @@ function buildSystemPromptEnvelope(diagnosisContext, weatherContext, language) {
   const weatherCondition = weatherContext?.condition || 'Clear / Mild';
   const isRainImminent = rainProb >= 50;
 
-  let langInstruction = 'Provide all explanations and bullet points in clear, farmer-friendly English.';
+  let langInstruction = 'Respond in clear, farmer-friendly English.';
   if (targetLang === 'hi') {
-    langInstruction = 'MANDATORY LANGUAGE: Output MUST be 100% in natural, fluent Hindi (Devanagari script). Translate all monitoring guidance, irrigation instructions, and agronomic advice into Hindi without leaving English sentences.';
+    langInstruction = 'MANDATORY LANGUAGE: Respond 100% in natural, fluent Hindi (Devanagari script). Translate all guidance into Hindi without English sentences.';
   } else if (targetLang === 'hinglish') {
-    langInstruction = 'MANDATORY LANGUAGE: Output MUST be 100% in farmer-friendly Hinglish (Hindi written in Roman script, e.g., "Leaves par regular scouting karein", "Drip irrigation se roots mein paani dein"). Do NOT output English sentences for guidance.';
+    langInstruction = 'MANDATORY LANGUAGE: Respond 100% in natural, farmer-friendly Hinglish (Hindi written in Roman script, e.g., "Crop rotation se soil health improve hoti hai", "Leaves par regular scouting karein").';
   }
 
-  if (diagnosticState === 'HEALTHY') {
-    const rawPreventive = Array.isArray(diagnosisContext?.preventiveCropCare)
-      ? diagnosisContext.preventiveCropCare.filter(item => !/spray|fungicide|copper|chemical|chlorothalonil/i.test(item)).join('; ')
-      : 'Maintain balanced crop nutrition, proper plant spacing, and field sanitation.';
-    const rawMonitoring = diagnosisContext?.monitoringGuidance || 'Regularly inspect foliar canopy and leaf undersides for any early signs of spots or puckering.';
-    const rawIrrigation = diagnosisContext?.irrigationGuidance || 'Provide appropriate root-zone irrigation via drip; avoid wetting foliage.';
-    const rawSymptoms = diagnosisContext?.visualSymptoms || 'Normal green foliage with smooth margins and no visible lesions.';
-
-    const preventive = translateAgronomicText(rawPreventive, targetLang);
-    const monitoring = translateAgronomicText(rawMonitoring, targetLang);
-    const irrigation = translateAgronomicText(rawIrrigation, targetLang);
-    const symptoms = translateAgronomicText(rawSymptoms, targetLang);
-
-    return `You are AgriSmart AI's agricultural decision-support assistant designed for Indian farmers.
-Your role is to provide actionable, farmer-friendly explanations grounded strictly in the verified farm telemetry below.
-
-==================================================
-REAL-TIME FARM TELEMETRY & DIAGNOSTIC CONTEXT
-==================================================
-[FOLIAR SCAN DIAGNOSIS]:
-- Diagnostic State: HEALTHY (No active disease diagnosed)
-- Crop: ${crop}
-- Condition Detected: ${rawDisease}
-- Model Confidence: ${confidence} (Confidence Level: ${confidenceLevel})
-- AI Uncertainty Flag: ${isUncertain ? 'YES (Confidence is LOW; result is an unconfirmed model prediction)' : 'NO (Sufficient confidence)'}
-- Healthy Foliage Visual Traits: ${symptoms}
-- Preventive Crop Care: ${preventive}
-- Monitoring & Scouting Guidance: ${monitoring}
-- Irrigation Guidance: ${irrigation}
-
-[METEOROLOGICAL TELEMETRY]:
-- Temperature: ${temp}°C
-- Relative Humidity: ${humidity}%
-- Rain Probability (Next 24h): ${rainProb}%
-- Weather Condition: ${weatherCondition}
-
-==================================================
-MANDATORY HARD RULES FOR HEALTHY DIAGNOSTIC STATE:
-==================================================
-1. HARD RULE — STRICTLY FORBID DISEASE TREATMENTS & FUNGICIDES:
-   - The diagnosis is HEALTHY.
-   - You MUST NEVER recommend fungicides, bactericides, insecticides, copper sprays, chlorothalonil, chemical disease controls, or curative sprays (such as Peach Leaf Curl sprays, dormant sprays, or blight treatments) for a healthy crop.
-   - Explain clearly that the plant is currently diagnosed as healthy, so curative chemical or fungicide spraying is NOT recommended.
-2. LOW CONFIDENCE & UNCERTAINTY HANDLING:
-   ${isUncertain ? `- The Model Confidence is LOW (${confidenceLevel} / ${confidence}). You MUST explicitly state that this prediction is uncertain and only a possible result, NOT a confirmed diagnosis. Advise the farmer to inspect leaves closely and capture a clearer close-up photograph in diffuse daylight.` : `- State that current foliage appears healthy based on the scan.`}
-3. WEATHER & SPRAY GUARDRAIL:
-   ${isRainImminent ? `- Rain Probability is ${rainProb}% (>= 50%). Explicitly warn that no foliar application should be carried out today as rain will wash it away; advise monitoring canopy moisture.` : `- Advise maintaining proper root-zone watering without wetting leaves.`}
-4. HEALTHY CROP CARE:
-   - Provide preventive crop-care advice (balanced fertilization, proper aeration, field hygiene).
-   - List what symptoms the farmer should watch out for during routine field scouting.
-5. NO GUARANTEED DIAGNOSIS:
-   - Remind the farmer that for formal agricultural extension validation, they should consult their local Krishi Vigyan Kendra (KVK).
-6. LANGUAGE REQUIREMENT:
-   - ${langInstruction}`;
-  }
-
-  // ==========================================
-  // DISEASE STATE PROMPT
-  // ==========================================
-  const rawOrganic = Array.isArray(diagnosisContext?.organicManagement)
-    ? diagnosisContext.organicManagement.map(o => translateAgronomicText(o, targetLang)).join('; ')
-    : translateAgronomicText('Bio-fungicide, Trichoderma viride, or neem-based spray', targetLang);
-
-  const rawChemical = Array.isArray(diagnosisContext?.chemicalManagement)
-    ? diagnosisContext.chemicalManagement.map(c => translateAgronomicText(c, targetLang)).join('; ')
-    : translateAgronomicText('Consult local KVK / extension officer for registered protective fungicides.', targetLang);
-
-  const rawImmediate = Array.isArray(diagnosisContext?.immediateActions)
-    ? diagnosisContext.immediateActions.map(i => translateAgronomicText(i, targetLang)).join('; ')
-    : translateAgronomicText('Inspect foliage, prune heavily infected leaves, maintain field hygiene.', targetLang);
-
-  const rawPrevention = Array.isArray(diagnosisContext?.prevention)
-    ? diagnosisContext.prevention.map(p => translateAgronomicText(p, targetLang)).join('; ')
-    : translateAgronomicText('Ensure proper row spacing, clean crop rotation, and disease-free certified seeds.', targetLang);
-
-  return `You are AgriSmart AI's agricultural decision-support assistant designed for Indian farmers.
-Your role is to provide actionable, farmer-friendly explanations grounded strictly in the verified farm telemetry below.
-
-==================================================
-REAL-TIME FARM TELEMETRY & DIAGNOSTIC CONTEXT
-==================================================
-[FOLIAR SCAN DIAGNOSIS]:
-- Diagnostic State: DISEASE (Active disease detected)
-- Crop: ${crop}
+  let diagnosisBlock = 'No previous leaf scan available in current session.';
+  if (diagnosisContext && rawDisease) {
+    if (diagnosticState === 'HEALTHY') {
+      diagnosisBlock = `Diagnostic State: HEALTHY (No active foliar disease detected)
+- Crop: ${crop || 'Crop'}
+- Condition: ${rawDisease}
+- Model Confidence: ${confidence || 'Moderate'} (${confidenceLevel})
+- Uncertainty Flag: ${isUncertain ? 'YES (Confidence is low; unconfirmed prediction)' : 'NO'}`;
+    } else {
+      diagnosisBlock = `Diagnostic State: DISEASE (Active foliar pathogen detected)
+- Crop: ${crop || 'Crop'}
 - Disease Detected: ${rawDisease}
-- Pathogen Type: ${diagnosisContext?.pathogenType || 'Pathogen'}
-- Model Confidence: ${confidence} (Confidence Level: ${confidenceLevel})
-- AI Uncertainty Flag: ${isUncertain ? 'YES (Confidence < 45%; result is unconfirmed)' : 'NO (Normal confidence)'}
-- Visual Symptoms: ${diagnosisContext?.visualSymptoms ? translateAgronomicText(diagnosisContext.visualSymptoms, targetLang) : 'Foliar discoloration/spots'}
-- Immediate Actions: ${rawImmediate}
-- Organic / Bio Controls: ${rawOrganic}
-- Chemical Control Guidelines: ${rawChemical}
-- Long-Term Prevention: ${rawPrevention}
+- Model Confidence: ${confidence || 'Moderate'} (${confidenceLevel})
+- Pathogen Type: ${diagnosisContext.pathogenType || 'Pathogen'}
+- Key Organic Controls: ${Array.isArray(diagnosisContext.organicManagement) ? diagnosisContext.organicManagement.join('; ') : 'Neem oil, Bio-fungicides'}
+- Immediate Actions: ${Array.isArray(diagnosisContext.immediateActions) ? diagnosisContext.immediateActions.join('; ') : 'Scout leaves, prune heavily damaged foliage'}`;
+    }
+  }
 
-[METEOROLOGICAL TELEMETRY]:
-- Temperature: ${temp}°C
-- Relative Humidity: ${humidity}%
-- Rain Probability (Next 24h): ${rainProb}%
-- Weather Condition: ${weatherCondition}
+  const weatherBlock = `Temperature: ${temp}°C, Humidity: ${humidity}%, Rain Probability (Next 24h): ${rainProb}%, Weather: ${weatherCondition}`;
+
+  return `You are AgriSmart AI, an expert agricultural decision-support agronomist for Indian farmers.
 
 ==================================================
-STRICT SAFETY & BEHAVIORAL RULES FOR DISEASE STATE:
+FARM TELEMETRY & BACKGROUND CONTEXT
 ==================================================
-1. STRICT TRUTH & FACTUAL GROUNDING: Base disease management strictly on the supplied diagnosis context for ${rawDisease}. Do not recommend treatments for unrelated diseases.
-2. SPRAY SAFETY RULE: If Rain Probability is >= 50% (${rainProb}%), you MUST explicitly advise against immediate foliar spraying because rain will wash away chemical or biological sprays. Advise postponing foliar application until weather clears.
-3. ORGANIC PRIORITY: Highlight organic, biological, and physical containment actions first before registered chemical recommendations.
-4. CONFIDENCE HONESTY: ${isUncertain ? `Confidence is LOW (${confidenceLevel} / ${confidence}). Explicitly communicate that this diagnosis is uncertain and recommend capturing a clearer close-up leaf photograph.` : `Provide clear disease management steps.`}
-5. NO GUARANTEED DIAGNOSIS: Advise consulting local Krishi Vigyan Kendra (KVK) for formal extension verification.
-6. LANGUAGE REQUIREMENT: ${langInstruction}`;
+[RECENT CROP SCAN CONTEXT (OPTIONAL BACKGROUND)]:
+${diagnosisBlock}
+
+[REAL-TIME WEATHER TELEMETRY]:
+${weatherBlock}
+
+==================================================
+MANDATORY CONVERSATIONAL & SAFETY RULES:
+==================================================
+1. PRIMARY OBJECTIVE — ANSWER THE USER'S ACTUAL QUESTION:
+   - Always directly and helpfully answer the farmer's specific question.
+   - For general agricultural or educational questions (such as crop rotation, vermicompost, soil health, drip irrigation, fertilizer management, planting seasons), provide a comprehensive and practical explanation. DO NOT force or discuss the recent crop scan if it is unrelated.
+
+2. WHEN TO USE THE RECENT CROP SCAN CONTEXT:
+   - ONLY reference or focus on the recent crop scan when:
+     a) The farmer explicitly asks about their recent scan, diagnosis, or test result (e.g., "What about my scan?", "Mere latest scan ke according kya karu?").
+     b) The farmer's question is specifically about the diagnosed crop and disease condition.
+
+3. SPRAYING SAFETY & WEATHER GUARDRAIL:
+   - If the farmer asks whether they can spray fungicide or pesticides today:
+     * If Rain Probability is >= 50% (${rainProb}%), you MUST warn them NOT to apply foliar sprays today as rainfall will wash off the application and cause runoff.
+     * If the recent scan diagnosis is HEALTHY, clarify that healthy plants do NOT need curative chemical fungicide sprays.
+     * If spraying is suitable (< 50% rain), recommend spraying during calm morning (06:00-08:00 AM) or late afternoon, emphasizing organic/biological controls first.
+
+4. HEALTHY DIAGNOSIS GUARDRAIL:
+   - When discussing a healthy plant diagnosis, NEVER recommend curative fungicides, chemical sprays, or bactericides. Focus on preventive hygiene, balanced nutrition, and visual scouting.
+
+5. LOW CONFIDENCE HANDLING:
+   - If discussing an AI scan prediction with LOW confidence (< 45%), clearly communicate that the result is an unconfirmed possibility and advise capturing a clearer close-up photograph in diffuse daylight.
+
+6. SAFETY DISCLAIMER:
+   - Encourage consulting local Krishi Vigyan Kendra (KVK) or State Agricultural Extension Officers for formal chemical product labels.
+
+7. LANGUAGE REQUIREMENT:
+   - ${langInstruction}`;
 }
 
 /**
- * Deterministic grounded response generator for offline, rate-limited, or unconfigured environments
+ * Deterministic grounded response generator for offline, rate-limited, or unconfigured environments.
+ * Directly answers the farmer's specific question using categorized agricultural intelligence.
  */
 function generateGroundedFallbackResponse(question, diagnosisContext, weatherContext, language = 'en') {
-  const q = (question || '').toLowerCase();
+  const q = (question || '').toLowerCase().trim();
   const targetLang = resolveLanguage(question, language);
 
-  const rawDisease = diagnosisContext?.disease || 'Foliar Scan';
+  const rawDisease = diagnosisContext?.disease || null;
   const crop = diagnosisContext?.crop || 'Crop';
 
   const confMeta = resolveConfidenceMeta(diagnosisContext?.confidence);
@@ -488,8 +438,9 @@ function generateGroundedFallbackResponse(question, diagnosisContext, weatherCon
   const confidenceLevel = diagnosisContext?.confidenceLevel || confMeta.level;
   const isUncertain = confMeta.isUncertain || confidenceLevel === 'LOW';
 
-  const diagnosticState = diagnosisContext?.diagnosticState ||
-    resolveDiagnosticState(rawDisease, diagnosisContext?.isHealthy, null);
+  const diagnosticState = diagnosisContext
+    ? (diagnosisContext.diagnosticState || resolveDiagnosticState(rawDisease, diagnosisContext.isHealthy, null))
+    : null;
 
   const rainProb = Number(weatherContext?.rainProbability ?? weatherContext?.rainProb ?? 20);
   const isRainImminent = rainProb >= 50;
@@ -498,261 +449,368 @@ function generateGroundedFallbackResponse(question, diagnosisContext, weatherCon
 
   const disclaimer = SAFETY_DISCLAIMERS[targetLang] || SAFETY_DISCLAIMERS.en;
 
-  // ==========================================
-  // BRANCH 1: HEALTHY DIAGNOSTIC STATE
-  // ==========================================
-  if (diagnosticState === 'HEALTHY') {
-    const rawMonitoring = diagnosisContext?.monitoringGuidance || 'Scout leaf undersides and new growth weekly for early signs of spots or discoloration.';
-    const rawIrrigation = diagnosisContext?.irrigationGuidance || 'Provide appropriate root-zone irrigation; avoid wetting foliage.';
-
-    const monitoring = translateAgronomicText(rawMonitoring, targetLang);
-    const irrigation = translateAgronomicText(rawIrrigation, targetLang);
-
-    // Low-confidence uncertainty notice
-    let uncertaintyNotice = '';
-    if (isUncertain) {
-      if (targetLang === 'hi') {
-        uncertaintyNotice = `⚠️ **अनिश्चितता सूचना (Low Confidence):** मॉडल का वर्तमान अनुमान **${rawDisease}** केवल **${confidence}% (कम विश्वसनीयता)** पर आधारित है। यह एक संभावित परिणाम है, पुष्टि नहीं। कृपया अच्छी रोशनी में पत्ती का साफ़ क्लोज़-अप फोटो पुनः अपलोड करें।\n\n`;
-      } else if (targetLang === 'hinglish') {
-        uncertaintyNotice = `⚠️ **Uncertainty Notice (Low Confidence):** Current model prediction **${rawDisease}** sirf **${confidence}% (Low confidence)** par based hai. Yeh unconfirmed possible result hai. Kripya daylight mein saaf close-up photo capture karein.\n\n`;
-      } else {
-        uncertaintyNotice = `⚠️ **Uncertainty Notice:** The current model prediction is **${rawDisease}** with **LOW confidence (${confidence}%)**. This is an unconfirmed possible result. Please inspect leaves closely and capture a clearer close-up photograph in diffuse daylight for higher diagnostic certainty.\n\n`;
-      }
-    }
-
-    // Weather note
-    let rainNote = '';
-    if (isRainImminent) {
-      if (targetLang === 'hi') {
-        rainNote = `🌧️ **मौसम सलाह (${rainProb}% बारिश की संभावना):** आज पत्तियों पर कोई छिड़काव न करें, क्योंकि बारिश से दवा धुल जाएगी। खेत में जल निकासी की उचित व्यवस्था रखें।\n`;
-      } else if (targetLang === 'hinglish') {
-        rainNote = `🌧️ **Weather Advisory (${rainProb}% rain forecast):** Aaj leaves par koi foliar spray na karein, kyunki baarish se spray wash ho jayega. Field drainage acchi rakhein.\n`;
-      } else {
-        rainNote = `🌧️ **Weather Advisory (${rainProb}% rain forecasted):** Do not apply any foliar sprays today as rain will wash them off. Maintain good field drainage.\n`;
-      }
-    } else {
-      if (targetLang === 'hi') {
-        rainNote = `🌤️ **मौसम स्थिति:** तापमान ${temp}°C, नमी ${humidity}%, बारिश की संभावना ${rainProb}%।\n`;
-      } else if (targetLang === 'hinglish') {
-        rainNote = `🌤️ **Farm Weather:** Temperature ${temp}°C, humidity ${humidity}%, rain probability ${rainProb}%.\n`;
-      } else {
-        rainNote = `🌤️ **Farm Weather:** ${temp}°C, ${humidity}% humidity, ${rainProb}% rain probability.\n`;
-      }
-    }
-
-    // 1.1 Spray / Treatment query on Healthy Plant
-    if (q.includes('spray') || q.includes('dawai') || q.includes('medicine') || q.includes('chhidkaav') || q.includes('fungicide') || q.includes('pesticide') || q.includes('treatment')) {
-      if (targetLang === 'hi') {
-        return `🌿 **फसल सुरक्षा परामर्श — स्वस्थ पत्तियां (${crop}):**\n\n` +
-          uncertaintyNotice +
-          `• **निदान स्थिति:** वर्तमान स्कैन में पत्तियां **स्वस्थ (Healthy)** पाई गई हैं।\n` +
-          `• **छिड़काव सलाह:** स्वस्थ फसल पर किसी भी कवकनाशी (fungicide) या रासायनिक दवा के छिड़काव की आवश्यकता **नहीं** है।\n` +
-          (isRainImminent ? `• **मौसम चेतावनी:** बारिश की संभावना ${rainProb}% है, अतः किसी भी प्रकार का छिड़काव न करें।\n` : '') +
-          `• **सिंचाई व देखभाल:** ${irrigation}\n` +
-          `• **नियमित निगरानी:** ${monitoring}\n\n` +
-          `*${disclaimer}*`;
-      } else if (targetLang === 'hinglish') {
-        return `🌿 **Crop Protection Advisory — Healthy Foliage (${crop}):**\n\n` +
-          uncertaintyNotice +
-          `• **Diagnostic Status:** Current scan ke according foliage **Healthy** hai.\n` +
-          `• **Spraying Advisory:** Healthy plants par kisi bhi fungicide ya chemical treatment ki zaroorat **nahi** hai.\n` +
-          (isRainImminent ? `• **Weather Advisory:** Rain probability ${rainProb}% hai, isliye aaj koi foliar spray na karein.\n` : '') +
-          `• **Irrigation & Care:** ${irrigation}\n` +
-          `• **Routine Monitoring:** ${monitoring}\n\n` +
-          `*${disclaimer}*`;
-      }
-      return `🌿 **Crop Protection Advisory — Healthy Foliage (${crop}):**\n\n` +
-        uncertaintyNotice +
-        `• **Diagnostic Status:** The current scan indicates **Healthy** foliage.\n` +
-        `• **Spraying Advisory:** No fungicide, bactericide, or chemical disease treatment is required for healthy plants.\n` +
-        (isRainImminent ? `• **Weather Advisory:** Rain probability is ${rainProb}%. Do not apply any foliar sprays today as rainfall will wash them off.\n` : '') +
-        `• **Irrigation & Care:** ${irrigation}\n` +
-        `• **Routine Monitoring:** ${monitoring}\n\n` +
-        `*${disclaimer}*`;
-    }
-
-    // 1.2 General query on Healthy Plant
+  // ----------------------------------------------------
+  // CATEGORY 1: CROP ROTATION / FASAL CHAKRA
+  // ----------------------------------------------------
+  if (/crop rotation|fasal chakra|fasal badal|rotation|फसल चक्र|फसल चक्रण/i.test(q)) {
     if (targetLang === 'hi') {
-      return `🌱 **एग्रीस्मार्ट फसल देखभाल — स्वस्थ पौधा (${crop}):**\n\n` +
-        uncertaintyNotice +
-        `• **फसल स्थिति:** पत्तियां स्वस्थ अनुमानित हैं (${confidence}% विश्वसनीयता)। किसी रोग उपचार की आवश्यकता नहीं है।\n` +
-        `• **नियमित निगरानी:** ${monitoring}\n` +
-        `• **सिंचाई मार्गदर्शन:** ${irrigation}\n` +
-        rainNote + '\n' +
+      return `🔄 **फसल चक्र (Crop Rotation) की जानकारी:**\n\n` +
+        `फसल चक्र एक ही खेत में योजनाबद्ध तरीके से फसलों को बदल-बदल कर उगाने की वैज्ञानिक पद्धति है।\n\n` +
+        `• **मुख्य लाभ:**\n` +
+        `  1. **मिट्टी की उर्वरता:** दलहनी फसलें (चना, मूंग, उड़द) वायुमंडलीय नाइट्रोजन को मिट्टी में स्थिर (fix) करती हैं।\n` +
+        `  2. **कीट व रोग नियंत्रण:** एक ही कुल (family) के कीट और कवक के जीवन चक्र को तोड़ने में मदद मिलती है।\n` +
+        `  3. **खरपतवार प्रबंधन:** विभिन्न फसलों के साथ खरपतवारों का प्रकोप कम होता है।\n\n` +
+        `• **उत्तम उदाहरण:** धान/गेहूं के बाद दलहन (दालें) या तिलहन फसलें लगाना, और गहरी जड़ वाली फसलों के बाद उथली जड़ वाली फसलें लेना।\n\n` +
         `*${disclaimer}*`;
     } else if (targetLang === 'hinglish') {
-      return `🌱 **AgriSmart Crop Care Advisory — Healthy Plant (${crop}):**\n\n` +
-        uncertaintyNotice +
-        `• **Crop Status:** Leaves healthy predict hui hain (${confidence}% confidence). Kisi disease treatment ki zaroorat nahi hai.\n` +
-        `• **Routine Monitoring:** ${monitoring}\n` +
-        `• **Irrigation Guidance:** ${irrigation}\n` +
-        rainNote + '\n' +
+      return `🔄 **Crop Rotation (Fasal Chakra) Guidance:**\n\n` +
+        `Crop rotation ka matlab hai ek hi khet mein alag-alag crops ko sequence mein lagana taaki soil nutrients aur soil health optimize ho sakein.\n\n` +
+        `• **Key Benefits:**\n` +
+        `  1. **Soil Fertility:** Legume crops (jaise moong, chana, urad) soil mein natural nitrogen fix karti hain.\n` +
+        `  2. **Pest & Disease Break:** Ek hi crop baar-baar na lagane se soil-borne pests aur fungal spores ka cycle break ho jata hai.\n` +
+        `  3. **Weed Control:** Different crop canopies se weeds ka spread naturally control hota hai.\n\n` +
+        `• **Best Practice:** Cereals (Wheat/Rice/Maize) ke baad pulses (dalhani faslein) ya green manure (Dhaincha) rotate karein.\n\n` +
         `*${disclaimer}*`;
     }
-    return `🌱 **AgriSmart Crop Care Advisory — Healthy Foliage (${crop}):**\n\n` +
-      uncertaintyNotice +
-      `• **Foliage Status:** The crop is classified as **Healthy** (${confidence}% confidence). No disease treatment is necessary.\n` +
-      `• **Monitoring Guidance:** ${monitoring}\n` +
-      `• **Irrigation & Soil:** ${irrigation}\n` +
-      rainNote + '\n' +
+    return `🔄 **Crop Rotation Principles & Benefits:**\n\n` +
+      `Crop rotation is the practice of planting different crops sequentially on the same plot of land to maintain soil fertility, optimize nutrient uptake, and disrupt weed, pest, and disease lifecycles.\n\n` +
+      `• **Key Benefits:**\n` +
+      `  1. **Nitrogen Fixation:** Alternating heavy nitrogen-feeders (cereals like wheat or maize) with legumes (pulses, beans) naturally replenishes soil nitrogen.\n` +
+      `  2. **Pathogen Cycle Disruption:** Breaks host-pathogen cycles for soil-borne fungi, nematodes, and specialized insect pests.\n` +
+      `  3. **Root Zone Diversity:** Alternating deep-rooted crops with shallow-rooted crops improves soil aeration and prevents hardpan formation.\n\n` +
+      `• **Recommended Sequence:** Follow cereal crops with pulses or oilseeds, and incorporate green manuring crops (like Sunn hemp or Sesbania) periodically.\n\n` +
       `*${disclaimer}*`;
   }
 
-  // ==========================================
-  // BRANCH 2: DISEASE DIAGNOSTIC STATE
-  // ==========================================
-  const rawOrganicList = Array.isArray(diagnosisContext?.organicManagement) && diagnosisContext.organicManagement.length > 0
-    ? diagnosisContext.organicManagement
-    : ['Neem oil foliar spray (5ml/L)', 'Bio-fungicide (Trichoderma viride or Bacillus subtilis)', 'Compost tea foliar drench'];
-
-  const rawImmediateList = Array.isArray(diagnosisContext?.immediateActions) && diagnosisContext.immediateActions.length > 0
-    ? diagnosisContext.immediateActions
-    : ['Inspect leaf undersides daily', 'Prune heavily spotted lower leaves', 'Sanitize pruning tools'];
-
-  const rawChemicalList = Array.isArray(diagnosisContext?.chemicalManagement) && diagnosisContext.chemicalManagement.length > 0
-    ? diagnosisContext.chemicalManagement
-    : ['Consult local KVK or extension officer for registered protective fungicides'];
-
-  const organicList = rawOrganicList.map(o => translateAgronomicText(o, targetLang));
-  const immediateList = rawImmediateList.map(i => translateAgronomicText(i, targetLang));
-  const chemicalList = rawChemicalList.map(c => translateAgronomicText(c, targetLang));
-
-  let uncertaintyNotice = '';
-  if (isUncertain) {
+  // ----------------------------------------------------
+  // CATEGORY 2: VERMICOMPOST / COMPOST / ORGANIC MANURE
+  // ----------------------------------------------------
+  if (/vermicompost|compost|jaivik khad|gobhar|organic manure|वर्मीकम्पोस्ट|केंचुआ खाद|जैविक खाद/i.test(q)) {
     if (targetLang === 'hi') {
-      uncertaintyNotice = `⚠️ **अनिश्चितता सूचना:** मॉडल कॉन्फिडेंस **कम (${confidence}%)** है। यह एक संभावित परिणाम है। कृपया अच्छी रोशनी में स्पष्ट फोटो पुनः लें।\n\n`;
+      return `🌱 **वर्मीकम्पोस्ट (केंचुआ खाद) एवं जैविक पोषण:**\n\n` +
+        `वर्मीकम्पोस्ट केंचुओं द्वारा जैविक कचरे व गोबर के अपघटन से तैयार की जाने वाली पोषक तत्वों से भरपूर खाद है।\n\n` +
+        `• **प्रयोग विधि:** बुवाई के समय 2-3 टन प्रति हेक्टेयर या प्रति पौधे 250-500 ग्राम मिट्टी में मिलाएं।\n` +
+        `• **लाभ:** मिट्टी की जल धारण क्षमता बढ़ती है, सूक्ष्मजीव सक्रिय होते हैं और पौधों की रोग प्रतिरोधक क्षमता में सुधार होता है।\n\n` +
+        `*${disclaimer}*`;
     } else if (targetLang === 'hinglish') {
-      uncertaintyNotice = `⚠️ **Uncertainty Notice:** Diagnostic confidence **LOW (${confidence}%)** hai. Yeh unconfirmed initial prediction hai. Kripya daylight mein clear close-up photo lein.\n\n`;
-    } else {
-      uncertaintyNotice = `⚠️ **Uncertainty Notice:** Diagnostic confidence is **LOW (${confidence}%)**. This is an unconfirmed initial prediction. Please capture a clearer close-up photo in diffuse daylight for confirmation.\n\n`;
+      return `🌱 **Vermicompost & Organic Nutrition Guidance:**\n\n` +
+        `Vermicompost (Kenchua khad) organic biomass aur cow dung ko earthworms dwara decompose karke banayi jati hai.\n\n` +
+        `• **Application Rate:** Sowing ke time 2-3 tonnes per hectare ya 250-500g per plant root-zone mein mix karein.\n` +
+        `• **Benefits:** Soil moisture retention improve hoti hai, beneficial microbes boost hote hain aur root health strong hoti hai.\n\n` +
+        `*${disclaimer}*`;
     }
+    return `🌱 **Vermicompost & Organic Manure Guidance:**\n\n` +
+      `Vermicompost is a nutrient-dense organic amendment produced by earthworms decomposing organic matter.\n\n` +
+      `• **Application Rate:** Incorporate 2-3 tonnes/hectare during basal field preparation or 250-500g per plant in the root zone.\n` +
+      `• **Benefits:** Enriches soil organic carbon, enhances beneficial soil microflora, and significantly boosts moisture retention.\n\n` +
+      `*${disclaimer}*`;
   }
 
-  // 2.1 Spray / Treatment query on Diseased Plant
-  if (q.includes('spray') || q.includes('dawai') || q.includes('medicine') || q.includes('chhidkaav') || q.includes('fungicide') || q.includes('pesticide') || q.includes('treatment')) {
+  // ----------------------------------------------------
+  // CATEGORY 3: DRIP IRRIGATION / WATER MANAGEMENT
+  // ----------------------------------------------------
+  if (/drip irrigation|tapak sinchai|irrigation method|sinchai|ड्रिप सिंचाई|टपक सिंचाई|सिंचाई/i.test(q)) {
+    if (targetLang === 'hi') {
+      return `💧 **ड्रिप (टपक) सिंचाई प्रबंधन:**\n\n` +
+        `ड्रिप सिंचाई सीधे पौधों की जड़ों में पानी और घुलनशील खाद पहुंचाने की सबसे कुशल तकनीक है।\n\n` +
+        `• **मुख्य लाभ:** 40-60% पानी की बचत, खरपतवारों में कमी, और पत्तियों के सूखे रहने से फफूंद जनित रोगों (Fungal Blights) से सुरक्षा।\n` +
+        `• **सुझाव:** पत्तियों पर ऊपर से छिड़काव (overhead sprinkler) से बचें ताकि पर्णीय रोग न फैलें।\n\n` +
+        `*${disclaimer}*`;
+    } else if (targetLang === 'hinglish') {
+      return `💧 **Drip Irrigation Management:**\n\n` +
+        `Drip irrigation se paani directly root zone tak reach hota hai jisse evaporation aur water runoff minimize hota hai.\n\n` +
+        `• **Key Benefits:** 40-60% water savings, weed reduction aur foliage dry rehne se fungal blights aur leaf spots control rehte hain.\n` +
+        `• **Tip:** Overhead sprinklers avoid karein jo leaves ko lamba time geela rakhte hain.\n\n` +
+        `*${disclaimer}*`;
+    }
+    return `💧 **Drip Irrigation & Water Efficiency:**\n\n` +
+      `Drip irrigation delivers water and soluble nutrients directly to the root zone with up to 90% water efficiency.\n\n` +
+      `• **Agronomic Advantages:** Minimizes evaporation losses, prevents foliar leaf wetness (reducing fungal leaf spots and blights), and optimizes root zone oxygenation.\n` +
+      `• **Best Practice:** Water in the early morning at the soil line; avoid overhead sprinklers on disease-sensitive crops.\n\n` +
+      `*${disclaimer}*`;
+  }
+
+  // ----------------------------------------------------
+  // CATEGORY 4: FERTILIZERS / NPK / SOIL NUTRITION
+  // ----------------------------------------------------
+  if (/npk|fertilizer|urea|dap|potash|poshan|fertiliser|fertilization|उर्वरक|यूरिया|पोषक तत्व/i.test(q)) {
+    if (targetLang === 'hi') {
+      return `🌾 **संतुलित उर्वरक एवं NPK पोषण:**\n\n` +
+        `• **नाइट्रोजन (N):** वानस्पतिक वृद्धि और पत्तियों के हरे रंग (क्लोरोफिल) के लिए आवश्यक।\n` +
+        `• **फास्फोरस (P):** मजबूत जड़ों के विकास और फूलों के निर्माण में सहायक।\n` +
+        `• **पोटाश (K):** पौधों में रोग प्रतिरोधक क्षमता और फल/दाने की गुणवत्ता बढ़ाता है।\n` +
+        `• **सलाह:** मृदा स्वास्थ्य कार्ड (Soil Health Card) के अनुसार ही संतुलित मात्रा में उर्वरक दें; अत्यधिक नाइट्रोजन से बचें।\n\n` +
+        `*${disclaimer}*`;
+    } else if (targetLang === 'hinglish') {
+      return `🌾 **Balanced Fertilization & NPK Guidance:**\n\n` +
+        `• **Nitrogen (N):** Vegetative leaf growth aur green canopy ke liye zaroori hai.\n` +
+        `• **Phosphorus (P):** Root growth aur flower/fruit development boost karta hai.\n` +
+        `• **Potassium (K):** Disease resistance aur grain/fruit quality enhance karta hai.\n` +
+        `• **Advice:** Soil health card ke test results ke mutabik balanced ratio use karein; excess nitrogen se bachein.\n\n` +
+        `*${disclaimer}*`;
+    }
+    return `🌾 **Balanced Crop Nutrition & NPK Management:**\n\n` +
+      `• **Nitrogen (N):** Drives vegetative canopy and chlorophyll synthesis.\n` +
+      `• **Phosphorus (P):** Essential for robust root establishment, flowering, and energy transfer.\n` +
+      `• **Potassium (K):** Regulates stomatal conductance, builds disease resilience, and improves harvest quality.\n` +
+      `• **Recommendation:** Apply nutrients based on certified soil testing; avoid excessive late-season nitrogen which promotes tender, disease-prone growth.\n\n` +
+      `*${disclaimer}*`;
+  }
+
+  // ----------------------------------------------------
+  // CATEGORY 5: SPRAYING & WEATHER FEASIBILITY
+  // ----------------------------------------------------
+  if (/spray|स्प्रे|छिड़काव|chhidkaav|chhidkav|fungicide|pesticide|कीटनाशक|फफूंदनाशक|dawai|dawa|दवा|दवाई|medicine|chemical/i.test(q)) {
     if (isRainImminent) {
-      if (targetLang === 'hi') {
-        return `⚠️ **स्प्रे सलाह (Spray Advisory - ${rawDisease}):**\n\n` +
-          uncertaintyNotice +
-          `आपके क्षेत्र में बारिश की संभावना **${rainProb}%** है। **आज किसी भी कीटनाशक या फफूंदनाशक का छिड़काव न करें**, क्योंकि बारिश से दवा धुल जाएगी।\n\n` +
-          `• **मौसम साफ़ होने पर जैविक विकल्प:** ${organicList[0]}\n` +
-          `• **तात्कालिक कदम:** ${immediateList[0]}\n` +
-          `• **सावधानी:** ${disclaimer}`;
-      } else if (targetLang === 'hinglish') {
-        return `⚠️ **Spray Advisory (${rawDisease}):**\n\n` +
-          uncertaintyNotice +
-          `Aapke area mein rain probability **${rainProb}%** hai. **Aaj koi foliar spray na karein**, kyunki baarish se dawa wash ho jayegi.\n\n` +
-          `• **Weather clear hone par organic treatment:** ${organicList[0]}\n` +
-          `• **Immediate Action:** ${immediateList[0]}\n` +
-          `• **Safety Note:** ${disclaimer}`;
+      let diagNoteEn = '';
+      let diagNoteHi = '';
+      let diagNoteHinglish = '';
+
+      if (diagnosticState === 'HEALTHY') {
+        const uncertEn = isUncertain ? ` (Unconfirmed prediction with LOW confidence: ${confidence}%)` : '';
+        diagNoteEn = `\n• **Crop Diagnostic Status:** Foliage is diagnosed as **Healthy**${uncertEn}. No curative chemical fungicide or bactericide is needed for a healthy crop.\n• **Irrigation & Monitoring:** Utilize root-zone drip irrigation and continue routine visual monitoring and foliar scouting.`;
+        diagNoteHi = `\n• **फसल स्थिति:** वर्तमान स्कैन में पत्तियां **स्वस्थ (Healthy)** हैं। स्वस्थ फसल पर किसी कवकनाशी की आवश्यकता नहीं है।\n• **सिंचाई व निगरानी:** ड्रिप सिंचाई अपनाएं और पत्तियों की नियमित निगरानी व निरीक्षण जारी रखें।`;
+        diagNoteHinglish = `\n• **Crop Diagnostic Status:** Foliage **Healthy** detect hui hai. Healthy plants par kisi curative fungicide ki zaroorat nahi hai.\n• **Care:** Drip irrigation use karein aur routine scouting/monitoring continue karein.`;
+      } else if (diagnosticState === 'DISEASE' && rawDisease) {
+        diagNoteEn = `\n• **Diagnosed Disease:** ${rawDisease}. Once weather clears, apply organic bio-control such as Neem oil or Trichoderma.\n• **Irrigation:** Use drip irrigation; avoid wetting foliage.`;
+        diagNoteHi = `\n• **पहचाना गया रोग:** ${rawDisease}। मौसम साफ़ होने पर जैविक विकल्प (नीम तेल) का प्रयोग करें।\n• **सिंचाई:** ड्रिप सिंचाई अपनाएं।`;
+        diagNoteHinglish = `\n• **Diagnosed Disease:** ${rawDisease}. Weather clear hone ke baad organic spray use karein.\n• **Irrigation:** Drip irrigation prefer karein.`;
       }
-      return `⚠️ **Spray Advisory for ${rawDisease}:**\n\n` +
-        uncertaintyNotice +
-        `High precipitation forecasted (**${rainProb}% chance of rain**). **Do NOT apply foliar sprays today** as rainfall will wash away treatments and cause chemical runoff.\n\n` +
-        `• **Recommended window:** Postpone spraying until a clear, dry morning.\n` +
-        `• **Organic treatment (post-rain):** ${organicList[0]}\n` +
-        `• **Immediate Action:** ${immediateList[0]}\n` +
-        `• **Safety Note:** ${disclaimer}`;
-    } else {
+
       if (targetLang === 'hi') {
-        return `✅ **छिड़काव मार्गदर्शन (Spraying Guidance - ${rawDisease}):**\n\n` +
-          uncertaintyNotice +
-          `मौसम अनुकूल है (तापमान: ${temp}°C, बारिश: ${rainProb}%)। आप सुबह या देर शाम छिड़काव कर सकते हैं:\n\n` +
-          `• **जैविक नियंत्रण:** ${organicList.slice(0, 2).map(o => `• ${o}`).join('\n')}\n` +
-          `• **रासायनिक मार्गदर्शन:** ${chemicalList[0]}\n` +
+        return `🌧️ **मौसम चेतावनी — छिड़काव स्थगित रखें (${rainProb}% बारिश का अनुमान):**\n\n` +
+          `आपके क्षेत्र में अगले 24 घंटों में बारिश की संभावना **${rainProb}%** है।\n\n` +
+          `• **सलाह:** आज पत्तियों पर कोई भी कीटनाशक, कवकनाशी या पर्णीय खाद का छिड़काव **न करें**। बारिश से दवा धुल जाएगी और रासायनिक अपवाह (runoff) होगा।\n` +
+          `• **कार्रवाई:** मौसम साफ़ और शुष्क होने तक प्रतीक्षा करें। खेत में जलनिकासी की उचित व्यवस्था सुनिश्चित करें।` +
+          diagNoteHi + `\n\n` +
+          `*${disclaimer}*`;
+      } else if (targetLang === 'hinglish') {
+        return `🌧️ **Weather Warning — Postpone Spraying (${rainProb}% Rain Forecast):**\n\n` +
+          `Aapke area mein next 24 hours mein rain probability **${rainProb}%** hai.\n\n` +
+          `• **Advisory:** Aaj koi bhi foliar spray (fungicide/pesticide) **na karein**. Baarish se dawa wash ho jayegi aur effectiveness zero ho jayegi.\n` +
+          `• **Action:** Weather clear aur dry hone tak spray postpone karein.` +
+          diagNoteHinglish + `\n\n` +
+          `*${disclaimer}*`;
+      }
+      return `🌧️ **Weather Safety Warning — Postpone Spraying (${rainProb}% Rain Forecasted):**\n\n` +
+        `Rain probability for your location is currently **${rainProb}%** (>= 50%).\n\n` +
+        `• **Advisory:** Do NOT apply any foliar fungicides, insecticides, or nutrients today. Rainfall will wash off the application, resulting in wasted product and chemical runoff.\n` +
+        `• **Recommended Action:** Postpone spraying until a clear, dry morning window with calm winds.` +
+        diagNoteEn + `\n\n` +
+        `*${disclaimer}*`;
+    }
+
+    // Weather is clear (< 50% rain)
+    if (diagnosticState === 'HEALTHY') {
+      if (targetLang === 'hi') {
+        return `🌿 **छिड़काव परामर्श — स्वस्थ फसल (${crop}):**\n\n` +
+          `• **निदान स्थिति:** वर्तमान स्कैन में पत्तियां **स्वस्थ (Healthy)** हैं।\n` +
+          `• **छिड़काव सलाह:** स्वस्थ फसल पर किसी भी उपचारात्मक कवकनाशी (curative fungicide) या कीटनाशक के छिड़काव की **आवश्यकता नहीं है**।\n` +
+          `• **मौसम:** तापमान ${temp}°C, नमी ${humidity}%, बारिश ${rainProb}% (अनुकूल)।\n` +
+          `• **देखभाल:** नियमित रूप से पत्तियों की निचली सतह का निरीक्षण करते रहें और संतुलित पोषण दें।\n\n` +
+          `*${disclaimer}*`;
+      } else if (targetLang === 'hinglish') {
+        return `🌿 **Spraying Advisory — Healthy Crop (${crop}):**\n\n` +
+          `• **Diagnostic Status:** Current scan ke mutabik foliage **Healthy** hai.\n` +
+          `• **Spraying Advice:** Healthy plants par curative fungicide ya chemical dawa ka spray karne ki **zaroorat nahi hai**.\n` +
+          `• **Weather:** Temperature ${temp}°C, humidity ${humidity}%, rain probability ${rainProb}% (clear).\n` +
+          `• **Care:** Regular weekly scouting continue rakhein aur balanced nutrition dein.\n\n` +
+          `*${disclaimer}*`;
+      }
+      return `🌿 **Spraying Advisory — Healthy Crop (${crop}):**\n\n` +
+        `• **Diagnostic Status:** Foliage is currently classified as **Healthy**.\n` +
+        `• **Spraying Guidance:** No curative chemical fungicides or bactericides are required for a healthy crop.\n` +
+        `• **Farm Weather:** Temperature ${temp}°C, humidity ${humidity}%, rain probability ${rainProb}% (favorable).\n` +
+        `• **Routine Care:** Continue regular visual scouting of leaf undersides and maintain clean field hygiene.\n\n` +
+        `*${disclaimer}*`;
+    }
+
+    if (diagnosticState === 'DISEASE' && rawDisease) {
+      const rawOrganic = Array.isArray(diagnosisContext?.organicManagement) && diagnosisContext.organicManagement.length > 0
+        ? diagnosisContext.organicManagement[0]
+        : 'Neem oil foliar spray (5ml/L)';
+      const organicAction = translateAgronomicText(rawOrganic, targetLang);
+
+      if (targetLang === 'hi') {
+        return `✅ **छिड़काव मार्गदर्शन (${rawDisease}):**\n\n` +
+          `मौसम अनुकूल है (तापमान ${temp}°C, बारिश ${rainProb}%)। आप सुबह या देर शाम छिड़काव कर सकते हैं:\n\n` +
+          `• **जैविक नियंत्रण:** ${organicAction}\n` +
+          `• **समय:** सुबह 06:00 से 08:00 बजे या शाम 04:30 के बाद जब हवा शांत हो।\n` +
           `• **सावधानी:** ${disclaimer}`;
       } else if (targetLang === 'hinglish') {
-        return `✅ **Spraying Guidance (${rawDisease}):**\n\n` +
-          uncertaintyNotice +
-          `Weather favorable hai (temperature: ${temp}°C, rain probability: ${rainProb}%). Subah ya shaam ko spray kar sakte hain:\n\n` +
-          `• **Organic Controls:**\n${organicList.slice(0, 2).map(o => `  • ${o}`).join('\n')}\n` +
-          `• **Chemical Guidance:** ${chemicalList[0]}\n` +
+        return `✅ **Spraying Guidance for ${rawDisease}:**\n\n` +
+          `Weather conditions favorable hain (temperature ${temp}°C, rain probability ${rainProb}%).\n\n` +
+          `• **Organic Bio-Control:** ${organicAction}\n` +
+          `• **Best Timing:** Early morning (06:00-08:00 AM) ya late afternoon jab hawa shaant ho.\n` +
           `• **Safety Note:** ${disclaimer}`;
       }
       return `✅ **Spraying Guidance for ${rawDisease}:**\n\n` +
-        uncertaintyNotice +
-        `Weather conditions are favorable for treatment (${temp}°C, ${rainProb}% rain probability):\n\n` +
-        `• **Organic / Biological Controls:**\n${organicList.slice(0, 2).map(o => `  • ${o}`).join('\n')}\n` +
-        `• **Chemical Guidance:** ${chemicalList[0]}\n` +
-        `• **Application Tip:** Spray during early morning (06:00-08:00 AM) or late afternoon for maximum adherence.\n` +
-        `• **Safety Note:** ${disclaimer}`;
+        `Weather conditions are favorable (${temp}°C, ${rainProb}% rain probability):\n\n` +
+        `• **Organic / Biological Control:** ${organicAction}\n` +
+        `• **Application Window:** Spray during calm early morning (06:00-08:00 AM) or late afternoon.\n` +
+        `• **Safety Guidance:** ${disclaimer}`;
     }
-  }
 
-  // 2.2 Organic query
-  if (q.includes('organic') || q.includes('jaivik') || q.includes('natural') || q.includes('neem') || q.includes('home remedy')) {
+    // Default Spraying Guidance (No specific scan loaded)
     if (targetLang === 'hi') {
-      return `🌿 **जैविक उपचार (Organic Management for ${rawDisease}):**\n\n` +
-        uncertaintyNotice +
-        organicList.map(item => `• ${item}`).join('\n') +
-        `\n\n• **तात्कालिक कदम:** ${immediateList[0] || 'संक्रमित पत्तियों को हटाकर नष्ट करें।'}\n\n` +
+      return `🌾 **सामान्य छिड़काव मार्गदर्शन:**\n\n` +
+        `• **मौसम जांच:** वर्तमान तापमान ${temp}°C, नमी ${humidity}%, बारिश ${rainProb}%।\n` +
+        `• **सर्वोत्तम समय:** शांत मौसम में सुबह 06:00-08:00 बजे छिड़काव करें ताकि दवा का फैलाव अच्छा हो और वाष्पीकरण कम हो।\n` +
+        `• **जैविक प्राथमिकता:** रासायनिक दवाओं से पहले जैविक विकल्प (जैसे नीम तेल 5 मिली/लीटर) अपनाएं।\n\n` +
         `*${disclaimer}*`;
     } else if (targetLang === 'hinglish') {
-      return `🌿 **Organic Management for ${rawDisease}:**\n\n` +
-        uncertaintyNotice +
-        organicList.map(item => `• ${item}`).join('\n') +
-        `\n\n• **Immediate Physical Action:** ${immediateList[0] || 'Infected leaves ko remove karke destroy karein.'}\n\n` +
+      return `🌾 **General Spraying Guidance:**\n\n` +
+        `• **Weather Telemetry:** Temperature ${temp}°C, humidity ${humidity}%, rain probability ${rainProb}%.\n` +
+        `• **Best Time:** Early morning (06:00-08:00 AM) mein spray karein jab wind calm ho.\n` +
+        `• **Organic Priority:** Pehle organic formulations (jaise neem oil 5ml/L) use karein.\n\n` +
         `*${disclaimer}*`;
     }
-    return `🌿 **Organic & Biological Management for ${rawDisease}:**\n\n` +
-      uncertaintyNotice +
-      organicList.map(item => `• ${item}`).join('\n') +
-      `\n\n• **Immediate Physical Action:** ${immediateList[0] || 'Prune heavily infected leaves to reduce spore load.'}\n\n` +
+    return `🌾 **General Spraying Best Practices:**\n\n` +
+      `• **Current Weather:** ${temp}°C, ${humidity}% humidity, ${rainProb}% rain probability.\n` +
+      `• **Optimal Timing:** Apply during early morning (06:00-08:00 AM) when wind speed is minimal and leaf absorption is highest.\n` +
+      `• **IPM Priority:** Prioritize organic/biological formulations (such as cold-pressed neem oil 5ml/L) before considering chemical interventions.\n\n` +
       `*${disclaimer}*`;
   }
 
-  // 2.3 Why / Cause query
-  if (q.includes('kyu') || q.includes('why') || q.includes('cause') || q.includes('karan') || q.includes('reason')) {
-    const rawCauses = diagnosisContext?.likelyCauses || `High humidity (${humidity}%) and temperature (${temp}°C) create favorable conditions for spore germination.`;
-    const causes = translateAgronomicText(rawCauses, targetLang);
-    if (targetLang === 'hi') {
-      return `🔍 **रोग का कारण (${rawDisease}):**\n\n` +
-        uncertaintyNotice +
-        `• ${causes}\n` +
-        `• **वर्तमान मौसम:** तापमान ${temp}°C, नमी ${humidity}%।\n` +
-        `• **बचाव:** पौधों के बीच हवा का प्रवाह बनाए रखें और ड्रिप सिंचाई का उपयोग करें।\n\n` +
-        `*${disclaimer}*`;
-    } else if (targetLang === 'hinglish') {
-      return `🔍 **Likely Causes for ${rawDisease}:**\n\n` +
-        uncertaintyNotice +
-        `• ${causes}\n` +
-        `• **Current Weather:** Temperature ${temp}°C, humidity ${humidity}% pathogen spread favor karti hai.\n` +
-        `• **Prevention:** Proper plant spacing rakhein aur overhead watering avoid karein.\n\n` +
+  // ----------------------------------------------------
+  // CATEGORY 6: EXPLICIT QUESTIONS ABOUT LATEST SCAN / DIAGNOSIS
+  // ----------------------------------------------------
+  if (/latest scan|scan report|scan result|mera scan|meri scan|meri diagnosis|mere scan|scan ke according|recent scan|uploaded image|detection result|leaf scan|नवीनतम स्कैन|स्कैन रिपोर्ट/i.test(q)) {
+    if (diagnosticState === 'HEALTHY') {
+      let uncertText = isUncertain ? ` (Uncertainty: Low Confidence ${confidence}%)` : '';
+      if (targetLang === 'hi') {
+        return `🌿 **आपके नवीनतम स्कैन का विश्लेषण (${crop}):**\n\n` +
+          `• **निदान स्थिति:** पत्तियां **स्वस्थ (Healthy)** पाई गई हैं (${confidence}% विश्वसनीयता)${uncertText}।\n` +
+          `• **परामर्श:** किसी रासायनिक या कवकनाशी उपचार की आवश्यकता नहीं है।\n` +
+          `• **नियमित देखभाल:** ड्रिप सिंचाई द्वारा जड़ों में पानी दें और पत्तियों को सूखा रखें। साप्ताहिक निरीक्षण जारी रखें।\n\n` +
+          `*${disclaimer}*`;
+      } else if (targetLang === 'hinglish') {
+        return `🌿 **Latest Scan Report Summary (${crop}):**\n\n` +
+          `• **Diagnostic Status:** Leaves **Healthy** detect hui hain (${confidence}% confidence)${uncertText}.\n` +
+          `• **Treatment Advice:** Kisi chemical ya fungicide spray ki zaroorat nahi hai.\n` +
+          `• **Care:** Drip irrigation use karein, leaves ko dry rakhein aur weekly foliar scouting continue karein.\n\n` +
+          `*${disclaimer}*`;
+      }
+      return `🌿 **Latest Scan Summary (${crop}):**\n\n` +
+        `• **Diagnostic Status:** Your crop foliage is classified as **Healthy** (${confidence}% confidence)${uncertText}.\n` +
+        `• **Action Required:** No curative chemical treatments are needed.\n` +
+        `• **Preventive Maintenance:** Maintain balanced nutrition, proper plant spacing, and continue routine foliar monitoring.\n\n` +
         `*${disclaimer}*`;
     }
-    return `🔍 **Likely Causes for ${rawDisease}:**\n\n` +
-      uncertaintyNotice +
-      `• ${causes}\n` +
-      `• **Current Environmental Risk:** Temperature ${temp}°C with ${humidity}% humidity promotes pathogen proliferation.\n` +
-      `• **Prevention:** Ensure proper row spacing for airflow and avoid overhead watering.\n\n` +
+
+    if (diagnosticState === 'DISEASE' && rawDisease) {
+      const rawOrganic = Array.isArray(diagnosisContext?.organicManagement) && diagnosisContext.organicManagement.length > 0
+        ? diagnosisContext.organicManagement[0]
+        : 'Neem oil foliar spray (5ml/L)';
+      const rawImmediate = Array.isArray(diagnosisContext?.immediateActions) && diagnosisContext.immediateActions.length > 0
+        ? diagnosisContext.immediateActions[0]
+        : 'Prune heavily spotted leaves';
+
+      const organicAction = translateAgronomicText(rawOrganic, targetLang);
+      const immediateAction = translateAgronomicText(rawImmediate, targetLang);
+
+      let uncertNotice = '';
+      if (isUncertain) {
+        uncertNotice = targetLang === 'hi'
+          ? `⚠️ *नोट: मॉडल की विश्वसनीयता कम (${confidence}%) है। कृपया पुष्टि के लिए स्पष्ट क्लोज़-अप फोटो पुनः लें।*\n\n`
+          : targetLang === 'hinglish'
+            ? `⚠️ *Note: Model confidence LOW (${confidence}%) hai. Confirmation ke liye clear close-up photo lein.*\n\n`
+            : `⚠️ *Note: Diagnostic confidence is LOW (${confidence}%). Please capture a clearer close-up photograph for confirmation.*\n\n`;
+      }
+
+      if (targetLang === 'hi') {
+        return `🌾 **आपके नवीनतम स्कैन का विश्लेषण (${rawDisease}):**\n\n` +
+          uncertNotice +
+          `• **पहचाना गया रोग:** ${rawDisease} (${crop})\n` +
+          `• **तात्कालिक कदम:** ${immediateAction}\n` +
+          `• **जैविक नियंत्रण:** ${organicAction}\n` +
+          `• **मौसम सलाह:** तापमान ${temp}°C, बारिश ${rainProb}% (${isRainImminent ? 'आज छिड़काव न करें' : 'मौसम अनुकूल है'})।\n\n` +
+          `*${disclaimer}*`;
+      } else if (targetLang === 'hinglish') {
+        return `🌾 **Latest Scan Diagnosis (${rawDisease}):**\n\n` +
+          uncertNotice +
+          `• **Detected Condition:** ${rawDisease} (${crop})\n` +
+          `• **Immediate Action:** ${immediateAction}\n` +
+          `• **Organic Treatment:** ${organicAction}\n` +
+          `• **Weather Context:** ${temp}°C, rain probability ${rainProb}% (${isRainImminent ? 'Do not spray today' : 'Favorable window'}).\n\n` +
+          `*${disclaimer}*`;
+      }
+      return `🌾 **Latest Scan Diagnostic Report (${rawDisease}):**\n\n` +
+        uncertNotice +
+        `• **Diagnosed Condition:** ${rawDisease} on ${crop}\n` +
+        `• **Immediate Step:** ${immediateAction}\n` +
+        `• **Key Organic Control:** ${organicAction}\n` +
+        `• **Weather Telemetry:** ${temp}°C, ${rainProb}% rain probability (${isRainImminent ? 'Postpone foliar sprays' : 'Clear spraying window'}).\n\n` +
+        `*${disclaimer}*`;
+    }
+
+    // No scan available in context
+    if (targetLang === 'hi') {
+      return `📷 **स्कैन संदर्भ:** अभी तक कोई पत्ती स्कैन उपलब्ध नहीं है। कृपया "Disease Detection" पृष्ठ पर जाकर अपनी फसल की पत्ती का फोटो अपलोड करें।\n\n*${disclaimer}*`;
+    } else if (targetLang === 'hinglish') {
+      return `📷 **Scan Context:** Abhi koi leaf scan record nahi mila. Kripya "Disease Detection" tab par jakar apni crop ki leaf image upload karein.\n\n*${disclaimer}*`;
+    }
+    return `📷 **Scan Context:** No crop leaf scan was found in the current session. Please navigate to the Disease Detection section to upload a leaf photograph for diagnosis.\n\n*${disclaimer}*`;
+  }
+
+  // ----------------------------------------------------
+  // CATEGORY 7: SYMPTOM / DISEASE SPECIFIC QUESTIONS
+  // (e.g., "Potato ke leaves par brown spots hain", "yellow leaves", "leaf spot")
+  // ----------------------------------------------------
+  if (/spot|blight|rot|rust|mildew|yellow|brown|curl|wilt|dhabbe|pila|sukh|keeda|fungus|धब्बे|पीला|कीट|फफूंद|झुलसा|सिकुड़न/i.test(q)) {
+    if (targetLang === 'hi') {
+      return `🔍 **पत्तियों पर धब्बों व लक्षणों का प्रबंधन:**\n\n` +
+        `पत्तियों पर भूरे या पीले धब्बे आमतौर पर फफूंद जनित संक्रमण (जैसे अर्ली ब्लाइट, लीफ स्पॉट) या पोषण की कमी का संकेत होते हैं।\n\n` +
+        `• **तात्कालिक कदम:**\n` +
+        `  1. अधिक संक्रमित निचली पत्तियों को तोड़कर खेत से दूर नष्ट करें।\n` +
+        `  2. पत्तियों पर ऊपर से पानी डालने से बचें; ड्रिप सिंचाई अपनाएं।\n` +
+        `• **जैविक उपचार:** नीम का तेल (5 मिली/लीटर) या *ट्राइकोडर्मा विरिडी* जैविक कवकनाशी का पर्णीय छिड़काव करें।\n` +
+        `• **स्वच्छता:** पौधों के बीच उचित दूरी रखें ताकि हवा और धूप का आवागमन बना रहे।\n\n` +
+        `*${disclaimer}*`;
+    } else if (targetLang === 'hinglish') {
+      return `🔍 **Foliar Spots & Symptom Management:**\n\n` +
+        `Leaves par brown ya yellow spots generally fungal infection (Early Blight, Leaf Spot) ya nutrient deficiency ki wajah se aate hain.\n\n` +
+        `• **Immediate Action:**\n` +
+        `  1. Zyada infected lower leaves ko prune karke field se bahar destroy karein.\n` +
+        `  2. Foliage ko dry rakhein aur drip irrigation prefer karein.\n` +
+        `• **Organic Control:** Neem oil spray (5ml/L) ya *Trichoderma viride* / *Bacillus subtilis* bio-fungicide use karein.\n` +
+        `• **Field Care:** Plant spacing proper rakhein taaki sunlight aur airflow bana rahe.\n\n` +
+        `*${disclaimer}*`;
+    }
+    return `🔍 **Foliar Spots & Symptom Management:**\n\n` +
+      `Brown or yellow spots on foliage commonly indicate fungal infections (such as Early Blight or Cercospora Leaf Spot) or localized nutrient stress.\n\n` +
+      `• **Immediate Containment:**\n` +
+      `  1. Prune and safely dispose of heavily spotted lower leaves to reduce spore inoculation.\n` +
+      `  2. Keep foliar canopies dry by utilizing root-zone drip irrigation instead of overhead sprinklers.\n` +
+      `• **Organic & Biological Control:** Apply a foliar spray of cold-pressed Neem oil (5ml/L) or a registered bio-fungicide (*Trichoderma viride* or *Bacillus subtilis*).\n` +
+      `• **Cultural Practices:** Ensure proper plant spacing for airflow and follow crop rotation.\n\n` +
       `*${disclaimer}*`;
   }
 
-  // 2.4 Default disease advisory
+  // ----------------------------------------------------
+  // CATEGORY 8: GENERAL AGRONOMY FALLBACK
+  // ----------------------------------------------------
   if (targetLang === 'hi') {
-    return `🌾 **एग्रीस्मार्ट कृषि विशेषज्ञ परामर्श (${crop} - ${rawDisease}):**\n\n` +
-      uncertaintyNotice +
-      `• **निदान स्थिति:** ${rawDisease} (${confidence}% विश्वसनीयता)\n` +
-      `• **प्राथमिक कदम:** ${immediateList[0] || 'पौधों का नियमित निरीक्षण करें।'}\n` +
-      `• **जैविक सलाह:** ${organicList[0] || 'नीम आधारित जैविक कीटनाशक का प्रयोग करें।'}\n` +
-      `• **मौसम स्थिति:** तापमान ${temp}°C, आर्द्रता ${humidity}%, बारिश ${rainProb}%।\n\n` +
+    return `🌾 **एग्रीस्मार्ट कृषि विशेषज्ञ परामर्श:**\n\n` +
+      `"${question}" के संदर्भ में:\n\n` +
+      `• **सफल खेती के मूल सिद्धांत:** नियमित खेत निरीक्षण, मिट्टी परीक्षण आधारित संतुलित खाद (NPK व सूक्ष्म पोषक तत्व), ड्रिप सिंचाई और फसल चक्र अपनाना आवश्यक है।\n` +
+      `• **कीट व रोग प्रबंधन:** रासायनिक दवाओं के अत्यधिक प्रयोग से बचें और जैविक व नीम आधारित विकल्पों को प्राथमिकता दें।\n` +
+      `• **विशिष्ट मार्गदर्शन:** अपनी स्थानीय जलवायु और फसल किस्म के अनुसार सटीक परामर्श हेतु स्थानीय कृषि विज्ञान केंद्र (KVK) से संपर्क करें।\n\n` +
       `*${disclaimer}*`;
   } else if (targetLang === 'hinglish') {
-    return `🌾 **AgriSmart Advisory (${crop} - ${rawDisease}):**\n\n` +
-      uncertaintyNotice +
-      `• **Diagnostic Status:** ${rawDisease} (${confidence}% confidence, ${confidenceLevel})\n` +
-      `• **Immediate Action:** ${immediateList[0] || 'Leaves ka regular scouting karein'}\n` +
-      `• **Key Organic Control:** ${organicList[0] || 'Neem oil spray ya bio-fungicide use karein'}\n` +
-      `• **Farm Weather:** ${temp}°C, ${humidity}% humidity, ${rainProb}% rain probability.\n\n` +
+    return `🌾 **AgriSmart AI Decision-Support Guidance:**\n\n` +
+      `"${question}" ke context mein:\n\n` +
+      `• **Best Agronomic Practices:** Regular field scouting karein, soil health card ke mutabik balanced fertilizers dein, drip irrigation use karein aur crop rotation follow karein.\n` +
+      `• **IPM Strategy:** Chemical sprays se pehle organic formulations (jaise neem oil ya bio-fungicides) ko priority dein.\n` +
+      `• **Extension Advice:** Specific crop recommendation aur label dosage ke liye local Krishi Vigyan Kendra (KVK) se consult karein.\n\n` +
       `*${disclaimer}*`;
   }
 
-  return `🌾 **AgriSmart Decision-Support Advisory for ${rawDisease}:**\n\n` +
-    uncertaintyNotice +
-    `• **Diagnostic Status:** ${rawDisease} (${confidence}% confidence, ${confidenceLevel})\n` +
-    `• **Immediate Action:** ${immediateList[0] || 'Regular foliar scouting'}\n` +
-    `• **Key Organic Control:** ${organicList[0] || 'Bio-fungicide or neem oil formulation'}\n` +
-    `• **Current Farm Conditions:** ${temp}°C, ${humidity}% humidity, ${rainProb}% rain probability.\n\n` +
+  return `🌾 **AgriSmart AI Decision-Support Guidance:**\n\n` +
+    `Regarding "${question}":\n\n` +
+    `• **Core Agronomic Principles:** Implement regular foliar scouting, balanced fertilization based on certified soil tests, efficient root-zone irrigation (drip), and systematic crop rotation.\n` +
+    `• **Integrated Pest Management (IPM):** Prioritize cultural hygiene and organic biocontrols before considering chemical interventions.\n` +
+    `• **Extension Guidance:** Consult your local Krishi Vigyan Kendra (KVK) or State Agricultural Extension Officer for region-specific recommendations.\n\n` +
     `*${disclaimer}*`;
 }
 
@@ -771,3 +829,4 @@ module.exports = {
   SAFETY_DISCLAIMERS,
   isConfigured
 };
+

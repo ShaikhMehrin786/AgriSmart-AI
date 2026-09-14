@@ -1,9 +1,8 @@
 
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../config/database');
 const { answerFarmerQuery, resolveConfidenceMeta, resolveDiagnosticState } = require('../services/genAiService');
 const { getDiseaseKnowledge } = require('../data/diseaseKnowledgeBase');
 const { getWeatherData } = require('../services/weatherService');
-const prisma = new PrismaClient();
 
 const chat = async (req, res) => {
   try {

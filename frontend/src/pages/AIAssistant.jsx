@@ -106,7 +106,7 @@ const AIAssistant = () => {
             <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8 }}>
               AgriSmart AI Decision-Support Agronomist
               <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 10, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                Gemini 1.5 Flash
+                Gemini Flash (gemini-flash-latest)
               </span>
             </div>
             <div style={{ fontSize: '0.72rem', color: '#16a34a' }}>● Online · Grounded in Folio Scan & Weather Telemetry</div>

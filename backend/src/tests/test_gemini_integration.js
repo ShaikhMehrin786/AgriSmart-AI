@@ -226,11 +226,72 @@ async function runGeminiIntegrationTests() {
   assert.ok(rainHiResult.reply.includes('बारिश') && (rainHiResult.reply.includes('न करें') || rainHiResult.reply.includes('धुल जाएगी')), 'High rain in Hindi forbids foliar spray');
   recordPass('High precipitation (60%) in Hindi strictly warns against spray');
 
-  // --- Test 10: API Key Security Assertion ---
-  console.log('\n10. Verifying API Key Security:');
+  // --- Test 10: Case A - General Question: "What is crop rotation?" ---
+  console.log('\n10. Case A: General Question ("What is crop rotation?"):');
+  const caseAResult = await answerFarmerQuery({
+    question: 'What is crop rotation?',
+    diagnosisContext: potatoEbDiagnosis, // Background context present
+    weatherContext: mildWeather,
+    language: 'en'
+  });
+  const caseALower = caseAResult.reply.toLowerCase();
+  assert.ok(caseALower.includes('crop rotation') || caseALower.includes('sequence') || caseALower.includes('soil'), 'Case A must explain crop rotation');
+  assert.ok(!caseALower.includes('early blight'), 'Case A must NOT talk about Early Blight');
+  recordPass('Case A: General question explains crop rotation without forcing background scan advisory');
+
+  // --- Test 11: Case B - Explicit Scan Question: "Mere latest scan ke according kya karu?" ---
+  console.log('\n11. Case B: Explicit Scan Question ("Mere latest scan ke according kya karu?"):');
+  const caseBResult = await answerFarmerQuery({
+    question: 'Mere latest scan ke according kya karu?',
+    diagnosisContext: potatoEbDiagnosis,
+    weatherContext: mildWeather,
+    language: 'hinglish'
+  });
+  const caseBLower = caseBResult.reply.toLowerCase();
+  assert.ok(caseBLower.includes('early blight') || caseBLower.includes('potato') || caseBLower.includes('organic') || caseBLower.includes('prune'), 'Case B must address the latest scan diagnosis');
+  recordPass('Case B: Explicit question uses latest scan context to give tailored advice');
+
+  // --- Test 12: Case C - Specific Symptom Question: "Bhai potato ke leaves par brown spots hain, kya karu?" ---
+  console.log('\n12. Case C: Specific Symptom Question ("Bhai potato ke leaves par brown spots hain, kya karu?"):');
+  const caseCResult = await answerFarmerQuery({
+    question: 'Bhai potato ke leaves par brown spots hain, kya karu?',
+    diagnosisContext: peachDiagnosis, // Different background context
+    weatherContext: mildWeather,
+    language: 'hinglish'
+  });
+  const caseCLower = caseCResult.reply.toLowerCase();
+  assert.ok(caseCLower.includes('brown') || caseCLower.includes('spots') || caseCLower.includes('neem') || caseCLower.includes('prune'), 'Case C must answer brown spots symptom question');
+  assert.ok(!caseCLower.includes('peach leaf curl'), 'Case C must NOT hallucinate unrelated peach disease');
+  recordPass('Case C: Symptom question answers specific leaf spot inquiry accurately');
+
+  // --- Test 13: Case D - Spray Guardrail: "Can I spray fungicide today?" ---
+  console.log('\n13. Case D: Spraying Question ("Can I spray fungicide today?"):');
+  const caseDResultRain = await answerFarmerQuery({
+    question: 'Can I spray fungicide today?',
+    diagnosisContext: potatoEbDiagnosis,
+    weatherContext: highRainWeather, // 60% rain
+    language: 'en'
+  });
+  const caseDLowerRain = caseDResultRain.reply.toLowerCase();
+  assert.ok(caseDLowerRain.includes('rain') || caseDLowerRain.includes('wash') || caseDLowerRain.includes('not apply') || caseDLowerRain.includes('postpone'), 'Case D must warn against spray when rain >= 50%');
+  recordPass('Case D: Spraying query strictly enforces precipitation safety guardrails');
+
+  // --- Test 14: Case E - Fallback Direct Question Answering (Gemini Unavailable) ---
+  console.log('\n14. Case E: Deterministic Fallback on General Query ("What is crop rotation?"):');
+  const fallbackA = generateGroundedFallbackResponse('What is crop rotation?', potatoEbDiagnosis, mildWeather, 'en');
+  assert.ok(fallbackA.toLowerCase().includes('crop rotation') && fallbackA.toLowerCase().includes('nitrogen'), 'Fallback must explain crop rotation');
+  assert.ok(!fallbackA.toLowerCase().includes('early blight'), 'Fallback must NOT dump Early Blight advisory on crop rotation question');
+
+  const fallbackCompost = generateGroundedFallbackResponse('How to make vermicompost?', potatoEbDiagnosis, mildWeather, 'en');
+  assert.ok(fallbackCompost.toLowerCase().includes('vermicompost') || fallbackCompost.toLowerCase().includes('earthworm'), 'Fallback must explain vermicompost');
+  assert.ok(!fallbackCompost.toLowerCase().includes('early blight'), 'Fallback must NOT dump Early Blight on compost question');
+  recordPass('Case E: Deterministic fallback answers actual user questions instead of dumping last scan');
+
+  // --- Test 15: API Key Security Assertion ---
+  console.log('\n15. Verifying API Key Security:');
   const rawKey = process.env.GEMINI_API_KEY;
   if (rawKey) {
-    const jsonStr = JSON.stringify(enResult) + JSON.stringify(hiResult) + JSON.stringify(hinglishResult);
+    const jsonStr = JSON.stringify(enResult) + JSON.stringify(hiResult) + JSON.stringify(hinglishResult) + JSON.stringify(caseAResult);
     assert.strictEqual(
       jsonStr.includes(rawKey),
       false,
