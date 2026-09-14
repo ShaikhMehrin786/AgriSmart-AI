@@ -58,7 +58,7 @@ Following a rigorous performance and deployment audit for SIH 2026, **the archit
 
 ### 3.1 Dataset Synergy Strategy
 AgriSmart AI avoids single-source training bias by combining:
-1. **PlantVillage (Base Feature Extraction):** Laboratory-curated color images covering core crop species across 28 audited canonical classes (17 diseases + 11 healthy). Provides dense morphological feature maps of leaf pathogens.
+1. **PlantVillage (Base Feature Extraction):** Laboratory-curated color images covering core crop species across 38 canonical classes across 14 major agricultural crops (including Corn, Tomato, Potato, Apple, Grape, Peach, Pepper, etc.). Provides dense morphological feature maps of foliar leaf pathogens.
 2. **PlantDoc (Field Domain Adaptation):** 2,598 in-situ field images containing leaves in natural farm settings with complex foliage and background clutter.
 3. **Targeted Field Augmentations (Albumentations):**
    - *Spatial:* Random Affine, Perspective Warping (simulating angled smartphone shots), Elastic Transform (leaf curvature), Random Cropping.
@@ -151,66 +151,49 @@ $$\text{Sustainability Score} = \sum_{i=1}^4 w_i \cdot S_i$$
 
 ## 6. Complete Data Models & Entity Relationships
 
-The system relies on an ACID-compliant relational SQL schema managed via **Prisma ORM**:
+The system relies on an ACID-compliant relational SQL schema managed via **Prisma ORM** for transactional telemetry, combined with in-memory agronomic knowledge caching:
 
 ```mermaid
 erDiagram
     User ||--o{ Prediction : creates
-    Crop ||--o{ Disease : classifies
-    Crop ||--o{ Prediction : subject_of
-    Disease ||--o{ Prediction : diagnoses
-    Disease ||--o{ Recommendation : prescribes
 
     User {
         string id PK
         string name
         string email UK
-        string passwordHash
-        string phone
+        string password
         string location
+        string phone
         datetime createdAt
-    }
-
-    Crop {
-        string id PK
-        string name UK
-        string scientificName
-        string description
-    }
-
-    Disease {
-        string id PK
-        string cropId FK
-        string name
-        string scientificName
-        string symptoms
-        string severity
-        string prevention
-        string treatmentOrganic
-        string treatmentChemical
+        datetime updatedAt
     }
 
     Prediction {
         string id PK
         string userId FK
-        string cropId FK
-        string diseaseId FK
-        string imageUrl
-        string heatmapUrl
+        string imagePath
+        string disease
         float confidence
+        string crop
         string severity
-        string modelVersion
+        string heatmapPath
         datetime createdAt
     }
 
-    Recommendation {
+    WeatherLog {
         string id PK
-        string diseaseId FK
-        string weatherCondition
-        string actionText
-        string priority
+        float latitude
+        float longitude
+        float temperature
+        float humidity
+        float rainProbability
+        float windSpeed
+        datetime recordedAt
     }
 ```
+
+> **Hybrid Architectural Pattern:**  
+> To guarantee microsecond-level response times and high availability during live mobile field use, curated ICAR/CIBRC disease monographs (`diseaseMonographs.js` and `diseaseKnowledgeBase.js`) are cached in memory as immutable knowledge structures. User accounts, scan logs, confidence history, and weather telemetry persist to **PostgreSQL via Prisma ORM**.
 
 ---
 

@@ -148,95 +148,49 @@ flowchart TD
 
 ### 3.3 Database Architecture (PostgreSQL 15+)
 
-The database is built on **PostgreSQL** to guarantee relational integrity, JSONB support for dynamic advisory configurations, and spatial query capability for regional telemetry.
+The database is built on **PostgreSQL** to guarantee relational integrity and fast telemetry logging.
 
 ```mermaid
 erDiagram
     USERS ||--o{ PREDICTIONS : creates
-    CROPS ||--o{ DISEASES : categorizes
-    CROPS ||--o{ PREDICTIONS : identifies
-    DISEASES ||--o{ PREDICTIONS : diagnoses
-    DISEASES ||--o{ RECOMMENDATIONS : provides
-    USERS ||--o{ IRRIGATION_LOGS : records
 
     USERS {
         uuid id PK
         varchar name
         varchar email UK
-        varchar password_hash
+        varchar password
+        varchar location
         varchar phone
-        varchar location_name
-        decimal latitude
-        decimal longitude
-        timestamp created_at
-    }
-
-    CROPS {
-        uuid id PK
-        varchar name UK
-        varchar scientific_name
-        text description
-        varchar water_requirement_level
-    }
-
-    DISEASES {
-        uuid id PK
-        uuid crop_id FK
-        varchar name
-        varchar scientific_name
-        text symptoms
-        varchar severity_default
-        text organic_treatment
-        text chemical_treatment
-        text preventive_measures
-        decimal optimal_temp_min
-        decimal optimal_temp_max
-        decimal optimal_humidity_min
+        timestamp createdAt
+        timestamp updatedAt
     }
 
     PREDICTIONS {
         uuid id PK
-        uuid user_id FK
-        uuid crop_id FK
-        uuid disease_id FK
-        varchar image_url
-        varchar heatmap_url
+        uuid userId FK
+        varchar imagePath
+        varchar disease
         float confidence
+        varchar crop
         varchar severity
-        varchar model_version
-        jsonb raw_probabilities
-        int farmer_feedback_rating
-        timestamp created_at
-    }
-
-    RECOMMENDATIONS {
-        uuid id PK
-        uuid disease_id FK
-        varchar trigger_condition
-        text action_text
-        varchar priority_level
+        varchar heatmapPath
+        timestamp createdAt
     }
 
     WEATHER_LOGS {
         uuid id PK
-        decimal latitude
-        decimal longitude
+        float latitude
+        float longitude
         float temperature
         float humidity
-        float rain_probability
-        float wind_speed
-        timestamp recorded_at
-    }
-
-    IRRIGATION_LOGS {
-        uuid id PK
-        uuid user_id FK
-        float soil_moisture_percent
-        varchar recommendation_action
-        text reason
-        timestamp created_at
+        float rainProbability
+        float windSpeed
+        timestamp recordedAt
     }
 ```
+
+> **Hybrid Architectural Pattern:**  
+> To guarantee sub-millisecond retrieval and zero latency during live mobile field use, curated ICAR/CIBRC disease monographs (`diseaseMonographs.js` and `diseaseKnowledgeBase.js`) are cached in memory as immutable knowledge structures. User accounts, scan logs, confidence history, and weather telemetry persist to **PostgreSQL via Prisma ORM**.
 
 #### Key PostgreSQL Performance Indexes:
 - `CREATE INDEX idx_predictions_user_created ON predictions(user_id, created_at DESC);` (Fast retrieval of farmer scan history).

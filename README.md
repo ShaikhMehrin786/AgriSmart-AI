@@ -50,7 +50,7 @@ AgriSmart AI bridges the lab-to-field gap through:
 ### 🎯 Mandatory Core SIH Deliverables
 | Feature | Description | Status |
 |---|---|:---:|
-| 🍃 **Crop & Disease Detection** | Upload foliar leaf images to diagnose **28 canonical crop-disease conditions** (17 diseases + 11 healthy) using EfficientNet-B0 ONNX Runtime in-process inference. | ✅ Production |
+| 🍃 **Crop & Disease Detection** | Upload foliar leaf images to diagnose **38 canonical crop-disease conditions across 14 crops** (Corn, Tomato, Potato, Apple, Grape, Peach, Pepper, Cherry, Strawberry, etc.) using in-process ONNX Runtime inference with trained weights. | ✅ Production |
 | 🛡️ **Confidence-Aware Abstention** | Stratified confidence tiers: **HIGH** ($\ge 70\%$), **MODERATE** ($45\%-69.99\%$), and **LOW** ($< 45\%$). Low-confidence scans trigger capture guidance without claiming false certainty. | ✅ Production |
 | 🔍 **Explainable AI (Grad-CAM)** | Visual attention heatmap overlays highlight infection loci on leaf uploads, fostering farmer transparency. | ✅ Production |
 | 📋 **Actionable Diagnostic Advisory** | Verified immediate scouting steps, organic remedies, and chemical controls tailored to verified disease monographs. *(Note: Disease management advice is distinct from crop planting recommendation).* | ✅ Production |
@@ -286,9 +286,13 @@ model WeatherLog {
 ### 🌤️ Advisory & Intelligence (`/api/advisory`)
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `GET` | `/api/advisory/weather` | Protected | Fetch current conditions, forecast, and pathogen proliferation risk. |
-| `POST` | `/api/advisory/irrigation` | Protected | Calculate precision irrigation requirement from crop, soil, and weather. |
-| `GET` | `/api/advisory/sustainability-score`| Protected | Fetch personalized farm sustainability metric breakdown (0–100). |
+| `GET` | `/api/advisory/weather` | Protected | Fetch current conditions, 5-day forecast, and pathogen proliferation risk. |
+| `POST` | `/api/advisory/irrigation` | Protected | Calculate precision irrigation requirement (Liters) from crop, soil, and weather. |
+| `GET` | `/api/advisory/sustainability-score`| Protected | Fetch personalized farm sustainability metric breakdown (0–100, Grade A–F). |
+| `POST` | `/api/advisory/sustainability-score`| Protected | Calculate deterministic sustainability score with custom farm telemetry. |
+| `POST` | `/api/advisory/recommendations` | Protected | Generate explainable agronomic guidance grounded in diagnosis and local weather. |
+| `GET` | `/api/advisory/diseases` | Protected | Fetch comprehensive catalog of supported crop diseases. |
+| `GET` | `/api/advisory/diseases/:diseaseName` | Protected | Retrieve verified ICAR/CIBRC disease monograph by name. |
 
 ### 🤖 Grounded GenAI Assistant (`/api/assistant`)
 | Method | Endpoint | Access | Description |
@@ -325,6 +329,7 @@ AgriSmart-AI/
 │   │   │   └── uploadMiddleware.js # Multer leaf image validator
 │   │   ├── models/                 # Model weights & label definitions
 │   │   │   ├── agrismart_efficientnet_b0.onnx
+│   │   │   ├── class_labels.json
 │   │   │   └── class_labels_public.json
 │   │   ├── routes/                 # Express route definitions
 │   │   │   ├── advisoryRoutes.js
@@ -445,7 +450,7 @@ JWT_SECRET="your_super_secret_jwt_key_here"
 OPENWEATHER_API_KEY="your_openweather_api_key"
 GEMINI_API_KEY="your_gemini_api_key"
 ONNX_MODEL_PATH="./src/models/agrismart_efficientnet_b0.onnx"
-CLASS_LABELS_PATH="./src/models/class_labels_public.json"
+CLASS_LABELS_PATH="./src/models/class_labels.json"
 ```
 
 Push database schema to PostgreSQL:

@@ -375,12 +375,13 @@ function evaluateContextRelevance({
     activeTopicType = 'non_agri';
   }
 
-  // Scan reference evaluation (DATA EXISTENCE != DATA RELEVANCE)
-  const isExplicitScan = /\b(scan|scans|scanned|detection|detected|diagnos(?:is|ed|tic)|report|result|image\s+i\s+uploaded|photo\s+i\s+uploaded|uploaded\s+(?:image|photo|picture|scan)|last\s+result|recent\s+result|nidan|meri\s+report|mera\s+scan|last\s+scan|recent\s+scan|latest\s+scan|previous\s+scan)\b/i.test(q);
+  // Scan & Treatment reference evaluation (DATA EXISTENCE != DATA RELEVANCE)
+  const isSprayOrTreatment = /\b(spray(?:ing)?|sprayed|fungicide|pesticide|insecticide|chhidkav|chhidkaav|treatment|dawa|ilaj)\b/i.test(q);
+  const isExplicitScan = isSprayOrTreatment || /\b(scan|scans|scanned|detection|detected|diagnos(?:is|ed|tic)|report|result|image\s+i\s+uploaded|photo\s+i\s+uploaded|uploaded\s+(?:image|photo|picture|scan)|last\s+result|recent\s+result|nidan|meri\s+report|mera\s+scan|last\s+scan|recent\s+scan|latest\s+scan|previous\s+scan)\b/i.test(q);
   const scanRelevant = Boolean(diagnosisContext && isExplicitScan && queryTurn.type !== 'non_agri');
 
-  // Weather relevance (only relevant if explicitly asking weather/rain or active weather topic)
-  const isExplicitWeather = queryTurn.type === 'weather' || /\b(weather|forecast|rain(?:s|ing|fall)?|shower(?:s)?|barish|barsat|temperature|temp|humidity|spray.*weather|mausam|kal\s+ka\s+mausam)\b/i.test(q);
+  // Weather relevance (only relevant if explicitly asking weather/rain, spray suitability, or active weather topic)
+  const isExplicitWeather = queryTurn.type === 'weather' || isSprayOrTreatment || /\b(weather|forecast|rain(?:s|ing|fall)?|shower(?:s)?|barish|barsat|temperature|temp|humidity|mausam|kal\s+ka\s+mausam)\b/i.test(q);
   const weatherRelevant = Boolean(weatherContext && isExplicitWeather && queryTurn.type !== 'non_agri');
 
   // Irrigation relevance
@@ -848,7 +849,7 @@ function generateContextualFallback({ question = '', history = [], relevance = n
   }
 
   // 8. Weather Queries & Rain Follow-ups (Standalone or with active crop)
-  const isWeatherAction = rel.activeTopicType === 'weather' || rel.queryTurn?.type === 'weather' || /\b(weather|forecast|rain(?:s|ing|fall)?|shower(?:s)?|barish|barsat|temperature|temp|humidity|spray.*weather|mausam|kal\s+ka\s+mausam)\b/i.test(q) || (rel.isLanguageSwitch && rel.activeTopic.includes('Weather'));
+  const isWeatherAction = rel.activeTopicType === 'weather' || rel.queryTurn?.type === 'weather' || rel.weather.relevant || /\b(weather|forecast|rain(?:s|ing|fall)?|shower(?:s)?|barish|barsat|temperature|temp|humidity|spray|spraying|fungicide|mausam|kal\s+ka\s+mausam)\b/i.test(q) || (rel.isLanguageSwitch && rel.activeTopic.includes('Weather'));
   if (isWeatherAction) {
     const crop = rel.activeCrop?.name;
     const temp = weatherContext?.temperature ?? 26;
