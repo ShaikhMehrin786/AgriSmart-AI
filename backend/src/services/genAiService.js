@@ -2,6 +2,8 @@
 // Grounded RAG Decision-Support for Farmers with Strict Agronomic & Weather Guardrails
 const axios = require('axios');
 const { getDiseaseKnowledge, SAFETY_DISCLAIMER } = require('../data/diseaseKnowledgeBase');
+const { getDiseaseMonograph } = require('./diseaseService');
+const { calculateSustainabilityScore } = require('./sustainabilityService');
 
 const GEMINI_API_TIMEOUT_MS = 15000;
 
@@ -244,88 +246,143 @@ function resolveLanguage(question, language) {
  *
  * @param {Object} params
  * @param {string} params.question - The natural language question from the farmer
- * @param {Object|null} params.diagnosisContext - Latest foliar diagnosis and knowledge base details
- * @param {Object|null} params.weatherContext - Real-time atmospheric conditions (temp, humidity, rain%)
- * @param {string} params.language - Requested/detected language ('en', 'hi', 'hinglish')
- * @returns {Promise<{ reply: string, source: 'gemini'|'fallback', contextual: boolean }>}
+ * @param {Object|null} [params.diagnosisContext] - Latest foliar diagnosis and knowledge base details
+ * @param {Object|null} [params.weatherContext] - Real-time atmospheric conditions (temp, humidity, rain%)
+ * @param {Object|null} [params.irrigationContext] - Action, urgency, waterRequired, etc.
+ * @param {Object|null} [params.sustainabilityContext] - Score, grade, level
+ * @param {Array} [params.recommendations] - Recommendations array
+ * @param {string} [params.language] - Requested/detected language ('en', 'hi', 'hinglish')
+ * @returns {Promise<Object>} Grounded agronomic response with structured guidance
  */
-async function answerFarmerQuery({ question, diagnosisContext = null, weatherContext = null, language = 'en' }) {
+async function answerFarmerQuery({
+  question,
+  diagnosisContext = null,
+  weatherContext = null,
+  irrigationContext = null,
+  sustainabilityContext = null,
+  recommendations = [],
+  language = 'en'
+}) {
+  if (!question || typeof question !== 'string' || !question.trim()) {
+    throw new Error('Valid question string is required');
+  }
+
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const geminiModel = process.env.GEMINI_MODEL || 'gemini-flash-latest';
-  const hasValidKey = Boolean(
+  const isKeyConfigured = Boolean(
     geminiApiKey &&
     geminiApiKey !== 'your_gemini_api_key_here' &&
     geminiApiKey !== 'your_gemini_api_key' &&
-    geminiApiKey.length > 10
+    geminiApiKey.trim().length > 10
   );
 
+  const crop = diagnosisContext?.crop || 'Tomato';
+  const disease = diagnosisContext?.disease || null;
+  const confMeta = resolveConfidenceMeta(diagnosisContext?.confidence);
+  const confidence = confMeta.percent !== null ? `${confMeta.percent}%` : 'High (Visual Diagnostic)';
+  const severity = diagnosisContext?.severity || 'Moderate';
+  const growthStage = diagnosisContext?.stage || 'Vegetative';
+
+  // 1. Retrieve verified monograph
+  const monograph = disease ? getDiseaseMonograph(disease, crop) : null;
+
+  // 2. Telemetry parameters
+  const temp = weatherContext?.temperature ?? 25;
+  const humidity = weatherContext?.humidity ?? 65;
+  const rainProb = weatherContext?.rainProbability ?? 20;
+  const condition = weatherContext?.condition || 'Clear';
+  const soilMoisture = diagnosisContext?.soilMoisture ?? null;
+
+  // 3. Deterministic Irrigation source of truth
+  const irrigationAction = irrigationContext?.action || (rainProb >= 60 ? 'Delay Irrigation' : 'Maintain Regular Schedule');
+  const waterRequired = irrigationContext?.waterRequired || 'Standard crop demand';
+
+  // 4. Deterministic Sustainability
+  const sustainability = sustainabilityContext || calculateSustainabilityScore({
+    crop,
+    soilMoisture,
+    weather: weatherContext,
+    irrigation: irrigationContext,
+    disease
+  });
+
+  const targetLang = resolveLanguage(question, language);
   const isContextual = Boolean(diagnosisContext || weatherContext);
 
-  // If API key is missing or placeholder, immediately route to deterministic grounded fallback
-  if (!hasValidKey) {
-    const fallbackReply = generateGroundedFallbackResponse(question, diagnosisContext, weatherContext, language);
-    return {
-      reply: fallbackReply,
-      source: 'fallback',
-      contextual: isContextual
-    };
-  }
+  // Construct grounded system prompt with hard guardrails and multilingual rules
+  const baseSystemPrompt = buildSystemPromptEnvelope(diagnosisContext, weatherContext, targetLang, question);
+  const irrigationRule = `\n[DETERMINISTIC IRRIGATION DIRECTIVE (ABSOLUTE - DO NOT OVERRIDE)]: "${irrigationAction}" (${waterRequired}). You must adhere to this decision 100%.`;
+  const sprayRule = rainProb >= 50
+    ? `\n[MANDATORY SPRAY WARNING (RAIN FORECAST)]: Rain probability is ${rainProb}%. Explicitly warn the farmer to NOT spray foliar fungicides or fertilizers today as rain will wash them away.`
+    : '';
+  const fullSystemPrompt = `${baseSystemPrompt}\n${irrigationRule}${sprayRule}`;
 
-  // Assemble Grounded System Prompt
-  const systemPrompt = buildSystemPromptEnvelope(diagnosisContext, weatherContext, language, question);
+  let llmAnswer = null;
 
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
-    const payload = {
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: `${systemPrompt}\n\n[FARMER QUESTION]: "${question}"` }
-          ]
+  if (isKeyConfigured) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
+      const payload = {
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: `${fullSystemPrompt}\n\n[FARMER QUESTION]: "${question}"` }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.2, // Low temperature for factual precision
+          maxOutputTokens: 800
         }
-      ],
-      generationConfig: {
-        temperature: 0.2, // Low temperature for factual agricultural precision
-        maxOutputTokens: 800,
-      }
-    };
-
-    const response = await axios.post(url, payload, {
-      timeout: GEMINI_API_TIMEOUT_MS,
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-    // Check for safety finish reasons or empty candidates
-    const candidate = response.data?.candidates?.[0];
-    const textPart = candidate?.content?.parts?.[0]?.text;
-
-    if (!textPart || typeof textPart !== 'string' || textPart.trim().length === 0) {
-      console.warn('Gemini returned empty candidate or blocked response; using grounded fallback.');
-      const fallbackReply = generateGroundedFallbackResponse(question, diagnosisContext, weatherContext, language);
-      return {
-        reply: fallbackReply,
-        source: 'fallback',
-        contextual: isContextual
       };
+
+      const response = await axios.post(url, payload, {
+        timeout: GEMINI_API_TIMEOUT_MS,
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const candidate = response.data?.candidates?.[0];
+      const textPart = candidate?.content?.parts?.[0]?.text;
+      if (textPart && typeof textPart === 'string' && textPart.trim().length > 0) {
+        llmAnswer = textPart.trim();
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.error?.message || err.message;
+      console.warn(`Gemini API call returned status ${err.response?.status || 'network'}: ${errMsg}; activating grounded fallback.`);
     }
-
-    return {
-      reply: textPart.trim(),
-      source: 'gemini',
-      contextual: isContextual
-    };
-  } catch (error) {
-    const errMsg = error.response?.data?.error?.message || error.message;
-    console.warn(`Gemini API call returned status ${error.response?.status || 'network'}: ${errMsg}; activating grounded fallback.`);
-
-    const fallbackReply = generateGroundedFallbackResponse(question, diagnosisContext, weatherContext, language);
-    return {
-      reply: fallbackReply,
-      source: 'fallback',
-      contextual: isContextual
-    };
   }
+
+  // Fallback text generator if LLM was unavailable
+  let replyText = llmAnswer;
+  if (!replyText) {
+    replyText = generateGroundedFallbackResponse(question, diagnosisContext, weatherContext, targetLang);
+  }
+
+  // Package structured response
+  const structured = buildStructuredAgronomicResponse({
+    question,
+    llmAnswer: replyText,
+    crop,
+    disease,
+    confidence,
+    severity,
+    monograph,
+    weather: { temp, humidity, rainProb, condition },
+    irrigationAction,
+    waterRequired,
+    sustainability,
+    isKeyConfigured: isKeyConfigured && !!llmAnswer,
+    geminiModel
+  });
+
+  return {
+    ...structured,
+    reply: replyText,
+    answer: replyText,
+    source: isKeyConfigured && !!llmAnswer ? 'gemini' : 'fallback',
+    contextual: isContextual
+  };
 }
 
 /**
@@ -818,9 +875,160 @@ function isConfigured() {
   return Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0);
 }
 
+/**
+ * Deterministic structured builder ensuring consistency between LLM and offline fallback
+ */
+function buildStructuredAgronomicResponse({
+  question,
+  llmAnswer,
+  crop,
+  disease,
+  confidence,
+  severity,
+  monograph,
+  weather,
+  irrigationAction,
+  waterRequired,
+  sustainability,
+  isKeyConfigured,
+  geminiModel = 'gemini-flash-latest'
+}) {
+  const isRainImminent = weather.rainProb >= 50;
+  const isHealthy = !disease || disease.toLowerCase().includes('healthy');
+
+  // Immediate Actions
+  const immediateActions = [];
+  if (!isHealthy) {
+    if (monograph?.immediateActions) {
+      immediateActions.push(monograph.immediateActions);
+    }
+    immediateActions.push(`Inspect lower canopy of ${crop} daily for spot expansion.`);
+  } else {
+    immediateActions.push('Continue weekly scouting. Maintain current soil moisture management.');
+  }
+
+  // Warnings
+  const warnings = [];
+  if (isRainImminent) {
+    warnings.push(`Rain forecast (${weather.rainProb}%): Do NOT spray foliar fungicides today. Rainfall will wash away chemical applications.`);
+  }
+  if (weather.humidity >= 85 && !isHealthy) {
+    warnings.push(`High humidity (${weather.humidity}%): Spores germinate rapidly on wet leaves. Avoid overhead watering.`);
+  }
+
+  // Irrigation Advice
+  const irrigationAdvice = irrigationAction === 'Delay Irrigation'
+    ? `Postpone irrigation. Rain forecast (${weather.rainProb}%) will provide natural soil moisture.`
+    : irrigationAction === 'Irrigate Urgently'
+    ? `Apply precision irrigation (${waterRequired}) immediately to prevent root stress.`
+    : `Follow regular irrigation schedule (${waterRequired}).`;
+
+  // Disease Management
+  const diseaseManagement = isHealthy
+    ? 'Crop is healthy. Preventative biological tonics (e.g. Panchagavya 3% or vermiwash) recommended every 15 days.'
+    : {
+        organicRemedy: monograph?.organicRemedy || 'Neem oil spray 0.5% with bio-soap emulsifier.',
+        chemicalControl: isRainImminent
+          ? 'HOLD SPRAY — Postpone chemical spraying until after rain passes.'
+          : (monograph?.chemicalControl || 'Mancozeb 75% WP @ 2g/L (apply on dry morning).'),
+        prevention: monograph?.prevention || 'Maintain 60cm spacing and 3-year non-solanaceous rotation.'
+      };
+
+  // Fallback text generator if LLM was unavailable
+  let replyText = llmAnswer;
+  if (!replyText) {
+    replyText = generateDeterministicGroundedReply({
+      question,
+      crop,
+      disease,
+      isHealthy,
+      monograph,
+      weather,
+      irrigationAction,
+      irrigationAdvice,
+      warnings,
+      isRainImminent
+    });
+  }
+
+  return {
+    reply: replyText,
+    answer: replyText,
+    summary: `${crop} advisory: ${irrigationAction}. ${warnings[0] || 'Conditions stable.'}`,
+    groundedContext: {
+      crop,
+      disease: disease || 'Healthy / No Disease',
+      diagnosticConfidence: confidence,
+      severity,
+      temperature: `${weather.temp}°C`,
+      humidity: `${weather.humidity}%`,
+      rainProbability: `${weather.rainProb}%`,
+      irrigationDecision: irrigationAction,
+      sustainabilityScore: sustainability.score,
+      sourceOfTruth: 'AgriSmart Deterministic Agronomy & ICAR Monograph'
+    },
+    immediateActions,
+    irrigationAdvice,
+    diseaseManagement,
+    prevention: monograph?.recommendedActions || ['Maintain clean field ridges', 'Monitor soil moisture'],
+    sustainabilityAdvice: sustainability.improvementSuggestions || ['Use drip irrigation to deliver water directly to roots.'],
+    warnings,
+    isGrounded: true,
+    engine: isKeyConfigured ? `Gemini (${geminiModel}) (Grounded)` : 'Deterministic Agronomic Rule Engine (Offline Grounded)'
+  };
+}
+
+/**
+ * Deterministic fallback reply when Gemini API is unconfigured or offline
+ */
+function generateDeterministicGroundedReply({
+  question,
+  crop,
+  disease,
+  isHealthy,
+  monograph,
+  weather,
+  irrigationAction,
+  irrigationAdvice,
+  warnings,
+  isRainImminent
+}) {
+  const qLower = question.toLowerCase();
+  const isHindi = qLower.includes('kya') || qLower.includes('dawai') || qLower.includes('pani') || qLower.includes('kaise') || qLower.includes('kare') || qLower.includes('kripya');
+
+  if (isHindi) {
+    if (qLower.includes('spray') || qLower.includes('dawai')) {
+      if (isRainImminent) {
+        return `⚠️ **स्प्रे सलाह (${crop}):** आपके क्षेत्र में बारिश की संभावना (${weather.rainProb}%) है। आज कोई भी कीटनाशक या फफूंदनाशक स्प्रे **न करें**, क्योंकि बारिश में दवा धुल जाएगी।\n\n• **जैविक उपाय:** बारिश के बाद सुबह ${monograph?.organicRemedy || 'नीम का तेल (5ml/L)'} का छिड़काव करें।\n• **तत्काल कार्य:** रोगग्रस्त निचली पत्तियों को तोड़कर खेत से दूर दबा दें।`;
+      }
+      return `✅ **स्प्रे सलाह (${crop}):** मौसम अनुकूल है (${weather.rainProb}% बारिश)।\n• **जैविक उपाय:** ${monograph?.organicRemedy || 'नीम तेल 5ml/लीटर'}\n• **रासायनिक उपाय:** ${monograph?.chemicalControl || 'मैनकोज़ेब 75% WP @ 2g/L'}\n• सुबह या शाम के समय छिड़काव करें।`;
+    }
+    if (qLower.includes('pani') || qLower.includes('irrigation')) {
+      return `💧 **सिंचाई सलाह (${crop}):** ${irrigationAdvice}\n• निर्णय: **${irrigationAction}**\n• आर्द्रता: ${weather.humidity}%, तापमान: ${weather.temp}°C।`;
+    }
+    return `🌿 **एग्रीस्मार्ट फसल सलाह (${crop} - ${disease || 'स्वस्थ'}):**\n• **स्थिति:** ${disease || 'फसल स्वस्थ है'}\n• **सिंचाई निर्णय:** ${irrigationAction}\n• **मुख्य उपाय:** ${monograph?.organicRemedy || 'नियमित निगरानी जारी रखें'}\n• ${warnings[0] || 'मौसम अनुकूल है।'}`;
+  }
+
+  // English fallback
+  if (qLower.includes('spray') || qLower.includes('fungicide') || qLower.includes('chemical') || qLower.includes('medicine')) {
+    if (isRainImminent) {
+      return `⚠️ **Spraying Advisory for ${crop} (${disease || 'Foliar Health'}):**\nRain is forecasted in your area (${weather.rainProb}% probability). Do **NOT** apply any foliar sprays today—precipitation will wash away the active ingredients into runoff.\n\n• **Organic Alternative (Post-Rain):** ${monograph?.organicRemedy || 'Neem oil spray (5ml/L) or Trichoderma viride'}\n• **Immediate Action:** Prune and deeply bury heavily spotted foliage to curb secondary spore transmission.`;
+    }
+    return `✅ **Spraying Guidance for ${crop} (${disease || 'Foliar Health'}):**\nCurrent weather is favorable (${weather.rainProb}% rain probability, ${weather.temp}°C):\n• **Biological / Organic Remedy:** ${monograph?.organicRemedy || 'Neem oil 0.5% or Trichoderma viride @ 5g/L'}\n• **Targeted Chemical Control:** ${monograph?.chemicalControl || 'Mancozeb 75% WP @ 2g/L'}\n• Apply during early morning or late afternoon for optimal foliar absorption.`;
+  }
+
+  if (qLower.includes('water') || qLower.includes('irrigate') || qLower.includes('irrigation')) {
+    return `💧 **Smart Irrigation Guidance for ${crop}:**\n• **Prescribed Action:** ${irrigationAction}\n• **Reasoning:** ${irrigationAdvice}\n• **Weather Context:** ${weather.temp}°C, ${weather.humidity}% humidity, ${weather.rainProb}% rain probability.`;
+  }
+
+  return `🌿 **AgriSmart Grounded Agronomist Advisory for ${crop}:**\n• **Diagnosis:** ${disease || 'Healthy Canopy'}\n• **Irrigation Directive:** ${irrigationAction}\n• **Recommended Organic Protocol:** ${monograph?.organicRemedy || 'Apply bio-stimulants and maintain balanced soil moisture'}\n• **Weather Notice:** ${warnings[0] || `Favorable weather conditions (${weather.temp}°C, ${weather.humidity}% humidity).`}\n• **Preventative Practice:** ${monograph?.prevention || 'Ensure proper plant spacing and crop rotation.'}`;
+}
+
 module.exports = {
   answerFarmerQuery,
+  buildStructuredAgronomicResponse,
   generateGroundedFallbackResponse,
+  generateDeterministicGroundedReply,
   buildSystemPromptEnvelope,
   resolveConfidenceMeta,
   resolveDiagnosticState,

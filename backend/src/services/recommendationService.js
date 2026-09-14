@@ -3,6 +3,8 @@
 const { getWeatherData, calculatePathogenRisk } = require('./weatherService');
 const { evaluateIrrigation } = require('./irrigationService');
 const { getDiseaseKnowledge, SAFETY_DISCLAIMER } = require('../data/diseaseKnowledgeBase');
+const { getDiseaseMonograph } = require('./diseaseService');
+const { calculateSustainabilityScore } = require('./sustainabilityService');
 
 /**
  * Generate integrated agronomic recommendations combining:
@@ -47,11 +49,12 @@ async function generateRecommendations(input = {}) {
     irrigation = evaluateIrrigation(crop, numericMoisture, weather, { stage, soilType, area });
   }
 
-  // 3. Pathogen Proliferation Risk (Reuse existing weatherService)
+  // 3. Pathogen Proliferation Risk & Disease Monograph (Reuse existing weatherService & diseaseService)
   const isHealthy = !disease || disease.toLowerCase().includes('healthy');
   const pathogenRisk = disease
     ? calculatePathogenRisk(disease, weather)
     : calculatePathogenRisk('General Pathogen', weather);
+  const monograph = disease ? getDiseaseMonograph(disease, crop) : null;
 
   const recommendations = [];
 
@@ -175,6 +178,17 @@ async function generateRecommendations(input = {}) {
 
   const diseaseKnowledge = disease ? getDiseaseKnowledge(disease) : null;
 
+  // -------------------------------------------------------------
+  // RULE SET 5: DETERMINISTIC SUSTAINABILITY INDEX EVALUATION
+  // -------------------------------------------------------------
+  const sustainability = calculateSustainabilityScore({
+    crop,
+    soilMoisture: numericMoisture,
+    weather,
+    irrigation,
+    disease
+  });
+
   return {
     riskLevel,
     crop,
@@ -214,7 +228,19 @@ async function generateRecommendations(input = {}) {
       waterVolumeTotal: irrigation.waterVolumeTotal,
       nextIrrigation: irrigation.nextIrrigation
     } : null,
-    recommendations
+    recommendations,
+    sustainability,
+    diseaseMonograph: monograph ? {
+      diseaseName: monograph.diseaseName,
+      scientificName: monograph.scientificName,
+      symptoms: monograph.symptoms,
+      causes: monograph.causes,
+      organicRemedy: monograph.organicRemedy,
+      chemicalControl: monograph.chemicalControl,
+      prevention: monograph.prevention,
+      immediateActions: monograph.immediateActions,
+      conduciveWeather: monograph.environmentalConditions?.conduciveWeather
+    } : null
   };
 }
 

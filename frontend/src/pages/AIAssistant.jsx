@@ -54,6 +54,7 @@ const AIAssistant = () => {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: reply,
+        data: data,
         source: data.source || 'gemini',
         contextual: Boolean(data.contextual),
         diagnosisContext: data.diagnosisContext,
@@ -104,12 +105,12 @@ const AIAssistant = () => {
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-              AgriSmart AI Decision-Support Agronomist
+              AgriSmart AI Grounded Agronomist
               <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 10, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
                 Gemini Flash (gemini-flash-latest)
               </span>
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#16a34a' }}>● Online · Grounded in Folio Scan & Weather Telemetry</div>
+            <div style={{ fontSize: '0.72rem', color: '#16a34a' }}>● Online · Grounded in Telemetry, Diagnosis & Monographs</div>
           </div>
         </div>
         <button className="btn-secondary" onClick={clearChat} style={{ fontSize: '0.8rem' }}>
@@ -158,6 +159,26 @@ const AIAssistant = () => {
                   wordBreak: 'break-word',
                 }}>
                   {msg.content}
+
+                  {/* Grounded Context Badge */}
+                  {msg.data?.groundedContext && (
+                    <div style={{
+                      marginTop: 8,
+                      padding: '6px 10px',
+                      background: 'rgba(34, 197, 94, 0.08)',
+                      border: '1px solid rgba(34, 197, 94, 0.2)',
+                      borderRadius: 6,
+                      fontSize: '0.72rem',
+                      color: 'var(--text-muted)'
+                    }}>
+                      <div style={{ fontWeight: 700, color: '#16a34a', marginBottom: 2 }}>
+                        🌱 Grounded Agronomic Telemetry
+                      </div>
+                      <div>
+                        Crop: <strong>{msg.data.groundedContext.crop}</strong> · Weather: {msg.data.groundedContext.temperature}, {msg.data.groundedContext.humidity} · Irrigation: <strong>{msg.data.groundedContext.irrigationDecision}</strong>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Metadata tags */}

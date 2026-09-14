@@ -103,10 +103,11 @@ const Sustainability = () => {
               </div>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 6 }}>{data.level}</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', lineHeight: 1.65 }}>
-                Your farm is performing{' '}
-                <strong style={{ color: gradeColor }}>{data.score >= 75 ? 'above average' : data.score >= 50 ? 'at average' : 'below average'}</strong>{' '}
-                in sustainability. Focus on the lowest-scoring factors below to improve your rating.
+                {data.explanation || `Your farm is performing ${data.score >= 75 ? 'above average' : data.score >= 50 ? 'at average' : 'below average'} in sustainability.`}
               </p>
+              <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.74rem', background: 'var(--bg-subtle)', padding: '4px 10px', borderRadius: 6, color: 'var(--text-muted)' }}>
+                <span>🌱 Deterministically calculated from water, soil & weather telemetry</span>
+              </div>
             </div>
           </div>
 
@@ -139,20 +140,23 @@ const Sustainability = () => {
             </div>
           )}
 
-          {/* Tips */}
+          {/* Tips / Improvement Suggestions */}
           <div className="card" style={{ borderLeft: '4px solid #16a34a' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <Leaf size={18} color="#16a34a" />
-              <h3 style={{ fontWeight: 700, fontSize: '0.95rem' }}>How to Improve</h3>
+              <h3 style={{ fontWeight: 700, fontSize: '0.95rem' }}>Actionable Ecological Improvements</h3>
             </div>
-            <ul style={{ paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[
-                'Reduce chemical pesticide use — switch to IPM (Integrated Pest Management).',
-                'Optimise irrigation scheduling using the Smart Irrigation planner.',
-                'Increase crop rotation frequency to improve soil health.',
-                'Add organic matter (compost) to reduce synthetic fertiliser dependence.',
-              ].map((tip, i) => (
-                <li key={i} style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>{tip}</li>
+            <ul style={{ paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(data.improvementSuggestions && data.improvementSuggestions.length > 0
+                ? data.improvementSuggestions
+                : [
+                    'Reduce chemical pesticide use — switch to IPM (Integrated Pest Management).',
+                    'Optimise irrigation scheduling using the Smart Irrigation planner.',
+                    'Increase crop rotation frequency to improve soil health.',
+                    'Add organic matter (compost) to reduce synthetic fertiliser dependence.'
+                  ]
+              ).map((tip, i) => (
+                <li key={i} style={{ fontSize: '0.875rem', color: 'var(--text-main)', lineHeight: 1.6 }}>{tip}</li>
               ))}
             </ul>
           </div>

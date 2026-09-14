@@ -72,4 +72,27 @@ export const fetchRecommendations = async (payload) => {
   return res.data;
 };
 
+// Fetch deterministic sustainability score
+export const fetchSustainabilityScore = async (payload = null) => {
+  if (payload) {
+    const res = await api.post('/advisory/sustainability-score', payload);
+    return res.data;
+  }
+  const res = await api.get('/advisory/sustainability-score');
+  return res.data;
+};
+
+// Fetch supported disease catalog
+export const fetchDiseases = async (params = {}) => {
+  const res = await api.get('/advisory/diseases', { params });
+  return res.data;
+};
+
+// Fetch specific disease monograph
+export const fetchDiseaseByName = async (diseaseName, crop = null) => {
+  const params = crop ? { crop } : {};
+  const res = await api.get(`/advisory/diseases/${encodeURIComponent(diseaseName)}`, { params });
+  return res.data;
+};
+
 export default api;
