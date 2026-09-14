@@ -22,7 +22,7 @@ const AIAssistant = () => {
       role: 'assistant',
       content: stateContext.disease
         ? `Hello! I see you recently diagnosed ${stateContext.crop || 'your crop'} with "${stateContext.disease}". How can I help you with treatment plans, spraying safety, or organic remedies today?`
-        : 'Hello! I am your AgriSmart AI agronomist, powered by Gemini AI and grounded in your real-time field scans and weather forecasts. Ask me anything in English, Hindi, or Hinglish.',
+        : 'Hello! I am your AgriSmart AI agronomist, powered by Gemini AI. Ask me anything about crops, soil, irrigation, disease management, weather, and sustainable farming in English, Hindi, or Hinglish.',
       source: 'gemini',
       contextual: Boolean(stateContext.disease),
       time: new Date(),
@@ -184,7 +184,7 @@ const AIAssistant = () => {
                       </div>
                       <div>
                         {msg.data.groundedContext.crop && <span>Crop: <strong>{msg.data.groundedContext.crop}</strong> · </span>}
-                        {msg.data.groundedContext.weather && <span>Weather: {msg.data.groundedContext.weather.temperature ?? msg.data.groundedContext.temperature}°C, {msg.data.groundedContext.weather.humidity ?? msg.data.groundedContext.humidity}% · </span>}
+                        {msg.data.groundedContext.weather && <span>Weather: {msg.data.groundedContext.weather.temperature ?? msg.data.groundedContext.temperature}°C, {msg.data.groundedContext.weather.rainProbability !== undefined ? `${msg.data.groundedContext.weather.rainProbability}%` : `${msg.data.groundedContext.weather.humidity}%`} · </span>}
                         {msg.data.groundedContext.irrigationDecision && <span>Irrigation: <strong>{msg.data.groundedContext.irrigationDecision}</strong></span>}
                       </div>
                     </div>

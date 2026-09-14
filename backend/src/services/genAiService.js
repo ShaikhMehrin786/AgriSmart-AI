@@ -1,6 +1,6 @@
 // Grounded GenAI Agronomist Service
 // Primary Conversational Intelligence: Gemini 3.6 Flash / Multi-turn
-// Deterministic Layer: AgriSmart Context Builder + Safety Guardrails
+// Deterministic Layer: AgriSmart Context Builder + Safety Guardrails + Telemetry Grounding
 const axios = require('axios');
 const { getDiseaseKnowledge, SAFETY_DISCLAIMER } = require('../data/diseaseKnowledgeBase');
 const { getDiseaseMonograph } = require('./diseaseService');
@@ -86,19 +86,30 @@ const AGRONOMIC_TRANSLATIONS = {
 
 /**
  * Detect language of query (en, hi, hinglish)
+ * Strictly enforces requested response language as a hard contract.
  */
 function detectLanguage(text = '') {
   const normalized = String(text).toLowerCase();
   
-  if (/[\u0900-\u097F]/.test(normalized)) {
+  // 1. Explicit target language request directives (Highest Priority)
+  if (/\b(in\s+hindi|hindi\s+me(?:in)?|translate\s+(?:it\s+|that\s+)?to\s+hindi|explain\s+(?:that\s+|this\s+|it\s+|the\s+same\s+)?in\s+hindi|hindi\s+mein\s+samjhao|hindi\s+bhasha|hindi\s+version|tell\s+me\s+in\s+hindi)\b/i.test(normalized) || /[\u0900-\u097F]/.test(normalized)) {
     return 'hi';
   }
   
+  if (/\b(in\s+hinglish|hinglish\s+me(?:in)?|translate\s+(?:it\s+|that\s+)?to\s+hinglish|explain\s+(?:that\s+|this\s+|it\s+|the\s+same\s+)?in\s+hinglish|hinglish\s+mein\s+samjhao|hinglish\s+version|tell\s+me\s+in\s+hinglish)\b/i.test(normalized)) {
+    return 'hinglish';
+  }
+
+  if (/\b(in\s+english|english\s+me(?:in)?|translate\s+(?:it\s+|that\s+)?to\s+english|explain\s+(?:that\s+|this\s+|it\s+|the\s+same\s+)?in\s+english|english\s+version|answer\s+in\s+english|tell\s+me\s+in\s+english)\b/i.test(normalized)) {
+    return 'en';
+  }
+  
+  // 2. Hinglish colloquial vocabulary matching
   const hinglishMarkers = [
     'kya', 'kaise', 'kare', 'karein', 'karegi', 'karna', 'karun', 'karu', 'hai', 'hain', 'mein', 'mera', 'meri', 'mere',
     'paani', 'pani', 'fasal', 'khet', 'patte', 'patti', 'bimari', 'ilaaj', 'dawa', 'dawaii', 'spray', 'khad',
     'chahiye', 'batao', 'bataiye', 'madad', 'rog', 'kisan', 'keede', 'mausam', 'barish', 'barsat', 'kal', 'aaj', 'parso',
-    'du', 'dein', 'sakte', 'sakta', 'nahi', 'mat', 'nidan', 'sinchai'
+    'du', 'dein', 'sakte', 'sakta', 'nahi', 'mat', 'nidan', 'sinchai', 'ab', 'ise', 'isse', 'kripya', 'samjhao', 'bhi', 'kuch'
   ];
   const words = normalized.split(/[^a-zA-Z0-9]+/);
   const matchCount = words.filter(w => hinglishMarkers.includes(w)).length;
@@ -110,6 +121,109 @@ function detectLanguage(text = '') {
 }
 
 /**
+ * Semantic Topic and Intent Extractor for a Single Turn
+ * Evaluates domain, topic, crop, and symptom cleanly without sticky pollution.
+ */
+function extractTurnTopic(text = '') {
+  const t = String(text || '').trim().toLowerCase();
+  if (!t) return { type: 'empty' };
+
+  // 1. Pure Non-Agriculture Queries (Must be politely redirected, NOT answered as agri or tutorials)
+  const isPureTechNonAgri = /\b(what\s+is\s+(?:python|java|javascript|c\+\+|html|css|react|angular|nodejs?|c#|golang|rust|php|ruby|sql)|write\s+(?:a\s+)?(?:python|java|javascript|code|script))\b/i.test(t);
+  const isGeneralNonAgri = /\b(who\s+is|capital\s+of|joke|funny|movie|song|actor|actress|crypto|bitcoin|stock\s+market|cricket|football|president|space|galaxy|planet|alien|recipe|cook\s+pizza)\b/i.test(t);
+  
+  const hasAgriConnection = /\b(farm|farmer|farmers|agri|agriculture|crop|crops|kheti|kisan|yield|soil|irrigation|sinchai|fasal|khet)\b/i.test(t);
+
+  if ((isPureTechNonAgri || isGeneralNonAgri) && !hasAgriConnection) {
+    return { type: 'non_agri', domain: 'NON_AGRICULTURE' };
+  }
+
+  // 2. Agritech & Technology Applied to Agriculture (Legitimate Agriculture Topic)
+  if (/\b(python|ai|ml|iot|sensors?|drones?|satellites?|gis|machine\s+learning)\b/i.test(t) && hasAgriConnection) {
+    return { type: 'agritech', domain: 'AGRICULTURE', topic: 'Precision Agriculture & Agritech' };
+  }
+
+  // 3. Plant Nutrition, Nitrogen, and Fertilization
+  if (/\b(nitrogen|phosphorus|potassium|npk|micronutrients?|urea|dap|fertilizer|khad|plant\s+nutrition|why\s+do\s+plants\s+need\s+nitrogen)\b/i.test(t)) {
+    const isNitrogen = /\bnitrogen\b/i.test(t);
+    return {
+      type: 'plant_nutrition',
+      domain: 'AGRICULTURE',
+      topic: isNitrogen ? 'Nitrogen in Plant Nutrition' : 'Plant Nutrition & Fertilization',
+      nutrient: isNitrogen ? 'nitrogen' : 'npk'
+    };
+  }
+
+  // 4. Soil Science & Soil Health
+  if (/\b(soil\s+health|soil\s+importance|importance\s+of\s+soil|healthy\s+soil|mitti|mrrida)\b/i.test(t) || /^what\s+is\s+soil\??$/i.test(t)) {
+    return { type: 'soil', domain: 'AGRICULTURE', topic: 'Soil Health & Science' };
+  }
+
+  // 5. Crop Rotation
+  if (/\b(crop\s+rotation|rotation\s+of\s+crops|fasal\s+chakra)\b/i.test(t)) {
+    return { type: 'crop_rotation', domain: 'AGRICULTURE', topic: 'Crop Rotation' };
+  }
+
+  // 6. Photosynthesis & Plant Biology
+  if (/\b(photosynthesis|prakash\s+sanshleshan|chlorophyll)\b/i.test(t)) {
+    return { type: 'photosynthesis', domain: 'AGRICULTURE', topic: 'Photosynthesis' };
+  }
+
+  // 7. Weather & Rainfall
+  if (/\b(weather|forecast|rain(?:s|ing|fall)?|shower(?:s)?|barish|barsat|temperature|temp|humidity|mausam|kal\s+ka\s+mausam)\b/i.test(t)) {
+    return { type: 'weather', domain: 'AGRICULTURE', topic: 'Weather & Rain Advisory' };
+  }
+
+  // 8. Irrigation & Water Management
+  if (/\b(irrigat(?:e|ion|ing)|water(?:ing)?|soil\s+moisture|drip|sprinkler|sinchai|pani\s+dena)\b/i.test(t)) {
+    return { type: 'irrigation', domain: 'AGRICULTURE', topic: 'Irrigation & Water Management' };
+  }
+
+  // 9. Crop & Symptom Mentions
+  const cropMatch = t.match(/\b(tomato(?:es)?|potato(?:es)?|apple(?:s)?|corn|grape(?:s)?|wheat|rice|squash|pepper(?:s)?|strawberry|strawberries|peach(?:es)?|cherry|cherries|soybean(?:s)?|cotton|sugarcane|cucumber(?:s)?|onion(?:s)?|garlic|cabbage|cauliflower|brinjal|eggplant|okra|bhindi|aloo|tamatar)\b/i);
+  
+  const symptomMatch = t.match(/\b(yellow(?:ing)?\s*(?:leaves|spots?|foliage)?|yellow\s+leaves|brown\s+spots?|black\s+spots?|dark\s+spots?|leaf\s+curl|wilting|peele\s+patte|bhure\s+dhabbe|dhabbe|blight|mildew|rot|rust|scab|spots?\s+on\s+leaves)\b/i);
+
+  if (cropMatch || symptomMatch) {
+    let crop = null;
+    if (cropMatch) {
+      let c = cropMatch[1].charAt(0).toUpperCase() + cropMatch[1].slice(1).toLowerCase();
+      if (c.startsWith('Tomato') || c === 'Tamatar') crop = 'Tomato';
+      else if (c.startsWith('Potato') || c === 'Aloo') crop = 'Potato';
+      else if (c.startsWith('Apple')) crop = 'Apple';
+      else if (c.startsWith('Grape')) crop = 'Grape';
+      else if (c.startsWith('Corn')) crop = 'Corn';
+      else if (c.startsWith('Squash')) crop = 'Squash';
+      else crop = c;
+    }
+
+    let symptom = null;
+    if (symptomMatch) {
+      const s = symptomMatch[0].toLowerCase();
+      if (s.includes('brown')) symptom = 'brown spots';
+      else if (s.includes('yellow')) symptom = 'yellow leaves';
+      else if (s.includes('blight')) symptom = 'blight';
+      else symptom = s;
+    }
+
+    return {
+      type: 'crop_symptom',
+      domain: 'AGRICULTURE',
+      crop,
+      symptom,
+      topic: crop ? `${crop} Crop Health` : 'Plant Foliar Health'
+    };
+  }
+
+  // 10. Language Switch or Generic Reference Follow-up
+  if (/\b(explain\s+(?:that|this|it|the\s+same|again)|translate|in\s+hindi|in\s+hinglish|in\s+english|hindi\s+me(?:in)?|hinglish\s+me(?:in)?|english\s+me(?:in)?|ise\s+hindi|ise\s+hinglish|samjhao|why\s+is\s+it\s+useful|can\s+i\s+improve\s+it\s+naturally|what\s+should\s+i\s+do\s+next|where\s+should\s+i\s+start|what\s+could\s+be\s+causing\s+this|how\s+can\s+i\s+prevent\s+it)\b/i.test(t)) {
+    return { type: 'follow_up', domain: 'AGRICULTURE' };
+  }
+
+  return { type: 'general', domain: 'AGRICULTURE' };
+}
+
+/**
  * Bounded history normalization (most recent 8-12 turns, alternating user/model)
  */
 function normalizeConversationHistory(history = [], maxTurns = 10) {
@@ -117,7 +231,6 @@ function normalizeConversationHistory(history = [], maxTurns = 10) {
     return [];
   }
 
-  // Slice most recent turns
   const recent = history.slice(-maxTurns);
   const normalized = [];
   let lastRole = null;
@@ -138,7 +251,6 @@ function normalizeConversationHistory(history = [], maxTurns = 10) {
     }
   }
 
-  // Ensure sequence begins with 'user'
   while (normalized.length > 0 && normalized[0].role !== 'user') {
     normalized.shift();
   }
@@ -148,9 +260,7 @@ function normalizeConversationHistory(history = [], maxTurns = 10) {
 
 /**
  * Context Relevance Model
- * Evaluates whether available candidate data sources (latest scan, active crop, disease, weather, irrigation, sustainability)
- * are genuinely relevant to the CURRENT turn.
- * Principle: DATA EXISTENCE != DATA RELEVANCE
+ * Tracks chronological conversation state and enforces DATA EXISTENCE != DATA RELEVANCE.
  */
 function evaluateContextRelevance({
   question = '',
@@ -161,143 +271,158 @@ function evaluateContextRelevance({
   sustainabilityContext = null
 }) {
   const q = String(question || '').trim().toLowerCase();
-  
-  const cropRegex = /\b(tomato(?:es)?|potato(?:es)?|apple(?:s)?|corn|grape(?:s)?|wheat|rice|squash|pepper(?:s)?|strawberry|strawberries|peach(?:es)?|cherry|cherries|soybean(?:s)?|cotton|sugarcane|cucumber(?:s)?|onion(?:s)?|garlic|cabbage|cauliflower|brinjal|eggplant|okra|bhindi|aloo|tamatar)\b/i;
-  
-  const scanRefRegex = /\b(scan|scans|scanned|detection|detected|diagnos(?:is|ed|tic)|report|result|image\s+i\s+uploaded|photo\s+i\s+uploaded|uploaded\s+(?:image|photo|picture|scan)|last\s+result|recent\s+result|nidan|meri\s+report|mera\s+scan|last\s+scan|recent\s+scan|latest\s+scan|previous\s+scan)\b/i;
+  const queryTurn = extractTurnTopic(q);
 
-  const weatherRegex = /\b(weather|forecast|rain|raining|rainfall|barish|barsat|temperature|temp|humidity|wind|cloudy|sunny|precipitation|spray.*weather|mausam|kal\s+ka\s+mausam)\b/i;
-
-  const irrigationRegex = /\b(irrigat(?:e|ion|ing)|water(?:ing)?|soil\s+moisture|drip|sprinkler|pani\s+(?:du|dein|lagaye|dena|chahiye)|sinchai|how\s+much\s+water|when\s+to\s+water)\b/i;
-
-  const diseaseRegex = /\b(blight|mildew|rot|rust|scab|spot|spots|canker|virus|mosaic|wilt|fungus|fungal|pathogen|pest|insects|dhabbe|rog|bimari|keede)\b/i;
-
-  // 1. Scan history for established active context
-  let historyCrop = null;
-  let historyDisease = false;
-  let historyDiscussedScan = false;
-  let historyDiscussedWeather = false;
-  let historyDiscussedIrrigation = false;
+  // Chronologically trace history to maintain active topic state
+  let activeCrop = null;
+  let activeSymptom = null;
+  let activeTopic = 'General Agriculture';
+  let activeTopicType = 'general';
 
   for (const item of history) {
-    if (item.role !== 'user') continue;
-    const text = String(item.content || item.text || item.parts?.[0]?.text || item.message || '').toLowerCase();
-    if (!text) continue;
+    if (item.role === 'user') {
+      const uText = String(item.content || item.text || item.parts?.[0]?.text || item.message || '').trim();
+      if (!uText) continue;
 
-    const cMatch = text.match(cropRegex);
-    if (cMatch) {
-      let c = cMatch[1].charAt(0).toUpperCase() + cMatch[1].slice(1).toLowerCase();
-      if (c.startsWith('Tomato')) c = 'Tomato';
-      else if (c.startsWith('Potato')) c = 'Potato';
-      else if (c === 'Aloo') c = 'Potato';
-      else if (c === 'Tamatar') c = 'Tomato';
-      else if (c === 'Bhindi') c = 'Okra';
-      else if (c.startsWith('Apple')) c = 'Apple';
-      else if (c.startsWith('Grape')) c = 'Grape';
-      else if (c.startsWith('Pepper')) c = 'Pepper';
-      else if (c.startsWith('Peach')) c = 'Peach';
-      else if (c.startsWith('Strawberry')) c = 'Strawberry';
-      else if (c.startsWith('Cherry')) c = 'Cherry';
-      historyCrop = c;
-    }
+      const turn = extractTurnTopic(uText);
 
-    if (scanRefRegex.test(text)) {
-      historyDiscussedScan = true;
-    }
-    if (weatherRegex.test(text)) {
-      historyDiscussedWeather = true;
-    }
-    if (irrigationRegex.test(text)) {
-      historyDiscussedIrrigation = true;
-    }
-    if (diseaseRegex.test(text)) {
-      historyDisease = true;
+      if (turn.type === 'crop_symptom') {
+        if (turn.crop) activeCrop = turn.crop;
+        if (turn.symptom) activeSymptom = turn.symptom; // Overwrite older symptom with newly mentioned symptom
+        activeTopic = activeCrop ? `${activeCrop} Management` : 'Crop Health';
+        activeTopicType = 'crop_symptom';
+      } else if (turn.type === 'soil') {
+        activeCrop = null; // Cleanly transition away from older crop
+        activeSymptom = null;
+        activeTopic = 'Soil Health & Science';
+        activeTopicType = 'soil';
+      } else if (turn.type === 'crop_rotation') {
+        activeCrop = null;
+        activeSymptom = null;
+        activeTopic = 'Crop Rotation';
+        activeTopicType = 'crop_rotation';
+      } else if (turn.type === 'plant_nutrition') {
+        activeCrop = null;
+        activeSymptom = null;
+        activeTopic = turn.topic;
+        activeTopicType = 'plant_nutrition';
+      } else if (turn.type === 'agritech') {
+        activeCrop = null;
+        activeSymptom = null;
+        activeTopic = turn.topic;
+        activeTopicType = 'agritech';
+      } else if (turn.type === 'photosynthesis') {
+        activeCrop = null;
+        activeSymptom = null;
+        activeTopic = 'Photosynthesis';
+        activeTopicType = 'photosynthesis';
+      } else if (turn.type === 'weather') {
+        activeTopic = activeCrop ? `${activeCrop} Weather Management` : 'Weather Advisory';
+        activeTopicType = 'weather';
+      } else if (turn.type === 'non_agri') {
+        activeCrop = null;
+        activeSymptom = null;
+        activeTopic = 'Non-Agriculture';
+        activeTopicType = 'non_agri';
+      }
     }
   }
 
-  // 2. Evaluate current question for explicit mentions
-  let queryCrop = null;
-  const cMatchQuery = q.match(cropRegex);
-  if (cMatchQuery) {
-    let c = cMatchQuery[1].charAt(0).toUpperCase() + cMatchQuery[1].slice(1).toLowerCase();
-    if (c.startsWith('Tomato')) c = 'Tomato';
-    else if (c.startsWith('Potato')) c = 'Potato';
-    else if (c === 'Aloo') c = 'Potato';
-    else if (c === 'Tamatar') c = 'Tomato';
-    else if (c === 'Bhindi') c = 'Okra';
-    else if (c.startsWith('Apple')) c = 'Apple';
-    else if (c.startsWith('Grape')) c = 'Grape';
-    else if (c.startsWith('Pepper')) c = 'Pepper';
-    else if (c.startsWith('Peach')) c = 'Peach';
-    else if (c.startsWith('Strawberry')) c = 'Strawberry';
-    else if (c.startsWith('Cherry')) c = 'Cherry';
-    queryCrop = c;
+  // Evaluate CURRENT query turn
+  const hasAgriConnection = /\b(farm|farmer|farmers|agri|agriculture|crop|crops|kheti|kisan|yield|soil|irrigation|sinchai|fasal|khet)\b/i.test(q);
+  if (activeTopicType === 'non_agri' && !hasAgriConnection && (queryTurn.type === 'general' || queryTurn.type === 'follow_up')) {
+    queryTurn.type = 'non_agri';
+    queryTurn.domain = 'NON_AGRICULTURE';
   }
 
-  // Active crop resolution
-  const activeCropName = queryCrop || historyCrop || null;
-  const activeCropSource = queryCrop ? 'explicit_query' : historyCrop ? 'active_conversation' : null;
+  if (queryTurn.type === 'crop_symptom') {
+    if (queryTurn.crop) activeCrop = queryTurn.crop;
+    if (queryTurn.symptom) activeSymptom = queryTurn.symptom;
+    activeTopic = activeCrop ? `${activeCrop} Management` : 'Crop Health';
+    activeTopicType = 'crop_symptom';
+  } else if (queryTurn.type === 'soil') {
+    activeCrop = null;
+    activeSymptom = null;
+    activeTopic = 'Soil Health & Science';
+    activeTopicType = 'soil';
+  } else if (queryTurn.type === 'crop_rotation') {
+    activeCrop = null;
+    activeSymptom = null;
+    activeTopic = 'Crop Rotation';
+    activeTopicType = 'crop_rotation';
+  } else if (queryTurn.type === 'plant_nutrition') {
+    activeCrop = null;
+    activeSymptom = null;
+    activeTopic = queryTurn.topic;
+    activeTopicType = 'plant_nutrition';
+  } else if (queryTurn.type === 'agritech') {
+    activeCrop = null;
+    activeSymptom = null;
+    activeTopic = queryTurn.topic;
+    activeTopicType = 'agritech';
+  } else if (queryTurn.type === 'photosynthesis') {
+    activeCrop = null;
+    activeSymptom = null;
+    activeTopic = 'Photosynthesis';
+    activeTopicType = 'photosynthesis';
+  } else if (queryTurn.type === 'weather') {
+    activeTopic = activeCrop ? `${activeCrop} Weather Management` : 'Weather Advisory';
+    activeTopicType = 'weather';
+  } else if (queryTurn.type === 'non_agri') {
+    activeCrop = null;
+    activeSymptom = null;
+    activeTopic = 'Non-Agriculture';
+    activeTopicType = 'non_agri';
+  }
 
-  // Latest scan relevance
-  const isExplicitScan = scanRefRegex.test(q);
-  const isScanFollowUp = historyDiscussedScan && /\b(it|this|that|next|kya\s+karu|what\s+now|steps?|action|treatment|remedy|dawa|cure|spray)\b/i.test(q);
-  const scanRelevant = Boolean(diagnosisContext && (isExplicitScan || isScanFollowUp));
-  const scanReason = isExplicitScan ? 'explicit_reference' : isScanFollowUp ? 'active_conversation' : 'not_relevant';
+  // Scan reference evaluation (DATA EXISTENCE != DATA RELEVANCE)
+  const isExplicitScan = /\b(scan|scans|scanned|detection|detected|diagnos(?:is|ed|tic)|report|result|image\s+i\s+uploaded|photo\s+i\s+uploaded|uploaded\s+(?:image|photo|picture|scan)|last\s+result|recent\s+result|nidan|meri\s+report|mera\s+scan|last\s+scan|recent\s+scan|latest\s+scan|previous\s+scan)\b/i.test(q);
+  const scanRelevant = Boolean(diagnosisContext && isExplicitScan && queryTurn.type !== 'non_agri');
 
-  // Disease relevance
-  const isExplicitDisease = diseaseRegex.test(q);
-  const isDiseaseFollowUp = (historyDisease || (scanRelevant && diagnosisContext?.disease)) && /\b(it|this|prevent|cure|treat|stop|spread|dawa|ilaaj|remedy|control)\b/i.test(q);
-  const diseaseRelevant = Boolean(isExplicitDisease || isDiseaseFollowUp || scanRelevant);
-  const diseaseReason = isExplicitDisease ? 'explicit_reference' : (isDiseaseFollowUp || scanRelevant) ? 'active_conversation' : 'not_relevant';
-
-  // Weather relevance
-  const isExplicitWeather = weatherRegex.test(q);
-  const isWeatherFollowUp = historyDiscussedWeather && /\b(tomorrow|today|forecast|spray|rain|kal|aaj)\b/i.test(q);
-  const weatherRelevant = Boolean(weatherContext && (isExplicitWeather || isWeatherFollowUp));
-  const weatherReason = isExplicitWeather ? 'explicit_reference' : isWeatherFollowUp ? 'active_conversation' : 'not_relevant';
+  // Weather relevance (only relevant if explicitly asking weather/rain or active weather topic)
+  const isExplicitWeather = queryTurn.type === 'weather' || /\b(weather|forecast|rain(?:s|ing|fall)?|shower(?:s)?|barish|barsat|temperature|temp|humidity|spray.*weather|mausam|kal\s+ka\s+mausam)\b/i.test(q);
+  const weatherRelevant = Boolean(weatherContext && isExplicitWeather && queryTurn.type !== 'non_agri');
 
   // Irrigation relevance
-  const isExplicitIrrigation = irrigationRegex.test(q);
-  const isIrrigationFollowUp = historyDiscussedIrrigation && /\b(how\s+often|how\s+much|schedule|drip|watering|volume|frequency|pani|sinchai)\b/i.test(q);
-  const irrigationRelevant = Boolean(irrigationContext && (isExplicitIrrigation || isIrrigationFollowUp));
-  const irrigationReason = isExplicitIrrigation ? 'explicit_reference' : isIrrigationFollowUp ? 'active_conversation' : 'not_relevant';
+  const isExplicitIrrigation = queryTurn.type === 'irrigation' || /\b(irrigat(?:e|ion|ing)|water(?:ing)?|soil\s+moisture|drip|sprinkler|pani\s+(?:du|dein|lagaye|dena|chahiye)|sinchai|how\s+much\s+water|when\s+to\s+water)\b/i.test(q);
+  const irrigationRelevant = Boolean(irrigationContext && isExplicitIrrigation && queryTurn.type !== 'non_agri');
 
-  // Sustainability relevance
-  const isExplicitSustainability = /\b(sustainability|eco|carbon|water\s+saving|green\s+score)\b/i.test(q);
-  const sustainabilityRelevant = Boolean(sustainabilityContext && isExplicitSustainability);
-  const sustainabilityReason = isExplicitSustainability ? 'explicit_reference' : 'not_relevant';
+  const isLanguageSwitch = /\b(explain\s+(?:that|this|it|the\s+same|again)|translate|in\s+hindi|in\s+hinglish|in\s+english|hindi\s+me(?:in)?|hinglish\s+me(?:in)?|english\s+me(?:in)?|ise\s+hindi|ise\s+hinglish|samjhao)\b/i.test(q);
 
   return {
+    queryTurn,
+    activeCrop: {
+      name: activeCrop || (scanRelevant ? diagnosisContext?.crop : null),
+      source: activeCrop ? 'active_conversation' : (scanRelevant ? 'latest_scan' : null)
+    },
+    activeSymptom,
+    activeTopic,
+    activeTopicType,
+    isLanguageSwitch,
     latestScan: {
       relevant: scanRelevant,
-      reason: scanReason,
+      reason: scanRelevant ? 'explicit_reference' : 'not_relevant',
       data: scanRelevant ? diagnosisContext : null
     },
-    activeCrop: {
-      name: activeCropName || (scanRelevant ? diagnosisContext?.crop : null),
-      source: activeCropSource || (scanRelevant ? 'latest_scan' : null)
-    },
     disease: {
-      relevant: diseaseRelevant,
-      diseaseName: (scanRelevant ? diagnosisContext?.disease : null) || null,
-      reason: diseaseReason
+      relevant: scanRelevant || (activeTopicType === 'crop_symptom' && Boolean(activeSymptom)),
+      diseaseName: scanRelevant ? (diagnosisContext?.disease || diagnosisContext?.diseaseName) : null
     },
     weather: {
       relevant: weatherRelevant,
-      reason: weatherReason,
+      reason: weatherRelevant ? 'explicit_reference' : 'not_relevant',
       data: weatherRelevant ? weatherContext : null
     },
     irrigation: {
       relevant: irrigationRelevant,
-      reason: irrigationReason,
+      reason: irrigationRelevant ? 'explicit_reference' : 'not_relevant',
       data: irrigationRelevant ? irrigationContext : null
     },
     sustainability: {
-      relevant: sustainabilityRelevant,
-      reason: sustainabilityReason,
-      data: sustainabilityRelevant ? sustainabilityContext : null
+      relevant: Boolean(sustainabilityContext && /\b(sustainability|eco|carbon|water\s+saving|green\s+score)\b/i.test(q)),
+      data: sustainabilityContext
     },
-    hasAnyGroundedContext: scanRelevant || weatherRelevant || irrigationRelevant || sustainabilityRelevant
+    hasAnyGroundedContext: scanRelevant || weatherRelevant || irrigationRelevant
   };
 }
 
@@ -307,9 +432,24 @@ function evaluateContextRelevance({
 function buildAgriSmartContext({ relevance, diagnosisContext, weatherContext, irrigationContext }) {
   const parts = [];
 
-  if (relevance?.activeCrop?.name) {
+  if ((relevance?.activeTopicType === 'crop_symptom' || relevance?.activeTopicType === 'weather') && relevance?.activeCrop?.name) {
     parts.push(`[ACTIVE CONVERSATIONAL TOPIC]:
-- Target Crop: ${relevance.activeCrop.name} (Source: ${relevance.activeCrop.source})`);
+- Target Crop: ${relevance.activeCrop.name}
+${relevance.activeSymptom ? `- Current Active Symptom / Problem: ${relevance.activeSymptom}\n` : ''}- Note: Answer in the context of ${relevance.activeCrop.name}${relevance.activeSymptom ? ` (${relevance.activeSymptom})` : ''}. If user asks a follow-up or language-switch ("What if it rains tomorrow?", "Please explain that in Hindi", "What should I do next?"), resolve it directly to this active crop context.`);
+  } else if (relevance?.activeTopicType === 'soil') {
+    parts.push(`[ACTIVE CONVERSATIONAL TOPIC]:
+- Subject: Soil Health & Agronomic Soil Management
+- Note: If user asks "Can I improve it naturally?", "it" refers to soil health.`);
+  } else if (relevance?.activeTopicType === 'crop_rotation') {
+    parts.push(`[ACTIVE CONVERSATIONAL TOPIC]:
+- Subject: Crop Rotation in Sustainable Agriculture
+- Note: If user asks "Why is it useful?", "it" refers to crop rotation.`);
+  } else if (relevance?.activeTopicType === 'plant_nutrition') {
+    parts.push(`[ACTIVE CONVERSATIONAL TOPIC]:
+- Subject: Plant Nutrition & Mineral Dynamics`);
+  } else if (relevance?.activeTopicType === 'agritech') {
+    parts.push(`[ACTIVE CONVERSATIONAL TOPIC]:
+- Subject: Precision Agriculture & Technology (Python, AI/ML, IoT, Remote Sensing in Farming)`);
   }
 
   if (relevance?.latestScan?.relevant && diagnosisContext && (diagnosisContext.diseaseName || diagnosisContext.disease)) {
@@ -318,7 +458,7 @@ function buildAgriSmartContext({ relevance, diagnosisContext, weatherContext, ir
     const conf = Math.round((diagnosisContext.confidence || 0.85) * 100);
     const kb = getDiseaseKnowledge(diseaseName);
 
-    parts.push(`[LATEST SCAN CONTEXT (Explicitly Requested / Active Topic)]:
+    parts.push(`[LATEST SCAN CONTEXT (Explicitly Requested)]:
 - Crop: ${crop}
 - Diagnosed Condition: ${diseaseName} (${conf}% confidence)
 - Pathogen Type: ${kb.pathogenType || 'N/A'}
@@ -327,11 +467,22 @@ function buildAgriSmartContext({ relevance, diagnosisContext, weatherContext, ir
   }
 
   if (relevance?.weather?.relevant && weatherContext) {
-    parts.push(`[LIVE WEATHER TELEMETRY (Relevant to Query)]:
-- Temperature: ${weatherContext.temperature ?? 'N/A'}°C
-- Relative Humidity: ${weatherContext.humidity ?? 'N/A'}%
-- Rain Probability: ${weatherContext.rainProbability ?? weatherContext.pop ?? 0}%
-- Wind Speed: ${weatherContext.windSpeed ?? 'N/A'} km/h`);
+    const temp = weatherContext.temperature ?? 'N/A';
+    const humidity = weatherContext.humidity ?? 'N/A';
+    const rainProb = weatherContext.rainProbability ?? weatherContext.pop ?? 0;
+    const wind = weatherContext.windSpeed ?? 'N/A';
+
+    parts.push(`[LIVE WEATHER TELEMETRY — TRUSTED SYSTEM SOURCE OF TRUTH (DO NOT MODIFY)]:
+- Temperature: ${temp}°C
+- Relative Humidity: ${humidity}%
+- Rain Probability: ${rainProb}%
+- Wind Speed: ${wind} km/h
+
+TRUSTED TELEMETRY MANDATE:
+These values come directly from the application's trusted weather sensor service.
+If you cite temperature or rain probability in your response, you MUST use ${temp}°C and ${rainProb}%.
+Never estimate, recalculate, substitute, or invent another value (e.g. do NOT say 22% if rain probability is ${rainProb}%, and do NOT say 89% if rain probability is 22%).
+Reproduce these exact figures or provide qualitative guidance.`);
   }
 
   if (relevance?.irrigation?.relevant && irrigationContext) {
@@ -341,7 +492,7 @@ function buildAgriSmartContext({ relevance, diagnosisContext, weatherContext, ir
   }
 
   if (parts.length === 0) {
-    return `[CONTEXT NOTE]: No specific scan, crop, or telemetry data was requested for this turn. Answer as a helpful general agronomist and ask for specific crop/farm details if needed.`;
+    return `[CONTEXT NOTE]: No specific scan or telemetry data was requested for this turn. Answer as a helpful general agronomist.`;
   }
 
   return parts.join('\n\n');
@@ -351,51 +502,79 @@ function buildAgriSmartContext({ relevance, diagnosisContext, weatherContext, ir
  * Build System Instructions for Gemini as Primary Conversational Brain
  */
 function buildSystemInstruction(language = 'en', agriContext = '') {
-  let instruction = `You are the conversational intelligence of AgriSmart AI, a conversational AI agronomist specialized exclusively in agriculture, plant science, crop disease management, soil care, weather intelligence, and agricultural technology.
+  const langName = language === 'hi' 
+    ? 'HINDI (Devanagari script: हिन्दी). The entire response MUST be written in natural, fluent Hindi in Devanagari script.'
+    : language === 'hinglish'
+    ? 'HINGLISH (everyday colloquial Hindi written using the Latin/Roman English alphabet, e.g. "Agar kal barish hoti hai toh tomato par spray mat karein..."). The entire substantive response MUST be written in Hinglish.'
+    : 'ENGLISH. The entire substantive response MUST be written in clear English.';
 
-CORE CONVERSATIONAL PRINCIPLES:
-1. CONVERSATION UNDERSTANDING & RESOLUTION:
+  let instruction = `You are AgriSmart AI, an expert conversational AI agronomist specialized exclusively in agriculture, crop health, soil science, plant pathology, precision irrigation, weather intelligence, and smart farming technology.
+
+==================================================
+CRITICAL LANGUAGE REQUIREMENT (HARD OUTPUT CONTRACT):
+==================================================
+- Requested Language: ${langName}
+- You MUST generate the entire substantive response in this requested language.
+- Do NOT respond in English when Hindi or Hinglish is requested.
+- Do NOT translate only the heading while leaving the body in English.
+- Generate natural, high-quality, idiomatic agricultural explanations in the requested language.
+
+==================================================
+CONVERSATIONAL PRINCIPLES & FOLLOW-UP RESOLUTION:
+==================================================
+1. QUESTION-FIRST DIRECT ANSWERING:
+   - Always understand what the user is ACTUALLY asking and answer that specific question first.
+   - For plant nutrition/nitrogen (e.g., "Why do plants need nitrogen?"), provide a direct educational explanation of nitrogen's role (chlorophyll synthesis, amino acids, protein formation, leafy vegetative growth, deficiency chlorosis).
+   - For conceptual/scientific questions (e.g., "What is soil health?", "What is crop rotation?", "Explain photosynthesis"), explain that specific concept thoroughly with practical agronomic depth.
+   - Do NOT deflect conceptual questions into unrelated generic plant care checklists.
+
+2. CONVERSATION UNDERSTANDING, SEMANTIC CONTINUITY & LANGUAGE SWITCHES:
    - Understand the current user message in the context of recent conversation history.
-   - If the user refers to something implicitly (e.g., "it", "they", "this problem", "what should I check first?", "where do I begin?", "what about tomorrow?", "can you show an example?", "how to fix this?"), resolve the reference from previous turns.
-   - Do NOT repeat the previous answer verbatim unless repetition is explicitly requested.
-   - Answer the user's CURRENT question and conversational goal directly and naturally.
-   - If the user asks a follow-up question, continue the existing topic naturally.
-   - If the user changes topic to another agriculture-related subject (e.g. from diseases to irrigation or to another crop), follow the new topic smoothly.
-   - Never invent or assume a disease merely because a crop name was mentioned (e.g. "I grow tomatoes" or "My crop is Apple" means the crop is Tomato or Apple; do not jump to Early Blight or Apple Scab without symptoms).
+   - LANGUAGE-SWITCH REQUESTS (CRITICAL):
+     * When the user asks "Please explain that in Hindi.", "Now explain it in Hinglish.", "Explain that in English.", or "अब इसे हिंदी में समझाओ।", this means: "Explain the previous answer/topic in the requested language."
+     * Preserve the exact substantive context of the immediately preceding turn (e.g. rain precautions for tomato plants) and explain it natively in the requested language. Do NOT switch to an unrelated topic like Photosynthesis.
+   - REFERENCE RESOLUTION & PRONOUNS:
+     * When user asks "Can I improve it naturally?", resolve "it" to the active topic (e.g. soil health).
+     * When user asks "Why is it useful?", resolve "it" to the active topic (e.g. crop rotation).
+     * When user asks "What could be causing this?" or "What should I do next?", resolve "this" to the active crop/symptom (e.g. tomato yellowing or tomato brown spots).
+     * When user introduces a new symptom (e.g., "My tomato leaves have brown spots."), update the discussion to brown spots (Septoria / Early blight spots, copper/neem treatment, leaf pruning) rather than reusing the old yellow-leaf explanation.
+   - AGRITECH INQUIRIES:
+     * When user asks "How can Python help farmers?", answer directly how programming, Python, AI/ML, and sensors power precision agriculture (NDVI, yield forecasting, automated irrigation, disease detection).
 
-2. DOMAIN BOUNDARIES:
+3. DOMAIN BOUNDARIES:
    - AgriSmart is dedicated exclusively to agriculture, farming, crops, plant health, agronomy, soil, fertilizers, irrigation, weather for agriculture, and modern agricultural technology.
-   - If the user asks a pure non-agriculture question (e.g., general programming like "What is Python?", general movies, sports, recipes for pizza, generic jokes), set "domain": "NON_AGRICULTURE", "contextual": false, and politely redirect them toward agriculture.
-   - Agriculture-connected technology questions (e.g., "How is Python used in agriculture?", "How can SQL help manage farm data?", "How does soil physics affect irrigation?") ARE FULLY ALLOWED and MUST be answered substantively in the context of modern farming.
+   - If the user asks a pure non-agriculture question (e.g., "What is Python?", "What is Java?", general programming without farming, movies, sports, generic jokes), set "domain": "NON_AGRICULTURE", "contextual": false, and politely redirect them toward agriculture.
+   - Agriculture-connected technology questions (e.g., "How can Python help farmers?", "IoT sensors in farm irrigation") ARE ALLOWED as "domain": "AGRICULTURE".
 
-3. CONTEXT RELEVANCE & GROUNDING (DATA EXISTENCE != DATA RELEVANCE):
-   - AgriSmart context is optional reference data provided only when relevant.
+4. TRUSTED TELEMETRY GROUNDING (DATA INTEGRITY CONTRACT):
+   - When LIVE WEATHER TELEMETRY is provided in the context below, it is the application's SINGLE SOURCE OF TRUTH.
+   - If you cite any numerical values (temperature, rain probability, humidity, wind speed), you MUST reproduce the EXACT provided values (e.g. if rain probability is 22%, write 22%; if 89%, write 89%).
+   - NEVER estimate, recalculate, substitute, fabricate, or hallucinate different numerical values.
+   - If you do not need to mention specific numbers, provide sound qualitative agronomic guidance.
+
+5. CONTEXT RELEVANCE & HONEST GROUNDING (DATA EXISTENCE != DATA RELEVANCE):
    - Use ONLY the context explicitly provided in AVAILABLE AGRISMART SYSTEM CONTEXT.
-   - Never assume the user's latest scan, crop, disease, weather, or irrigation state is relevant merely because it exists in the database.
-   - If no specific crop or disease is established in the user's message or active conversation history, do NOT invent or infer one from stored farm data.
-   - When the user asks a broad agriculture question (e.g., "Can you help me to grow my plants?", "How do I make my plants healthier?", "How can I improve my crops?"), provide general agricultural guidance (soil care, deep root watering, light, balanced nutrition, scouting) and politely ask what specific crop they are growing.
-   - Set "contextual": true ONLY if the response directly grounds in explicitly relevant scan data, live weather telemetry, or specific irrigation telemetry for this turn.
+   - Never assume stored database scans or weather data apply unless explicitly attached for this turn.
    - For generic agriculture questions, broad plant care, conceptual agronomy, or non-agri queries, set "contextual": false.
 
-4. SAFETY & REGULATORY:
+6. SAFETY & REGULATORY:
    - Always encourage IPM (Integrated Pest Management) and cultural/organic controls first.
-   - If rain probability is high (>=50%), advise against foliar chemical sprays because rain washes them off.
+   - If rain probability is high (>=50%), advise against foliar chemical sprays.
    - For healthy plants, focus on preventive nutrition and irrigation; do NOT prescribe curative fungicides.
-   - Match the user's language: ${language === 'hi' ? 'Hindi (Devanagari)' : language === 'hinglish' ? 'Hinglish (Hindi written in Roman script)' : 'English'}.
 
-5. STRUCTURED JSON OUTPUT SCHEMA:
+7. STRUCTURED JSON OUTPUT SCHEMA:
 You MUST respond with a single valid JSON object strictly matching this schema:
 {
   "domain": "AGRICULTURE" | "NON_AGRICULTURE",
   "contextual": boolean,
   "topic": string,
   "intent": "GREETING" | "GENERAL_PLANT_CARE" | "DIAGNOSIS" | "TREATMENT" | "PREVENTION" | "IRRIGATION" | "WEATHER" | "AGRITECH" | "GENERAL_AGRICULTURE" | "NON_AGRICULTURE",
-  "response": "Your natural, helpful, conversational response here...",
+  "response": "Your natural, helpful, conversational response in the requested language...",
   "needs_clarification": boolean
 }`;
 
   if (agriContext) {
-    instruction += `\n\nAVAILABLE AGRISMART SYSTEM CONTEXT (Use only when relevant to the user's inquiry):\n${agriContext}`;
+    instruction += `\n\nAVAILABLE AGRISMART SYSTEM CONTEXT (Single Source of Truth):\n${agriContext}`;
   }
 
   return instruction;
@@ -422,7 +601,7 @@ function applySafetyAndDomainGuardrails(geminiResult, { relevance, weatherContex
   };
 
   // Rule 1: Non-Agriculture Boundary Enforcement
-  if (sanitized.domain === 'NON_AGRICULTURE' || sanitized.intent === 'NON_AGRICULTURE') {
+  if (relevance?.queryTurn?.type === 'non_agri' || sanitized.domain === 'NON_AGRICULTURE' || sanitized.intent === 'NON_AGRICULTURE') {
     sanitized.contextual = false;
     sanitized.domain = 'NON_AGRICULTURE';
     sanitized.intent = 'NON_AGRICULTURE';
@@ -460,11 +639,66 @@ function applySafetyAndDomainGuardrails(geminiResult, { relevance, weatherContex
     sanitized.response = sanitized.response.replace(new RegExp(rawKey, 'g'), '[PROTECTED]');
   }
 
+  // Rule 6: Telemetry Data Grounding & Value Integrity Protection (Single Source of Truth)
+  if (weatherContext && (relevance?.weather?.relevant || relevance?.hasAnyGroundedContext)) {
+    const trustedRain = weatherContext.rainProbability ?? weatherContext.pop;
+    const trustedTemp = weatherContext.temperature;
+
+    if (trustedRain !== undefined && trustedRain !== null) {
+      sanitized.response = sanitized.response.replace(
+        /(\b\d{1,3}\s*%\s*(?:rain|precipitation|chance\s+of\s+rain|probability\s+of\s+rain|barish|barsat)\b)/gi,
+        (match) => {
+          const num = parseInt(match, 10);
+          if (!isNaN(num) && num !== trustedRain) {
+            return match.replace(/\d{1,3}\s*%/, `${trustedRain}%`);
+          }
+          return match;
+        }
+      );
+
+      sanitized.response = sanitized.response.replace(
+        /((?:rain|precipitation|barish|barsat|chance\s+of\s+rain|probability\s+of\s+rain)(?:[^\d\n\r]{1,25})?)(\b\d{1,3}\s*%)/gi,
+        (match, prefix, perc) => {
+          const num = parseInt(perc, 10);
+          if (!isNaN(num) && num !== trustedRain) {
+            return `${prefix}${trustedRain}%`;
+          }
+          return match;
+        }
+      );
+
+      sanitized.response = sanitized.response.replace(
+        /(\b\d{1,2}\s*°\s*C\s*,\s*)(\d{1,3}\s*%)/gi,
+        (match, tempPart, percPart) => {
+          const num = parseInt(percPart, 10);
+          if (!isNaN(num) && num !== trustedRain) {
+            return `${tempPart}${trustedRain}%`;
+          }
+          return match;
+        }
+      );
+    }
+
+    if (trustedTemp !== undefined && trustedTemp !== null) {
+      sanitized.response = sanitized.response.replace(
+        /(\b\d{1,2}\s*°\s*C\b)/gi,
+        (match) => {
+          const num = parseInt(match, 10);
+          if (!isNaN(num) && Math.abs(num - trustedTemp) > 2) {
+            return `${trustedTemp}°C`;
+          }
+          return match;
+        }
+      );
+    }
+  }
+
   return sanitized;
 }
 
 /**
  * Resilient Contextual Fallback for Gemini API Quota Limits / Offline State
+ * Employs Question-First Response Generation & Semantic Continuity
  */
 function generateContextualFallback({ question = '', history = [], relevance = null, diagnosisContext = null, weatherContext = null, irrigationContext = null, language = 'en' }) {
   const lang = language || 'en';
@@ -482,10 +716,10 @@ function generateContextualFallback({ question = '', history = [], relevance = n
   // 1. Simple greeting check
   if (/^(hi|hii|hello|hey|namaste|good morning|good evening)\b/i.test(q)) {
     const greeting = lang === 'hi'
-      ? "नमस्ते! 👋 मैं आपका एग्रीस्मार्ट एआई कृषि सलाहकार हूँ। आज मैं आपकी फसलों, रोग निदान, सिंचाई या मौसम में कैसे सहायता कर सकता हूँ? 🌱"
+      ? "नमस्ते! 👋 मैं आपका एग्रीस्मार्ट एआई कृषि सलाहकार हूँ। आज मैं आपकी फसलों, मृदा स्वास्थ्य, पोषण, सिंचाई या कृषि तकनीक में कैसे सहायता कर सकता हूँ? 🌱"
       : lang === 'hinglish'
-      ? "Namaste! 👋 Main aapka AgriSmart AI Agronomist hoon. Aaj main aapki fasal, rog nidan, sinchai ya mausam me kaise madad kar sakta hoon? 🌱"
-      : "Hi! 👋 I'm your AgriSmart AI Agronomist. How can I help you today? You can ask about crop health, irrigation, weather, fertilizers, pest management, or your latest scan. 🌱";
+      ? "Namaste! 👋 Main aapka AgriSmart AI Agronomist hoon. Aaj main aapki fasal, mitti ki dekhbhal, nutrition, sinchai ya kheti ke sawalon me kaise madad kar sakta hoon? 🌱"
+      : "Hello! 👋 I'm your AgriSmart AI Agronomist. How can I assist you with your crops, soil management, plant nutrition, irrigation, or farming questions today? 🌱";
 
     return {
       domain: 'AGRICULTURE',
@@ -497,29 +731,8 @@ function generateContextualFallback({ question = '', history = [], relevance = n
     };
   }
 
-  // Check agricultural query presence
-  let hasAgriHistory = false;
-  let historyTopic = '';
-  const agriPattern = /(agri|farm|kheti|crop|plant|grow|growth|care|soil|yield|pest|disease|irrigation|sinchai|water|watering|pani|paani|weather|mausam|rain|barish|barsat|precision|khet|fasal|kisan|patte|patti|spray|chhidkaw|khad|fertilizer|manure|pesticide|fungicide|dawa|tomato|potato|apple|corn|grape|wheat|rice|squash|pepper|strawberry|peach|leaves|leaf|spot|spots|fung|root|seed|rot|mildew|blight|garden|gardening|scan|scans|scanned|detection|detected|diagnos|report|nidan|greenhouse|orchard|seedling|compost|mulch)/i;
-
-  for (const item of history) {
-    if (item.role === 'user') {
-      const text = String(item.content || item.text || item.parts?.[0]?.text || item.message || '').toLowerCase();
-      if (agriPattern.test(text)) {
-        hasAgriHistory = true;
-      }
-      if (/(python|programming|ai|code|data|model|sql)/i.test(text)) {
-        if (hasAgriHistory || agriPattern.test(text)) {
-          historyTopic = 'agritech';
-        }
-      }
-    }
-  }
-
-  const hasAgriInQuery = agriPattern.test(q) || rel.hasAnyGroundedContext || rel.activeCrop.name !== null || rel.latestScan.relevant;
-
-  // Pure non-agriculture check (if neither history nor current query has agriculture terms)
-  if (!hasAgriHistory && !hasAgriInQuery) {
+  // 2. Pure Non-Agriculture Check (e.g. "What is Python?", "What is Java?")
+  if (rel.queryTurn?.type === 'non_agri' || rel.activeTopicType === 'non_agri') {
     const redirect = lang === 'hi'
       ? "मैं एग्रीस्मार्ट एआई कृषि विशेषज्ञ हूँ। मैं केवल कृषि, फसल स्वास्थ्य, मिट्टी और स्मार्ट फार्मिंग से जुड़े प्रश्नों में सहायता करता हूँ। कृपया अपनी फसल या खेती से संबंधित प्रश्न पूछें। 🌱"
       : lang === 'hinglish'
@@ -536,38 +749,13 @@ function generateContextualFallback({ question = '', history = [], relevance = n
     };
   }
 
-  // Weather query or temporal follow-up
-  if (rel.weather.relevant) {
-    const temp = weatherContext?.temperature ?? 25;
-    const rainProb = weatherContext ? (weatherContext.rainProbability ?? weatherContext.pop ?? 10) : 10;
-    const weatherResp = rainProb >= 50
-      ? (lang === 'hi'
-          ? `🌧️ **मौसम व स्प्रे सलाह (${temp}°C, ${rainProb}% बारिश):**\n\nबारिश की संभावना (${rainProb}%) अधिक होने के कारण आज फोलियर स्प्रे और सिंचाई टालें (Delay Irrigation)। बारिश से स्प्रे धुल जाएगा और खेत में जलभराव हो सकता है। 🌱`
-          : (lang === 'hinglish'
-              ? `🌧️ **Mausam Telemetry (${temp}°C, ${rainProb}% Barish):**\n\nBarish ki ${rainProb}% sambhavna ke karan aaj foliar spray mat karein aur pani (sinchai) delay karein. Barish se spray dhul jayega. 🌱`
-              : `🌧️ **Weather Telemetry (${temp}°C, ${rainProb}% Rain):**\n\nPostpone foliar chemical applications due to high probability of precipitation. Maintain proper drainage. 🌱`))
-      : (lang === 'hi'
-          ? `🌤️ **खेत मौसम सलाह (${temp}°C, ${rainProb}% बारिश):**\n\nमौसम साफ है। सुबह के समय खेत का निरीक्षण और आवश्यक कृषि कार्य किए जा सकते हैं। 🌱`
-          : (lang === 'hinglish'
-              ? `🌤️ **Khet Mausam Telemetry (${temp}°C, ${rainProb}% Barish):**\n\nMausam kheti ke anukool hai. Subah ke samay field scouting aur regular kheti operations kar sakte hain. 🌱`
-              : `🌤️ **Farm Weather Telemetry (${temp}°C, ${rainProb}% Rain):**\n\nConditions are suitable for field scouting and early morning operations. 🌱`));
-
-    return {
-      domain: 'AGRICULTURE',
-      contextual: true,
-      topic: 'Weather',
-      intent: 'WEATHER',
-      response: weatherResp,
-      needs_clarification: false
-    };
-  }
-
-  // Agritech query or follow-up
-  const isAgriTech = ((historyTopic === 'agritech' && /example/i.test(q)) || /(python|ai|sql|iot|sensors?|drones?|satellite|ndvi)/i.test(q)) && (hasAgriHistory || hasAgriInQuery);
-  if (isAgriTech) {
+  // 3. Agritech & Technology in Agriculture (e.g. "How can Python help farmers?")
+  if (rel.activeTopicType === 'agritech' || rel.queryTurn?.type === 'agritech') {
     const agritechResp = lang === 'hi'
-      ? "यहाँ कृषि में पायथन का एक व्यावहारिक उदाहरण है:\n\n```python\n# उपग्रह डेटा से एनडीवीआई (NDVI) फसल स्वास्थ्य विश्लेषण\nimport numpy as np\ndef calculate_ndvi(nir, red):\n    return (nir - red) / (nir + red + 1e-6)\n```\n\nड्रोन और सैटेलाइट इमेजरी के साथ फसल की वृद्धि मापने और स्मार्ट सिंचाई के लिए इसका उपयोग किया जाता है। 🌱"
-      : "In precision agriculture, modern technology (such as Python, AI/ML, and IoT sensors) is used for satellite NDVI crop health mapping, disease classification, and predictive irrigation scheduling.\n\n```python\n# NDVI Vegetation Index Calculation for Crop Health\nimport numpy as np\ndef calculate_ndvi(nir_band, red_band):\n    return (nir_band - red_band) / (nir_band + red_band + 1e-6)\n```\n\nAgronomists apply these algorithms for yield forecasting and automated variable-rate spraying. 🌱";
+      ? "कृषि में आधुनिक तकनीक व प्रोग्रामिंग (जैसे Python, AI/ML और IoT) किसानों की कई महत्वपूर्ण क्षेत्रों में सहायता करती है:\n\n1. **उपग्रह व ड्रोन आधारित NDVI मैपिंग:** फसल के स्वास्थ्य और तनावग्रस्त क्षेत्रों की पहचान के लिए सैटेलाइट डेटा का विश्लेषण।\n2. **सटीक सिंचाई पूर्वानुमान:** मौसम और मिट्टी की नमी के आधार पर पानी की सही मात्रा का निर्धारण।\n3. **रोग व कीट की स्वचालित पहचान:** मोबाइल कैमरे से पत्तियों की तस्वीर लेकर रोग की तुरंत पहचान।\n\n```python\n# उपग्रह डेटा से फसल स्वास्थ्य (NDVI) विश्लेषण\nimport numpy as np\ndef calculate_ndvi(nir_band, red_band):\n    return (nir_band - red_band) / (nir_band + red_band + 1e-6)\n```\n\nइससे किसानों की लागत कम होती है और पैदावार में वृद्धि होती है। 🌱"
+      : lang === 'hinglish'
+      ? "Agriculture me modern technology (Python, AI/ML, IoT sensors) farmers ki multiple ways me help karti hai:\n\n1. **Satellite & Drone NDVI Mapping:** Crop health aur stress areas ko satellite data se analyze karna.\n2. **Smart Irrigation Forecast:** Weather aur soil moisture ke basis par exact watering schedule banana.\n3. **Automated Disease Detection:** Mobile photos se leaf diseases classify karna.\n\n```python\n# NDVI Crop Health Calculation\nimport numpy as np\ndef calculate_ndvi(nir_band, red_band):\n    return (nir_band - red_band) / (nir_band + red_band + 1e-6)\n```\n\nYe tools resource wastage kam karte hain aur yield badhate hain. 🌱"
+      : "In precision agriculture, modern technology (including Python, AI/ML, IoT sensors, and drone imaging) helps farmers make data-driven agronomic decisions:\n\n1. **Satellite & Drone NDVI Vegetation Mapping:** Computing the Normalized Difference Vegetation Index from spectral bands to spot nitrogen deficiency, drought stress, and canopy vigor variations across hectares.\n2. **Predictive Irrigation & Evapotranspiration Models:** Forecasting daily root-zone soil water depletion to automate drip valves and prevent over-irrigation.\n3. **Automated Disease & Pest Detection:** Running edge convolutional neural networks on smartphones to identify foliar lesions directly in the field.\n\n```python\n# NDVI Vegetation Index Calculation for Crop Vigor\nimport numpy as np\ndef calculate_ndvi(nir_band, red_band):\n    return (nir_band - red_band) / (nir_band + red_band + 1e-6)\n```\n\nThese automated workflows enable variable-rate spraying, yield forecasting, and optimal resource management. 🌱";
 
     return {
       domain: 'AGRICULTURE',
@@ -579,34 +767,152 @@ function generateContextualFallback({ question = '', history = [], relevance = n
     };
   }
 
-  // Irrigation explicit query
-  if (rel.irrigation.relevant) {
-    const targetCrop = rel.activeCrop.name || 'plants';
-    const irrigResp = lang === 'hi'
-      ? `💧 **सिंचाई प्रबंधन (${targetCrop}):**\n\n- सीधे जड़ क्षेत्र में ड्रिप प्रणाली से पानी दें। पत्तियों पर ऊपर से पानी न डालें।\n- खेत में उचित जल निकासी रखें ताकि जड़ों में जलभराव न हो। 🌱`
-      : `💧 **Irrigation & Moisture Protocol (${targetCrop}):**\n\n- Deliver water directly to the root zone via drip lines; avoid overhead sprinklers that wet the foliage.\n- Keep the topsoil evenly moist while ensuring adequate subsoil drainage to prevent root rot. 🌱`;
+  // 4. Plant Nutrition & Nitrogen (e.g. "Why do plants need nitrogen?")
+  if (rel.activeTopicType === 'plant_nutrition' || rel.queryTurn?.type === 'plant_nutrition') {
+    const isNitrogen = rel.activeTopic.toLowerCase().includes('nitrogen') || /\bnitrogen\b/i.test(q);
+    const nutritionResp = isNitrogen
+      ? (lang === 'hi'
+          ? "🌿 **पौधों के लिए नाइट्रोजन (Nitrogen) क्यों आवश्यक है?**\n\nनाइट्रोजन पौधों की वृद्धि और विकास के लिए सबसे महत्वपूर्ण प्राथमिक पोषक तत्व है:\n\n1. **क्लोरोफिल निर्माण:** नाइट्रोजन क्लोरोफिल अणु का मुख्य घटक है, जो प्रकाश संश्लेषण द्वारा सूर्य के प्रकाश को भोजन (ग्लूकोज) में बदलने के लिए आवश्यक है।\n2. **प्रोटीन व अमीनो एसिड निर्माण:** यह अमीनो एसिड की बुनियादी निर्माण इकाई है, जिससे पौधों के संरचनात्मक प्रोटीन और एंजाइम बनते हैं।\n3. **वानस्पतिक वृद्धि:** यह तनों, शाखाओं और हरी पत्तियों के तेजी से विकास को प्रेरित करता है।\n\n**कमी के लक्षण (Deficiency):** पुरानी निचली पत्तियां पीली पड़ने लगती हैं (क्लोरोसिस) और पौधों का विकास रुक जाता है।\n\n*जैविक स्रोत: अच्छी तरह सड़ा हुआ गोबर का खाद, वर्मीकम्पोस्ट, नीम की खली और ढैंचा/सनई की हरी खाद। 🌱*"
+          : lang === 'hinglish'
+          ? "🌿 **Plants ko Nitrogen (N) kyu chahiye hota hai?**\n\nNitrogen plant growth ka sabse primary nutrient hai:\n\n1. **Chlorophyll Synthesis:** Nitrogen chlorophyll ka main component hai jo photosynthesis ke liye zaroori hai.\n2. **Proteins & Enzymes:** Ye amino acids aur structural proteins banata hai jisse nayi cells banti hain.\n3. **Vegetative Canopy Growth:** Green leaves aur branches ki fast growth ko drive karta hai.\n\n**Deficiency Signs:** Lower leaves peeli hone lagti hain aur plant ki height ruk jati hai.\n\n*Organic Sources: Vermicompost, Gobar khad, Neem cake aur Legume green manure. 🌱*"
+          : "🌿 **Why Plants Need Nitrogen (N) in Agriculture:**\n\nNitrogen is the most critical primary macronutrient for plant growth and metabolic survival:\n\n1. **Chlorophyll Synthesis & Photosynthesis:** Nitrogen is an essential atomic constituent of the chlorophyll molecule. Without adequate nitrogen, plants cannot efficiently capture solar photons to synthesize carbohydrates.\n2. **Amino Acids, Proteins & Enzymes:** Nitrogen forms the foundational amino backbone of all plant proteins, structural membranes, and functional metabolic enzymes.\n3. **Vegetative Canopy & Biomass Development:** It directly drives rapid cell division, shoot elongation, and lush foliar expansion during vegetative growth stages.\n4. **Nucleic Acids (DNA/RNA):** Nitrogen is required for genetic replication and cellular energy transfer (ATP).\n\n**Deficiency Symptoms (Chlorosis):** General uniform yellowing of older, lower leaves as mobile nitrogen is translocated to newer canopy shoots, accompanied by stunted vegetative growth. 🌱")
+      : (lang === 'hi'
+          ? "🧪 **फसलों के लिए संतुलित पोषण (N-P-K) के सिद्धांत:**\n\n1. **नाइट्रोजन (N):** वानस्पतिक वृद्धि व हरी पत्तियों के विकास के लिए।\n2. **फॉस्फोरस (P):** जड़ विकास और फूल/फल बनने के लिए।\n3. **पोटाश (K):** रोग प्रतिरोधक क्षमता, सूखा सहनशीलता और गुणवत्ता के लिए।\n\n*सटीक मात्रा के लिए हमेशा मिट्टी परीक्षण (Soil Test) कराएं। 🌱*"
+          : "🧪 **Principles of Balanced Plant Nutrition (N-P-K):**\n\n1. **Nitrogen (N):** Drives vegetative canopy and foliage.\n2. **Phosphorus (P):** Develops deep root architecture and early flowering.\n3. **Potassium (K):** Regulates stomatal conductance, water stress resistance, and fruit sizing. 🌱");
 
     return {
       domain: 'AGRICULTURE',
-      contextual: true,
-      topic: 'Irrigation',
-      intent: 'IRRIGATION',
-      response: irrigResp,
+      contextual: false,
+      topic: 'Plant Nutrition',
+      intent: 'GENERAL_AGRICULTURE',
+      response: nutritionResp,
       needs_clarification: false
     };
   }
 
-  // Explicit Latest Scan Discussion
+  // 5. Crop Rotation (e.g. "What is crop rotation?", "Why is it useful?")
+  if (rel.activeTopicType === 'crop_rotation' || rel.queryTurn?.type === 'crop_rotation') {
+    const rotResp = lang === 'hi'
+      ? "🔄 **फसल चक्र (Crop Rotation) क्या है और यह क्यों उपयोगी है?**\n\nफसल चक्र का अर्थ है एक ही खेत में अलग-अलग मौसमों में बदल-बदल कर विभिन्न फसलों को उगाना।\n\n**मुख्य लाभ व उपयोगिता:**\n1. **रोग व कीट चक्र तोड़ना:** एक ही फसल को बार-बार लगाने से उस फसल के विशिष्ट कीट व फफूंद मिट्टी में पनप जाते हैं। फसल बदलने से उनका चक्र टूट जाता है।\n2. **मिट्टी में प्राकृतिक नाइट्रोजन स्थिरीकरण:** दलहनी फसलें (जैसे मूंग, चना, अरहर) राइजोबियम जीवाणुओं की सहायता से हवा से नाइट्रोजन खींचकर मिट्टी में स्थिर करती हैं।\n3. **मृदा स्वास्थ्य व संरचना सुधार:** गहरी जड़ों वाली और उथली जड़ों वाली फसलों को बारी-बारी से लगाने से मिट्टी में वायु संचार सुधरता है।\n\n**चक्र उदाहरण:** `दलहनी फसल (चना/मूंग) ➔ भारी पोषक लेने वाला अनाज (गेहूं/मक्का) ➔ पत्तेदार सब्जी/कंद (आलू/प्याज)` 🌱"
+      : lang === 'hinglish'
+      ? "🔄 **Crop Rotation kyu useful aur zaroori hai?**\n\nCrop rotation ka matlab hai ek hi khet me season-by-season alag-alag type ki crops ko sequence me grow karna.\n\n**Main Benefits:**\n1. **Pest aur Disease Cycle Break:** Lagatar same crop lagane se soil-borne bimariya badhti hain. Crop badalne se pathogens starve ho jate hain.\n2. **Natural Soil Nitrogen:** Legume crops (moong, chana) soil me natural atmospheric nitrogen fix karti hain.\n3. **Soil Structure:** Deep root aur shallow root crops alternate karne se soil aeration behtar hota hai.\n\n**Sequence Example:** `Legume (Chana/Moong) ➔ Cereal (Wheat/Corn) ➔ Root/Vegetable (Potato/Onion)` 🌱"
+      : "🔄 **What is Crop Rotation and Why is it Useful?**\n\nCrop rotation is the systematic practice of cultivating different crop species in recurring seasonal succession on the same parcel of agricultural land.\n\n**Key Agronomic Benefits & Utility:**\n1. **Disrupts Host-Specific Pest & Pathogen Cycles:** Monocultures allow specialized soil-borne fungi, nematodes, and insect pests to accumulate. Introducing a non-host plant family starves these pest populations.\n2. **Biological Nitrogen Fixation:** Incorporating legumes (such as chickpeas, lentils, or clover) enriches the soil with atmospheric nitrogen via symbiotic Rhizobium root nodules, cutting fertilizer demands for heavy feeders (corn, wheat).\n3. **Improves Soil Structure & Nutrient Use:** Alternating deep taproot crops with shallow fibrous-root crops accesses nutrients from diverse soil depths and improves soil porosity.\n\n**Recommended Sequence:** `Legume (N-fixer) ➔ Heavy Feeder Cereal (Corn/Wheat) ➔ Leafy Brassica (Cabbage) ➔ Light Feeder Root Crop (Onion/Carrot)` 🌱";
+
+    return {
+      domain: 'AGRICULTURE',
+      contextual: false,
+      topic: 'Crop Rotation',
+      intent: 'GENERAL_AGRICULTURE',
+      response: rotResp,
+      needs_clarification: false
+    };
+  }
+
+  // 6. Soil Health & Science (e.g. "What is soil health?", "Can I improve it naturally?")
+  if (rel.activeTopicType === 'soil' || rel.queryTurn?.type === 'soil') {
+    const isNaturalImprovement = /\b(improve|natural|naturally|health|organic|compost|fertility|enrich|kaise\s+sudhare)\b/i.test(q) || (rel.isLanguageSwitch && rel.activeTopic.includes('Soil'));
+    const soilResp = isNaturalImprovement
+      ? (lang === 'hi'
+          ? "🌱 **मृदा स्वास्थ्य को प्राकृतिक रूप से कैसे सुधारें:**\n\n1. **जैविक खाद (Organic Matter):** अच्छी तरह सड़ा हुआ गोबर का खाद या वर्मीकम्पोस्ट (5-10 टन/हेक्टेयर) मिलाकर मिट्टी की जलधारण क्षमता और लाभकारी सूक्ष्मजीवों की संख्या बढ़ाएं।\n2. **हरी खाद व कवर क्रॉप्स:** ढैंचा, सनई या दलहनी फसलों को उगाकर फूल आने पर मिट्टी में दबाएं ताकि प्राकृतिक नाइट्रोजन और बायोमास जुड़े।\n3. **मल्चिंग (Mulching):** फसल अवशेषों या सूखे पत्तों की मल्चिंग करें ताकि मिट्टी की नमी सुरक्षित रहे और कटाव रुके।\n4. **न्यूनतम जुताई (Minimum Tillage):** अनावश्यक गहरी जुताई से बचें ताकि मिट्टी की संरचना और केंचुओं का आवास सुरक्षित रहे। 🌱"
+          : lang === 'hinglish'
+          ? "🌱 **Soil Health ko Naturally Improve karne ke Best Ways:**\n\n1. **Organic Matter:** Well-decomposed Gobar khad ya Vermicompost add karein taaki microbial activity aur water retention badhe.\n2. **Green Manuring:** Dhaincha ya legume crops ko grow karke soil me mix karein natural nitrogen ke liye.\n3. **Mulching:** Crop residue se mulching karein taaki moisture hold rahe aur soil erosion ruke.\n4. **Minimum Tillage:** Over-ploughing avoid karein taaki beneficial earthworms aur soil structure disturb na ho. 🌱"
+          : "🌱 **How to Naturally Improve and Restore Soil Health:**\n\n1. **Incorporate Organic Matter:** Apply well-decomposed farmyard manure or vermicompost to dramatically increase cation exchange capacity (CEC), water infiltration, and beneficial microbial populations.\n2. **Grow Nitrogen-Fixing Cover Crops & Green Manure:** Cultivate legumes or sunn hemp and till them in before flowering to replenish active soil carbon and fixed nitrogen.\n3. **Apply Organic Mulch:** Maintain a protective layer of crop residues or straw across beds to moderate root temperatures, retain moisture, and curb erosion.\n4. **Practise Minimum / Conservation Tillage:** Minimize excessive soil inversion to preserve mycorrhizal fungal networks, earthworm burrows, and aggregate stability. 🌱")
+      : (lang === 'hi'
+          ? "🌍 **कृषि में मृदा स्वास्थ्य (Soil Health) का महत्व:**\n\nमिट्टी केवल पौधों को सहारा देने वाला माध्यम नहीं है, बल्कि एक जीवित पारिस्थितिकी तंत्र है जो कृषि की नींव है:\n\n1. **पोषक तत्वों का भंडार:** यह पौधों के लिए आवश्यक 17 अनिवार्य पोषक तत्वों को जड़ क्षेत्र में संचित और उपलब्ध कराती है।\n2. **जल संरक्षण व निकासी:** वर्षा और सिंचाई के पानी को सोखकर जड़ क्षेत्र में नमी बनाए रखती है।\n3. **सूक्ष्मजीव जीवन:** इसमें मौजूद अरबों लाभकारी जीवाणु और केंचुए कार्बनिक पदार्थों को पौधों के अवशोषण योग्य पोषक तत्वों में बदलते हैं। 🌱"
+          : "🌍 **The Importance of Soil Health in Agriculture:**\n\nSoil health is the continued capacity of soil to function as a vital living ecosystem that sustains plants, animals, and agricultural productivity:\n\n1. **Nutrient Reservoir & Bioavailability:** Houses and cycles essential macro- and micro-nutrients via ion exchange.\n2. **Hydrological Regulation:** Regulates water retention in the root zone while preventing hypoxia.\n3. **Biological Diversity:** Supports the soil microbiome that decomposes organic residues and suppresses soil-borne pathogens. 🌱");
+
+    return {
+      domain: 'AGRICULTURE',
+      contextual: false,
+      topic: 'Soil Science',
+      intent: 'GENERAL_AGRICULTURE',
+      response: soilResp,
+      needs_clarification: false
+    };
+  }
+
+  // 7. Photosynthesis
+  if (rel.activeTopicType === 'photosynthesis' || rel.queryTurn?.type === 'photosynthesis') {
+    const photoResp = lang === 'hi'
+      ? "☀️ **प्रकाश संश्लेषण (Photosynthesis) की प्रक्रिया:**\n\nप्रकाश संश्लेषण वह मूलभूत प्रक्रिया है जिसमें पौधे सूर्य के प्रकाश, कार्बन डाइऑक्साइड ($CO_2$) और पानी ($H_2O$) का उपयोग करके ग्लूकोज और ऑक्सीजन ($O_2$) बनाते हैं:\n\n$$\\text{6CO}_2 + \\text{6H}_2\\text{O} + \\text{प्रकाश} \\rightarrow \\text{C}_6\\text{H}_{12}\\text{O}_6 + \\text{6O}_2$$\n\nयह प्रक्रिया सीधे फसल की बायोमास वृद्धि और पैदावार को निर्धारित करती है। 🌱"
+      : "☀️ **How Photosynthesis Works in Crop Science:**\n\nPhotosynthesis is the foundational biochemical process through which green plants convert light energy, carbon dioxide ($CO_2$), and water ($H_2O$) into glucose (chemical energy) and oxygen ($O_2$):\n\n$$\\text{6CO}_2 + \\text{6H}_2\\text{O} + \\text{Light} \\rightarrow \\text{C}_6\\text{H}_{12}\\text{O}_6 + \\text{6O}_2$$\n\nCanopy photosynthetic efficiency directly dictates crop biomass accumulation and final harvestable yield. 🌱";
+
+    return {
+      domain: 'AGRICULTURE',
+      contextual: false,
+      topic: 'Plant Biology',
+      intent: 'GENERAL_AGRICULTURE',
+      response: photoResp,
+      needs_clarification: false
+    };
+  }
+
+  // 8. Weather Queries & Rain Follow-ups (Standalone or with active crop)
+  const isWeatherAction = rel.activeTopicType === 'weather' || rel.queryTurn?.type === 'weather' || /\b(weather|forecast|rain(?:s|ing|fall)?|shower(?:s)?|barish|barsat|temperature|temp|humidity|spray.*weather|mausam|kal\s+ka\s+mausam)\b/i.test(q) || (rel.isLanguageSwitch && rel.activeTopic.includes('Weather'));
+  if (isWeatherAction) {
+    const crop = rel.activeCrop?.name;
+    const temp = weatherContext?.temperature ?? 26;
+    const rainProb = weatherContext ? (weatherContext.rainProbability ?? weatherContext.pop ?? 22) : 22;
+
+    if (crop) {
+      const rainCropResp = lang === 'hi'
+        ? `🌧️ **वर्षा व फसल प्रबंधन (${crop}):**\n\nयदि कल बारिश होने की संभावना है, तो अपने ${crop} के लिए निम्नलिखित सावधानियां रखें:\n\n1. **फोलियर स्प्रे टालें:** किसी भी कीटनाशक, फफूंदनाशक (जैसे नीम तेल) या तरल खाद का छिड़काव न करें, क्योंकि बारिश दवा को धो देगी।\n2. **पत्तियों में फफूंद का खतरा:** पत्तियों के अधिक समय तक गीले रहने से ${crop} में फफूंद (जैसे धब्बे और ब्लाइट) तेजी से फैलती है। हवा का संचार बनाए रखें।\n3. **सिंचाई रोकें:** बारिश से पहले पानी न दें और खेत की जलनिकासी नालियों को साफ़ रखें ताकि जड़ों में पानी न भरे। 🌱`
+        : lang === 'hinglish'
+        ? `🌧️ **Barish aur Fasal Prabandhan (${crop}):**\n\nAgar kal barish expected hai toh ${crop} ke liye ye steps follow karein:\n\n1. **Foliar Spray Postpone Karein:** Neem oil ya chemical spray na karein, barish se spray dhul jayega.\n2. **Foliage Moisture Control:** Leaves geeli rehne se ${crop} me fungal spots aur blight tezi se failte hain. Proper aeration rakhein.\n3. **Sinchai Rokein:** Sinchai delay karein aur drainage clear rakhein taaki roots me paani jam na ho. 🌱`
+        : `🌧️ **Rain & Crop Management Advisory (${crop}):**\n\nIf rain is expected tomorrow, consider the following agronomic precautions for your ${crop}:\n\n1. **Postpone Foliar Sprays:** Hold off on applying any organic or chemical foliar sprays (such as neem oil or copper bio-fungicides) until dry weather returns, as rainfall will wash active ingredients off the foliage.\n2. **Manage Foliar Moisture & Disease Proliferation:** Extended leaf wetness accelerates fungal spore germination (such as foliar spots and blight on ${crop}). Ensure good canopy aeration so leaves dry quickly.\n3. **Pause Scheduled Irrigation:** Do not water ahead of expected rainfall, and ensure field drainage channels are clear to prevent waterlogging around root zones. 🌱`;
+
+      return {
+        domain: 'AGRICULTURE',
+        contextual: rel.weather.relevant,
+        topic: `${crop} Weather Advisory`,
+        intent: 'WEATHER',
+        response: rainCropResp,
+        needs_clarification: false
+      };
+    } else {
+      const generalRainResp = lang === 'hi'
+        ? "🌧️ **कृषि मौसम व वर्षा मार्गदर्शन:**\n\nयदि आपके क्षेत्र में कल बारिश की संभावना है:\n\n1. **स्प्रे स्थगित करें:** किसी भी फोलियर स्प्रे या रासायनिक छिड़काव को रोकें ताकि दवा धुल न जाए।\n2. **सिंचाई रोकें:** निर्धारित सिंचाई को टालें ताकि पानी की बचत हो और जलभराव न हो।\n3. **जल निकासी जांचें:** खेत की नालियों की सफाई करें ताकि जड़ क्षेत्र में पानी जमा न हो। 🌱"
+        : "🌧️ **Agricultural Weather Guidance:**\n\nIf rain is expected tomorrow on your farm, keep these core agronomic practices in mind:\n\n1. **Postpone Foliar Applications:** Hold off on spraying liquid fertilizers, fungicides, or pesticides, as precipitation will wash active ingredients off.\n2. **Delay Scheduled Irrigation:** Pause irrigation cycles to conserve water and prevent soil saturation.\n3. **Check Field Drainage:** Ensure furrows, beds, and drainage channels are clear to avoid standing water and root hypoxia. 🌱";
+
+      return {
+        domain: 'AGRICULTURE',
+        contextual: rel.weather.relevant,
+        topic: 'Weather Advisory',
+        intent: 'WEATHER',
+        response: generalRainResp,
+        needs_clarification: false
+      };
+    }
+  }
+
+  // 8.5. Irrigation & Water Management
+  if (rel.irrigation.relevant || rel.activeTopicType === 'irrigation' || rel.queryTurn?.type === 'irrigation') {
+    const action = irrigationContext?.action || irrigationContext?.reason || 'Inspect soil moisture in root zone before watering.';
+    const irrigationResp = lang === 'hi'
+      ? `💧 **सिंचाई व जल प्रबंधन परामर्श:**\n\n${action}\n\n1. **ड्रिप सिंचाई:** पत्तियों को ऊपर से गीला करने से बचें; सीधे जड़ क्षेत्र में पानी दें।\n2. **मृदा नमी परीक्षण:** ऊपरी 2-3 इंच मिट्टी को छूकर नमी की जांच करें। 🌱`
+      : lang === 'hinglish'
+      ? `💧 **Sinchai aur Jal Prabandhan:**\n\n${action}\n\n1. **Drip Irrigation:** Leaves ko geela na karein; direct root zone me paani dein.\n2. **Soil Moisture Check:** Top 2-3 inch mitti check karke hi zaroorat anusar pani dein. 🌱`
+      : `💧 **Irrigation & Water Management Advisory:**\n\n${action}\n\n1. **Root-Zone Delivery:** Apply irrigation directly at the soil line using drip lines to avoid canopy leaf wetness.\n2. **Soil Moisture Check:** Check the top 2–3 inches of soil before running irrigation cycles. 🌱`;
+
+    return {
+      domain: 'AGRICULTURE',
+      contextual: rel.irrigation.relevant,
+      topic: 'Irrigation Advisory',
+      intent: 'IRRIGATION',
+      response: irrigationResp,
+      needs_clarification: false
+    };
+  }
+
+  // 9. Explicit Latest Scan Discussion (e.g. "What was detected in my latest scan?")
   if (rel.latestScan.relevant && diagnosisContext) {
     const dCrop = diagnosisContext.crop || 'Plant';
     const dDisease = diagnosisContext.disease || diagnosisContext.diseaseName || 'Crop Disease';
     const conf = Math.round((diagnosisContext.confidence || 0.85) * 100);
 
     const scanResp = lang === 'hi'
-      ? `📋 **नवीनतम स्कैन रिपोर्ट (${dCrop} - ${dDisease}):**\n\nआपके हालिया स्कैन में **${dDisease}** (${conf}% सटीकता) की पहचान हुई है।\n\n1. **तात्कालिक कदम:** रोगग्रस्त पत्तियों को सावधानीपूर्वक काटकर नष्ट करें।\n2. **जैविक प्रबंधन:** सुबह के समय नीम के तेल (5 मिली/लीटर) का स्प्रे करें।\n3. **सिंचाई:** ड्रिप सिंचाई द्वारा केवल जड़ों में पानी दें; पत्तियों को सूखा रखें।\n\n*${disclaimer}*`
-      : lang === 'hinglish'
-      ? `📋 **Latest Scan Report (${dCrop} - ${dDisease}):**\n\nAapke recent scan me **${dDisease}** (${conf}% confidence) detect hua hai.\n\n1. **Immediate Step:** Infected leaves ko prune karke safely destroy karein.\n2. **Organic Spray:** Subah neem oil (5ml/L) ka foliar spray karein.\n3. **Irrigation:** Roots me drip se paani dein; foliage geela na karein.\n\n*${disclaimer}*`
-      : `📋 **Latest Scan Report (${dCrop} - ${dDisease}):**\n\nBased on your recent scan diagnosing **${dDisease}** (${conf}% confidence):\n\n1. **Immediate Step:** Carefully prune and destroy heavily spotted/infected foliage to reduce fungal inoculum.\n2. **Organic Management:** Apply a preventive neem oil foliar spray (5ml/L) or registered bio-fungicide.\n3. **Moisture Control:** Switch to root-zone drip irrigation to keep canopy foliage dry.\n\n*${disclaimer}*`;
+      ? `📋 **नवीनतम स्कैन रिपोर्ट (${dCrop} - ${dDisease}):**\n\nहालिया स्कैन में **${dDisease}** (${conf}% सटीकता) की पुष्टि हुई है।\n\n1. **तात्कालिक कदम:** रोगग्रस्त पत्तियों को काटकर नष्ट करें।\n2. **जैविक स्प्रे:** सुबह नीम तेल (5 मिली/लीटर) का छिड़काव करें।\n3. **सिंचाई:** ड्रिप से केवल जड़ों में पानी दें।\n\n*${disclaimer}*`
+      : `📋 **Latest Scan Report (${dCrop} - ${dDisease}):**\n\nBased on your recent scan diagnosing **${dDisease}** (${conf}% confidence):\n\n1. **Immediate Step:** Carefully prune heavily infected foliage.\n2. **Organic Management:** Apply cold-pressed neem oil (5ml/L) or bio-fungicide.\n3. **Moisture Control:** Keep canopy foliage dry with drip irrigation.\n\n*${disclaimer}*`;
 
     return {
       domain: 'AGRICULTURE',
@@ -618,14 +924,16 @@ function generateContextualFallback({ question = '', history = [], relevance = n
     };
   }
 
-  // Explicit Crop Established in Conversation / Query
-  const establishedCrop = rel.activeCrop.name;
-  if (establishedCrop) {
-    // 1. Initial Action / Where to Begin Question
-    if (/\b(where do i (begin|start)|what (should|to) (i|we)?\s*(check|do) (first|initially)|how (should|do) i start|first steps?|kaha se shuru|kya karu pehle)\b/i.test(q)) {
+  // 10. Crop-Specific Foliar Health & Symptom Assessment (e.g. Tomato Yellow Leaves vs Brown Spots vs Prevention vs Steps)
+  if (rel.activeCrop?.name) {
+    const crop = rel.activeCrop.name;
+    const symptom = rel.activeSymptom || 'foliar symptoms';
+
+    // A. Initial steps / Where to begin / Next steps
+    if (/\b(where\s+do\s+i\s+(begin|start)|what\s+should\s+i\s+do\s+next|first\s+steps?|what\s+next|kaha\s+se\s+shuru|where\s+should\s+i\s+start)\b/i.test(q)) {
       const beginResp = lang === 'hi'
-        ? `🔍 **निरीक्षण व प्रारंभिक कदम (${establishedCrop}):**\n\n1. **पत्तियों की जांच:** अपने ${establishedCrop} के पौधों की निचली पत्तियों और तनों का निरीक्षण करें कि धब्बों का रंग और आकार कैसा है।\n2. **सफाई:** अत्यधिक प्रभावित निचली पत्तियों को विसंक्रमित कैंची से काटकर नष्ट करें।\n3. **जल प्रबंधन:** पत्तियों पर पानी का छिड़काव बंद करें और केवल जड़ों में पानी दें।\n\n*${disclaimer}*`
-        : `🔍 **Initial Inspection & Next Steps (${establishedCrop}):**\n\n1. **Canopy Inspection:** Start by checking the lower leaves and undersides of your ${establishedCrop} to see if spots have dark concentric rings or yellow halos.\n2. **Sanitation:** Carefully prune and destroy heavily spotted lower leaves using clean tools to reduce fungal spore loads.\n3. **Foliar Management:** Ensure foliage stays dry by switching to drip irrigation at the root zone.\n\n*${disclaimer}*`;
+        ? `🔍 **निरीक्षण व प्रारंभिक कदम (${crop}):**\n\n1. **कैनोपी जांच:** अपने ${crop} के पौधों की निचली पत्तियों और तनों का बारीकी से निरीक्षण करें कि धब्बों या पीलापन का स्वरूप कैसा है।\n2. **स्वच्छता:** अत्यधिक रोगग्रस्त या सूखी निचली पत्तियों को विसंक्रमित कैंची से काटकर नष्ट करें।\n3. **सिंचाई:** ड्रिप सिंचाई द्वारा केवल जड़ों में पानी दें; पत्तियों को सूखा रखें।\n\n*${disclaimer}*`
+        : `🔍 **Initial Inspection & Next Steps (${crop}):**\n\n1. **Canopy Inspection:** Start by inspecting the lower leaves and undersides of your ${crop} to check the pattern of discoloration or lesions.\n2. **Sanitation:** Carefully prune and destroy heavily affected lower foliage using clean shears to reduce pathogen loads.\n3. **Foliar Management:** Deliver water directly to the root zone via drip irrigation rather than wetting foliage.\n\n*${disclaimer}*`;
 
       return {
         domain: 'AGRICULTURE',
@@ -637,27 +945,11 @@ function generateContextualFallback({ question = '', history = [], relevance = n
       };
     }
 
-    // 2. Foliar Symptom Reporting / Diagnosis
-    if (/\b(yellow spots?|brown spots?|spots? on leaves|dark spots?|lesions?|wilting|leaf curl|peele patte|dhabbe)\b/i.test(q)) {
-      const symptomResp = lang === 'hi'
-        ? `🌱 **फसल लक्षण परामर्श (${establishedCrop}):**\n\n${establishedCrop} की पत्तियों पर धब्बे फफूंद जनित संक्रमण (जैसे अर्ली ब्लाइट या सेप्टोरिया) या पोषण की कमी का संकेत हो सकते हैं। प्रभावित पत्तियों को सूखा रखें और कैनोपी में हवा का आवागमन सुनिश्चित करें।\n\n*${disclaimer}*`
-        : `🌱 **Foliar Symptom Assessment (${establishedCrop}):**\n\nYellow or discolored foliar spots on ${establishedCrop} commonly indicate early fungal leaf spots or localized nutrient stress. Avoid overhead watering to prevent spore dispersal, and monitor whether new shoots are affected.\n\n*${disclaimer}*`;
-
-      return {
-        domain: 'AGRICULTURE',
-        contextual: true,
-        topic: 'Symptom Assessment',
-        intent: 'DIAGNOSIS',
-        response: symptomResp,
-        needs_clarification: false
-      };
-    }
-
-    // 3. Prevention & Spread Control
-    if (/\b(prevent|worse|stop.*(it|spread|disease)|future|roktham)\b/i.test(q)) {
+    // B. Prevention & Spread Control
+    if (/\b(prevent|worse|stop.*(it|spread|disease)|future|roktham|prevention|how\s+can\s+i\s+prevent)\b/i.test(q)) {
       const preventResp = lang === 'hi'
-        ? `🛡️ **रोग रोकथाम व सुरक्षा उपाय (${establishedCrop}):**\n\n1. **हवा का संचार:** पौधों के बीच उचित दूरी रखें ताकि पत्तियों में हवा और धूप लगे।\n2. **जैविक सुरक्षा:** सुरक्षात्मक उपाय के रूप में नीम तेल (5 मिली/लीटर) या ट्राइकोडर्मा का सुबह के समय छिड़काव करें।\n3. **फसल चक्र:** अगली बुवाई में गैर-सोलेनेसी फसलों का चक्र अपनाएं।\n\n*${disclaimer}*`
-        : `🛡️ **Prevention & Disease Spread Control (${establishedCrop}):**\n\n1. **Aeration & Spacing:** Maintain proper plant spacing and prune crowded lower foliage to maximize canopy air movement and rapid drying.\n2. **Protective Bio-Control:** Apply cold-pressed Neem oil (5ml/L) or a registered bio-fungicide during calm morning hours.\n3. **Mulching:** Apply organic mulch at the base to prevent soil-borne pathogens from splashing onto leaves during watering.\n\n*${disclaimer}*`;
+        ? `🛡️ **रोग रोकथाम व सुरक्षा उपाय (${crop}):**\n\n1. **पौधों में दूरी व वायु संचार:** पौधों के बीच पर्याप्त दूरी रखें ताकि पत्तियों में हवा और धूप का प्रवाह बना रहे।\n2. **जैविक सुरक्षा:** सुबह के समय सुरक्षात्मक नीम तेल (5 मिली/लीटर) या ट्राइकोडर्मा का छिड़काव करें।\n3. **फसल चक्र:** अगली बुवाई में गैर-सोलेनेसी फसलों का चक्र अपनाएं।\n\n*${disclaimer}*`
+        : `🛡️ **Prevention & Disease Spread Control (${crop}):**\n\n1. **Airflow & Spacing:** Maintain proper spacing between ${crop} plants to ensure rapid canopy drying and air circulation.\n2. **Protective Bio-Control:** Apply cold-pressed neem oil (5ml/L) or registered bio-fungicide during calm mornings.\n3. **Mulching:** Apply organic straw mulch around plant bases to prevent soil-borne pathogens from splashing onto leaves during watering.\n\n*${disclaimer}*`;
 
       return {
         domain: 'AGRICULTURE',
@@ -669,28 +961,45 @@ function generateContextualFallback({ question = '', history = [], relevance = n
       };
     }
 
-    // 4. General agronomic crop care for established crop
-    const cropCareResp = lang === 'hi'
-      ? `🌿 **फसल देखभाल परामर्श (${establishedCrop}):**\n\n1. **कैनोपी निरीक्षण:** पत्तियों की निचली सतह और नई शाखाओं का नियमित निरीक्षण करें।\n2. **पोषण व सिंचाई:** ड्रिप सिंचाई द्वारा संतुलित नमी रखें और पत्तियों को गीला करने से बचें।\n3. **स्वच्छता:** सूखी या पीली पत्तियों को काटकर खेत साफ़ रखें।\n\n*${disclaimer}*`
-      : `🌿 **Agronomic Guidance (${establishedCrop}):**\n\n1. **Foliar Inspection:** Inspect leaf undersides and stems regularly to catch any early symptoms.\n2. **Water Management:** Apply water at the root zone via drip lines to avoid prolonged leaf wetness.\n3. **Sanitation:** Prune and safely remove discolored lower leaves to maintain canopy aeration.\n\n*${disclaimer}*`;
+    // C. Brown Spots specifically
+    if (/\b(brown\s+spots?|bhure\s+dhabbe|dark\s+spots?|black\s+spots?)\b/i.test(q) || (symptom.includes('brown') && !/\byellow\b/i.test(q))) {
+      const brownResp = lang === 'hi'
+        ? `🍂 **पत्तियों पर भूरे धब्बों का परामर्श (${crop}):**\n\n${crop} की पत्तियों पर भूरे या गहरे रंग के धब्बे आमतौर पर फफूंद जनित संक्रमण (जैसे अर्ली ब्लाइट / सेप्टोरिया लीफ स्पॉट) का संकेत होते हैं:\n\n1. **सफाई व छंटाई:** रोगग्रस्त भूरे धब्बों वाली निचली पत्तियों को विसंक्रमित कैंची से काटकर नष्ट करें।\n2. **जैविक उपचार:** सुबह के समय कॉपर-आधारित जैविक कवकनाशी या नीम तेल (5 मिली/लीटर) का स्प्रे करें।\n3. **पत्तियों को सूखा रखें:** पत्तियों पर ऊपर से पानी न डालें; ड्रिप सिंचाई से केवल जड़ों में पानी दें।\n\n*${disclaimer}*`
+        : lang === 'hinglish'
+        ? `🍂 **Brown Spots Assessment (${crop}):**\n\n${crop} ki leaves par brown ya dark concentric spots fungal leaf spot (Early Blight / Septoria) ka indication hain:\n\n1. **Sanitation:** Heavily spotted brown leaves ko prune karke destroy karein.\n2. **Protective Spray:** Copper-based bio-fungicide ya Neem oil (5ml/L) ka spray karein.\n3. **Irrigation:** Roots me drip se paani dein; foliage geela na karein.\n\n*${disclaimer}*`
+        : `🍂 **Brown Spot Symptom Assessment (${crop}):**\n\nBrown or dark necrotic spots on ${crop} foliage typically indicate foliar fungal infections such as Early Blight (*Alternaria*) or Septoria Leaf Spot:\n\n1. **Sanitation & Pruning:** Carefully prune and destroy infected lower foliage showing brown target-like rings to eliminate primary fungal spore reservoirs.\n2. **Fungicidal Protection:** Apply a registered copper-based bio-fungicide or cold-pressed neem oil during calm morning hours.\n3. **Foliar Moisture Management:** Switch exclusively to root-zone drip irrigation to keep canopy leaves dry and arrest secondary spore propagation.\n\n*${disclaimer}*`;
+
+      return {
+        domain: 'AGRICULTURE',
+        contextual: true,
+        topic: 'Brown Spot Management',
+        intent: 'DIAGNOSIS',
+        response: brownResp,
+        needs_clarification: false
+      };
+    }
+
+    // D. Yellow leaves / Initial Foliar Assessment
+    const yellowResp = lang === 'hi'
+      ? `🌱 **पत्तियों के पीलेपन का परामर्श (${crop}):**\n\n${crop} की पत्तियों का पीला पड़ना नाइट्रोजन/मैग्नीशियम पोषण की कमी, अत्यधिक पानी देने या शुरुआती फफूंद संक्रमण के कारण हो सकता है:\n\n1. **निरीक्षण:** देखें कि पीलापन पुरानी निचली पत्तियों पर है (पोषक कमी) या नई पत्तियों पर।\n2. **नमी नियंत्रण:** अधिक पानी देने से बचें और मिट्टी में उचित जल निकासी रखें।\n3. **पोषण:** संतुलित जैविक खाद या वर्मीकम्पोस्ट का प्रयोग करें।\n\n*${disclaimer}*`
+      : lang === 'hinglish'
+      ? `🌱 **Yellow Leaves Assessment (${crop}):**\n\n${crop} ke patto par peelapan nutrient deficiency (nitrogen/magnesium), over-watering ya early fungal stress ka sign ho sakta hai:\n\n1. **Inspection:** Check karein ki peelapan lower leaves par hai ya nayi leaves par.\n2. **Moisture Control:** Over-watering avoid karein aur root drainage check karein.\n3. **Nutrition:** Balanced organic compost add karein.\n\n*${disclaimer}*`
+      : `🌱 **Foliar Symptom Assessment (${crop}):**\n\nYellowing foliage on ${crop} commonly indicates localized nutrient chlorosis (such as nitrogen or magnesium deficiency), over-watering, or early fungal stress:\n\n1. **Canopy Inspection:** Check whether yellowing begins uniformly on older lower leaves (nitrogen mobility) or appears as interveinal yellowing.\n2. **Moisture Control:** Ensure soil is well-drained and avoid over-irrigation which can cause root hypoxia.\n3. **Balanced Feeding:** Apply organic compost or a balanced foliar nutrient spray to restore vigor.\n\n*${disclaimer}*`;
 
     return {
       domain: 'AGRICULTURE',
       contextual: true,
-      topic: 'Crop Care',
-      intent: 'GENERAL_AGRICULTURE',
-      response: cropCareResp,
+      topic: 'Symptom Assessment',
+      intent: 'DIAGNOSIS',
+      response: yellowResp,
       needs_clarification: false
     };
   }
 
-  // NO specific crop is established in query or history, and NO scan was requested.
-  // Provide general agronomic guidance and ask what crop they are growing.
+  // 11. General Plant Care & Growth (Broad agriculture query without specific topic)
   const generalPlantCareResp = lang === 'hi'
-    ? `🌱 **पौधों की सामान्य देखभाल व संवर्धन मार्गदर्शन:**\n\nपौधों के बेहतर विकास और अच्छी पैदावार के लिए इन मूलभूत कृषि सिद्धांतों का पालन करें:\n\n1. **मिट्टी व जड़ स्वास्थ्य:** जैविक खाद (वर्मीकम्पोस्ट) का प्रयोग करें और मिट्टी में उचित वायु संचार व जल निकासी रखें।\n2. **जल प्रबंधन:** पत्तियों पर पानी का छिड़काव न करें; सुबह के समय सीधे जड़ क्षेत्र में पानी दें।\n3. **धूप व वायु संचार:** पौधों को प्रतिदिन 6-8 घंटे की धूप और पर्याप्त दूरी दें ताकि हवा का प्रवाह बना रहे।\n4. **संतुलित पोषण:** पौधों की वृद्धि अवस्था के अनुसार संतुलित पोषक तत्व (N-P-K) दें।\n5. **नियमित निरीक्षण:** पत्तियों की निचली सतह पर कीटों या धब्बों के शुरुआती लक्षणों की नियमित जांच करें।\n\n*आप कौन सी फसल या पौधा उगा रहे हैं, या क्या आपको पत्तियों पर कोई खास लक्षण (जैसे पीलापन या धब्बे) दिखाई दे रहे हैं? कृपया बताएं ताकि मैं सटीक मार्गदर्शन दे सकूँ! 🌱*`
-    : lang === 'hinglish'
-    ? `🌱 **Plant Growth aur Care ke Core Principles:**\n\nApne plants ko healthy rakhne aur acchi growth ke liye in basic farming practices ko follow karein:\n\n1. **Mitti aur Root Health:** Mitti me achi organic compost milayein aur drainage maintain karein taaki paani jam na ho.\n2. **Water Management:** Leaves par paani mat chhidkein; subah root zone me drip se paani dein.\n3. **Dhoop aur Spacing:** Plants ko proper sunlight (6-8 ghante) aur canopy airflow ke liye sahi spacing dein.\n4. **Balanced Nutrition:** Growth stage ke according balanced nutrients aur organic manure use karein.\n5. **Regular Scouting:** Weekly leaves ke niche check karein koi pests ya spots toh nahi hain.\n\n*Aap kaunsi crop ya plant grow kar rahe hain? Kripya batayein taaki main aapko specific guidance de sakoon! 🌱*`
-    : `🌱 **General Plant Care & Crop Improvement:**\n\nTo help your plants grow vigorously and maintain optimal health, follow these core agronomic best practices:\n\n1. **Soil & Root Zone Health:** Ensure well-aerated, fertile soil with good organic matter (compost) and proper drainage to avoid waterlogging.\n2. **Targeted Watering:** Deliver water directly to the soil line/root zone rather than overhead spraying, which keeps foliage dry and deters fungal pathogens.\n3. **Sunlight & Canopy Aeration:** Provide adequate daily sunlight (6–8 hours for most fruiting crops) and maintain proper plant spacing for air circulation.\n4. **Balanced Plant Nutrition:** Apply balanced organic compost or tailored N-P-K nutrients aligned with your crop's vegetative or flowering stage.\n5. **Regular Crop Scouting:** Check leaf undersides and new shoots weekly to catch any nutrient deficiencies or early pest pressure.\n\n*Which specific crop or plant are you growing, or are you noticing any particular symptoms (such as yellowing leaves or spots)? Let me know so I can provide tailored recommendations! 🌱*`;
+    ? `🌱 **पौधों की सामान्य देखभाल व संवर्धन मार्गदर्शन:**\n\n1. **मिट्टी व पोषण:** अच्छी जैविक खाद (वर्मीकम्पोस्ट) का प्रयोग करें।\n2. **जल प्रबंधन:** पत्तियों पर पानी का छिड़काव न करें; सुबह के समय सीधे जड़ क्षेत्र में पानी दें।\n3. **धूप व वायु संचार:** पौधों को प्रतिदिन 6-8 घंटे की धूप और पर्याप्त दूरी दें।\n4. **नियमित निरीक्षण:** पत्तियों की निचली सतह की नियमित जांच करें। 🌱`
+    : `🌱 **General Plant Care & Crop Improvement:**\n\nTo help your crops grow vigorously and maintain optimal health:\n\n1. **Soil & Root Zone Health:** Maintain fertile, well-draining soil with rich organic compost.\n2. **Targeted Watering:** Water directly at the root zone via drip lines to keep canopy foliage dry.\n3. **Sunlight & Spacing:** Provide 6–8 hours of sunlight and adequate spacing for canopy aeration.\n4. **Regular Scouting:** Inspect leaf undersides weekly for early signs of stress or pests. 🌱`;
 
   return {
     domain: 'AGRICULTURE',
@@ -698,13 +1007,10 @@ function generateContextualFallback({ question = '', history = [], relevance = n
     topic: 'General Plant Care',
     intent: 'GENERAL_PLANT_CARE',
     response: generalPlantCareResp,
-    needs_clarification: true
+    needs_clarification: false
   };
 }
 
-/**
- * Answer farmer query with Gemini as primary conversational brain
- */
 async function answerFarmerQuery({
   question,
   history = [],
@@ -739,7 +1045,19 @@ async function answerFarmerQuery({
   let geminiOutput = null;
   let modelUsed = 'gemini-conversational-brain';
 
-  if (apiKey) {
+  // If query is pure non-agriculture, do not call Gemini or use fallback immediately
+  if (relevance.queryTurn?.type === 'non_agri') {
+    geminiOutput = generateContextualFallback({
+      question,
+      history: normalizedHistory,
+      relevance,
+      diagnosisContext,
+      weatherContext,
+      irrigationContext,
+      language
+    });
+    modelUsed = 'domain-guardrail-redirect';
+  } else if (apiKey) {
     try {
       const systemInstruction = buildSystemInstruction(language, agriContext);
       
@@ -936,6 +1254,7 @@ function resolveDiagnosticState(diseaseName, isHealthyFlag, kb = null) {
 
 module.exports = {
   detectLanguage,
+  extractTurnTopic,
   normalizeConversationHistory,
   evaluateContextRelevance,
   buildAgriSmartContext,
