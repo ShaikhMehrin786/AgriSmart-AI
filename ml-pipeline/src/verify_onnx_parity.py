@@ -117,8 +117,8 @@ def run_parity_check(checkpoint_path, onnx_model_path, class_labels_path, image_
 def main():
     parser = argparse.ArgumentParser(description="PyTorch vs ONNX Runtime Numerical Parity Check")
     parser.add_argument("--checkpoint", type=str, default="ml-pipeline/checkpoints/best_model.pth")
-    parser.add_argument("--onnx-model", type=str, default="backend/src/models/agrismart_model.onnx")
-    parser.add_argument("--class-labels", type=str, default="backend/src/models/class_labels.json")
+    parser.add_argument("--onnx-model", type=str, default="backend/src/models/agrismart_efficientnet_b0.onnx")
+    parser.add_argument("--class-labels", type=str, default="backend/src/models/class_labels_public.json")
     parser.add_argument("--image", type=str, default=None, help="Optional image path for test")
     parser.add_argument("--model", type=str, default="efficientnet_b0")
     parser.add_argument("--tolerance", type=float, default=1e-4)

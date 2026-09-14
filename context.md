@@ -58,12 +58,12 @@ Following a rigorous performance and deployment audit for SIH 2026, **the archit
 
 ### 3.1 Dataset Synergy Strategy
 AgriSmart AI avoids single-source training bias by combining:
-1. **PlantVillage (Base Feature Extraction):** 54,303 lab-curated images covering 14 crop species and 38 disease/healthy classes. Provides dense morphological feature maps of leaf pathogens.
+1. **PlantVillage (Base Feature Extraction):** Laboratory-curated color images covering core crop species across 28 audited canonical classes (17 diseases + 11 healthy). Provides dense morphological feature maps of leaf pathogens.
 2. **PlantDoc (Field Domain Adaptation):** 2,598 in-situ field images containing leaves in natural farm settings with complex foliage and background clutter.
 3. **Targeted Field Augmentations (Albumentations):**
    - *Spatial:* Random Affine, Perspective Warping (simulating angled smartphone shots), Elastic Transform (leaf curvature), Random Cropping.
-   - *Photometric:* Random Sun Flare, Shadow Simulation, Color Jitter, CLAHE (adaptive histogram equalization).
-   - *Sensor Noise:* Gaussian Blur, Motion Blur (wind movement), JPEG Quality Degradation (low-bandwidth image uploads).
+   - *Photometric:* Random Shadow Simulation, Color Jitter.
+   - *Sensor Noise:* Gaussian Blur, Image Compression (low-bandwidth image uploads).
 
 ### 3.2 Model Backbone Selection
 - **EfficientNet-B0 (Primary Backbone):** Balances parameter efficiency (5.3M parameters) with state-of-the-art feature extraction via compound scaling (depth, width, resolution).
@@ -87,40 +87,36 @@ AgriSmart AI solves this through **Explainable AI (Grad-CAM)**:
 ## 4. Grounded GenAI Assistant Architecture
 
 ```
-Farmer Query ("My tomato leaves have brown spots and it's raining, what should I do?")
+Farmer Message + Bounded History (8-12 turns)
        │
        ▼
-Node.js Assistant Controller
+Node.js Context Assembler
        │
-       ├─► 1. Query Active User & Diagnosis Context (Crop: Tomato, Disease: Early Blight, Confidence: 94%)
-       ├─► 2. Query Disease Monograph (Organic Treatments: Neem oil, Trichoderma; Chemical: Mancozeb)
-       ├─► 3. Query Local Weather (Humidity: 88%, Rain: Expected in 6h)
-       │
-       ▼
-Context Assembler & Strict Grounding Prompt
+       ├─► 1. System Instruction (Agronomist persona, safety rules, domain policy)
+       ├─► 2. Optional Background Reference (Diagnosis, Monograph KB, Weather Telemetry)
+       ├─► 3. Language Strategy (English, Hindi, Hinglish)
        │
        ▼
-LLM API (Gemini / OpenAI / Groq)
+Gemini Conversational Brain (`gemini-3.6-flash` / `gemini-3.5-flash`)
        │
        ▼
-Farmer Receives Grounded, Actionable, Multilingual Advisory
-("Do NOT apply spray right now because rainfall within 6 hours will wash it away. Prune affected bottom leaves...")
+Deterministic Post-Validation & Safety Guardrails
+       │ (Domain redirect for pure non-agri; rain spray warning >=50%; secret sanitization)
+       ▼
+Farmer Receives Grounded, Conversational, Multilingual Advisory
 ```
 
-### 4.1 The Hallucination Problem in Agriculture
-Generic LLMs are notorious for fabricating agricultural chemicals, recommending hazardous dosage concentrations, or suggesting remedies unavailable in rural Indian markets.
+### 4.1 The Hallucination & Domain Problem in Agriculture
+Generic LLMs are notorious for fabricating unapproved agricultural chemicals, hallucinating pesticide dosages, or answering unrelated questions without agricultural context.
 
 ### 4.2 The AgriSmart Grounding Solution
-The Node.js GenAI service acts as a strict **Retrieval-Augmented Context Orchestrator**:
-- **Structured System Prompt:** The LLM is supplied with:
-  1. The verified diagnosis from the ONNX classification engine.
-  2. The curated database monograph (symptoms, verified biological/chemical treatments approved by ICAR/CIBRC).
-  3. Real-time meteorological telemetry from OpenWeather / IMD.
-- **Strict Guardrails:** The prompt contains explicit negative constraints:
-  - *"Never recommend banned agrochemicals."*
-  - *"If rain is forecasted within 12 hours, explicitly warn against applying foliar sprays."*
-  - *"Always prioritize organic/biological controls before synthetic chemicals."*
-  - *"Support vernacular transliteration and Indian regional phrasing (e.g., Hinglish)."*
+The Node.js GenAI service equips Gemini with **bounded conversational memory and strict domain guardrails**:
+- **Primary Conversational Intelligence:** Gemini resolves references across multi-turn dialog, understands conversational context, and generates natural responses.
+- **Deterministic Guardrails:**
+  1. *Agriculture Domain Boundary:* Pure non-agricultural questions receive a polite domain redirect; agricultural technology inquiries receive substantive answers.
+  2. *Rain & Spray Safety:* If rain probability $\ge 50\%$, system enforces a mandatory warning against spraying foliar chemicals.
+  3. *Healthy Foliage Protection:* Blocks curative fungicide prescriptions on healthy plants.
+  4. *API Key Protection:* Automatically redacts API keys from output text.
 
 ---
 

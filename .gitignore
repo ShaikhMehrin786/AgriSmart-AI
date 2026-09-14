@@ -41,6 +41,7 @@ ml-pipeline/data/processed/
 *.pth
 *.pt
 *.onnx
+!backend/src/models/*.onnx
 
 # Python cache
 .pytest_cache/

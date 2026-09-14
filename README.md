@@ -47,18 +47,30 @@ AgriSmart AI bridges the lab-to-field gap through:
 
 ## ✨ Key Features Matrix
 
+### 🎯 Mandatory Core SIH Deliverables
 | Feature | Description | Status |
 |---|---|:---:|
-| 🍃 **Crop & Disease Detection** | Upload leaf images to diagnose **28 canonical crop-disease conditions** (17 diseases + 11 healthy) with confidence-aware abstention and quality scoring. | ✅ Production |
-| 🔍 **Explainable AI (Grad-CAM)** | Visual attention heatmap colormaps highlight infection loci on foliar uploads, fostering farmer transparency. | ✅ Production |
-| 🌦️ **Weather-Grounded Pathogen Risk** | Correlates ambient humidity, rainfall probability, and temperature to calculate imminent fungal/bacterial proliferation risk. | ✅ Production |
-| 💧 **Smart Irrigation Advisory** | Synthesizes crop coefficient ($K_c$), soil moisture, and precipitation forecasts to prevent over/under-watering. | ✅ Production |
-| 🌱 **Sustainability Index (0–100)** | Audits farm management efficiency across water conservation, chemical reduction, disease scouting, and soil optimization. | ✅ Production |
-| 🤖 **Grounded GenAI Agronomist** | Interactive multi-turn assistant grounded in verified diagnosis monographs, leaf scans, and weather context with strict healthy guardrails & multilingual support (English, Hindi, Hinglish). | ✅ Production |
-| 📖 **Interactive Agronomy Workflow** | Scroll-driven chapter book showcasing platform solutions with fluid physics, page-turn animations, and progress tracking. | ✅ Production |
-| 🌓 **Adaptive Dark / Light Theme** | Instant theme toggling across all dashboard views and landing page with custom HSL tokens and high contrast. | ✅ Production |
-| 🛡️ **Enterprise Security (RBAC & Limits)** | Password hashing (Bcrypt-10), JWT tokens, Role-Based Access Control, brute-force rate limiters, Helmet headers, and 401 auto-logout. | ✅ Production |
-| 📜 **Audit History & Telemetry** | Historical archive of past scans with IDOR-protected tenant scoping, allowing farmers to track crop health over time. | ✅ Production |
+| 🍃 **Crop & Disease Detection** | Upload foliar leaf images to diagnose **28 canonical crop-disease conditions** (17 diseases + 11 healthy) using EfficientNet-B0 ONNX Runtime in-process inference. | ✅ Production |
+| 🛡️ **Confidence-Aware Abstention** | Stratified confidence tiers: **HIGH** ($\ge 70\%$), **MODERATE** ($45\%-69.99\%$), and **LOW** ($< 45\%$). Low-confidence scans trigger capture guidance without claiming false certainty. | ✅ Production |
+| 🔍 **Explainable AI (Grad-CAM)** | Visual attention heatmap overlays highlight infection loci on leaf uploads, fostering farmer transparency. | ✅ Production |
+| 📋 **Actionable Diagnostic Advisory** | Verified immediate scouting steps, organic remedies, and chemical controls tailored to verified disease monographs. *(Note: Disease management advice is distinct from crop planting recommendation).* | ✅ Production |
+| 🖥️ **Farmer Prediction Dashboard** | Responsive React + Vite interface with drag-and-drop uploads, instant previews, and historical scan telemetry. | ✅ Production |
+
+### 🌟 Implemented Bonus Features
+| Feature | Description | Status |
+|---|---|:---:|
+| 🌦️ **Weather Intelligence & Risk** | Correlates ambient humidity, rainfall probability ($\ge 50\%$ spray hold guardrail), and temperature to calculate imminent fungal/bacterial proliferation risk. | ✅ Production |
+| 💧 **Smart Irrigation Advisory** | Synthesizes crop evapotranspiration ($K_c$), soil moisture, and precipitation forecasts to prevent over/under-watering. | ✅ Production |
+| 🌱 **Sustainability Index (0–100)** | Audits farm management efficiency across water conservation (35%), biological controls (30%), scouting (20%), and soil health (15%). | ✅ Production |
+| 🤖 **Grounded GenAI Agronomist** | Multilingual assistant (English, Hindi, Hinglish) powered by Gemini as the primary conversational brain, bounded by safety guardrails. *(Does not classify images).* | ✅ Production |
+| 📚 **Disease Monograph Knowledge Base** | Curated agronomic database linking symptoms, pathogen biology, cultural controls, and ICAR/CIBRC-aligned management protocols. | ✅ Production |
+
+### ⏳ Unimplemented / Future Roadmap Items
+| Feature | Description | Status |
+|---|---|:---:|
+| 🌾 **True Crop Planting Recommendation** | Multi-factor soil N-P-K & regional agro-climatic crop selection system (SIH Bonus A). | ❌ Not Implemented |
+| 📡 **Physical Hardware IoT Sensors** | Direct telemetry streaming from physical LoRaWAN / Arduino soil moisture probes. | ❌ Not Implemented |
+| 🔄 **Autonomous Multi-Agent Loop** | Fully autonomous multi-agent closed-loop tractor/valve execution without human farmer approval. | ❌ Not Implemented |
 
 ---
 
@@ -312,8 +324,8 @@ AgriSmart-AI/
 │   │   │   ├── rateLimiter.js      # Auth & API brute-force protection
 │   │   │   └── uploadMiddleware.js # Multer leaf image validator
 │   │   ├── models/                 # Model weights & label definitions
-│   │   │   ├── agrismart_model.onnx
-│   │   │   └── class_labels.json
+│   │   │   ├── agrismart_efficientnet_b0.onnx
+│   │   │   └── class_labels_public.json
 │   │   ├── routes/                 # Express route definitions
 │   │   │   ├── advisoryRoutes.js
 │   │   │   ├── assistantRoutes.js
@@ -492,23 +504,26 @@ python src/export_onnx.py \
 
 ## 🏆 SIH Hackathon Evaluation & Presentation Strategy
 
-### 📊 Benchmark Score vs. Official Organizer Evaluation Protocol
+### 📊 Public Benchmark vs. Official Organizer Evaluation Protocol
 
 > [!IMPORTANT]
-> **Evaluation Protocol Clarity:**
-> - **Internal / Public Field Benchmark:** Evaluated on the held-out in-situ PlantDoc test set ($N=236$ real-world field images across 28 canonical classes, yielding a baseline Macro-F1 of $0.2694$ under extreme cross-domain laboratory-to-field shift).
-> - **Official SIH Competition Score:** Determined exclusively by the **SIH Organizer's Unseen Held-Out Evaluation Dataset** during live jury assessment. Local PlantDoc metrics serve strictly as public validation and cross-split leakage audit baselines.
+> **Evaluation Protocol & Benchmark Integrity:**
+> - **Public Development & Validation Benchmark:** Evaluated on the laboratory PlantVillage validation set ($N=7,403$) achieving **0.9931 Macro-F1** and **99.50% validation accuracy** across 28 canonical classes.
+> - **Public Field Benchmark Checkpoint Status:** An earlier fine-tuned checkpoint achieved Macro-F1 **0.2694** on the public PlantDoc field benchmark ($N=236$ real-world field images across 28 canonical classes under extreme laboratory-to-field domain shift). The current post-augmentation checkpoint has not yet been re-evaluated on this public field benchmark.
+> - **Official SIH Competition Score:** Determined exclusively by the **SIH Organizer's Unseen Held-Out Evaluation Dataset** during live jury assessment. The official judging dataset is unseen and not available during development. Local PlantDoc metrics serve strictly as public validation and cross-split leakage audit baselines.
 
 When pitching to the Smart India Hackathon jury, highlight these key pillars:
 
 1. **Production-Ready Single-Runtime Architecture:**
    - *Judge Question:* "Why isn't there a separate Python FastAPI microservice?"
-   - *Winning Answer:* "By converting our fine-tuned vision model to the universal open standard **ONNX** and executing inference via `onnxruntime-node`, we eliminated inter-process network overhead, halved memory footprint, and ensured our platform can run seamlessly on affordable edge servers."
+   - *Winning Answer:* "By converting our fine-tuned vision model to the universal open standard **ONNX** (`agrismart_efficientnet_b0.onnx`) and executing inference in-process via `onnxruntime-node`, we eliminated inter-process network overhead, halved memory footprint, and ensured our platform runs seamlessly on lightweight hardware."
 2. **Honest Confidence-Aware Abstention & Image Quality Assessment:**
-   - Rather than overconfidently misdiagnosing degraded images, AgriSmart AI assesses lighting, contrast, and blur, and abstains on low-confidence inputs ($< 45\%$) with actionable 5-step capture guidance while maintaining full model transparency.
+   - Rather than overconfidently misdiagnosing degraded images, AgriSmart AI assesses lighting, contrast, and blur, and abstains on low-confidence inputs ($< 45\%$) with actionable capture guidance while maintaining full model transparency.
 3. **Multi-Vector "See → Understand → Act" Agricultural Decision Support:**
-   - Moves beyond simple classification by tying diagnoses directly into weather predictions, pathogen proliferation risks, smart irrigation conservation, and an interactive grounded GenAI advisor.
-4. **Enterprise-Grade Security Baseline:**
+   - Moves beyond simple classification by tying diagnoses directly into weather predictions, pathogen proliferation risks, smart irrigation conservation ($\ge 50\%$ rain hold), and an interactive grounded Gemini AI advisor.
+4. **Conversational AI Agronomist with Guardrails:**
+   - Gemini serves as the primary conversational brain, while backend guardrails enforce domain boundaries, safety alerts, and telemetry gating without hallucinating pesticides.
+5. **Enterprise-Grade Security Baseline:**
    - Highlight brute-force rate limiters, RBAC, Helmet headers, IDOR-protected tenant scoping, and 401 auto-logout session handling.
 
 ---

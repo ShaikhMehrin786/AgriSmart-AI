@@ -37,7 +37,7 @@ flowchart TD
 
         subgraph InProcess_ML ["🧠 Zero-Python In-Process Inference"]
             PreProc["Tensor Preprocessor (Sharp / Ndarray)<br/>224x224 RGB Normalization"]
-            ONNX_Engine["onnxruntime-node Execution Session<br/>(agrismart_model.onnx)"]
+            ONNX_Engine["onnxruntime-node Execution Session<br/>(agrismart_efficientnet_b0.onnx)"]
             Softmax["Softmax & Classification Resolver"]
             GradCAM_Service["Grad-CAM Activation Map Generator"]
 
@@ -127,7 +127,7 @@ flowchart TD
              │
              ▼
 [onnxruntime-node Inference Session]
-  ├── Loads 'agrismart_model.onnx' directly into C++ memory
+  ├── Loads 'agrismart_efficientnet_b0.onnx' directly into C++ memory
   └── Evaluates forward pass (<50ms execution latency)
              │
       ┌──────┴───────────────────────────┐
@@ -268,25 +268,34 @@ Generates an actionable irrigation verdict:
 
 ---
 
-### 3.5 Grounded GenAI Assistant (RAG Pipeline)
+### 3.5 Grounded GenAI Assistant (Conversational Brain Pipeline)
 
-To protect farmers from hallucinations and hazardous agrochemical advice, the GenAI assistant enforces **Database & Context Grounding**:
+Gemini serves as the **primary conversational intelligence** for natural dialog, follow-ups, and reference resolution, while deterministic backend guardrails enforce safety, telemetry gating, and agricultural domain boundaries:
 
 ```
-[Farmer Natural Language Prompt]
+[Farmer Message] + [Bounded Conversation History (8-12 turns)]
               │
               ▼
-[Node.js Context Assembler]
-  ├── 1. Current Diagnostic Result: Crop, Disease, Confidence, Severity
-  ├── 2. Verified PostgreSQL Monograph: Organic & Chemical Treatments, Prevention
-  ├── 3. Live Weather Telemetry: Temperature, Humidity, Rain Forecast
-  └── 4. Agricultural Safety Guardrails: No unapproved chemicals, warn on rain
+[Node.js Context Assembler & Prompt Builder]
+  ├── System Instructions: Agricultural agronomist persona & safety policy
+  ├── Optional Background Reference: Recent scan diagnosis, crop monograph, weather
+  ├── Language Strategy: English, Hindi (Devanagari), and Hinglish
+  └── Structured JSON Output Schema: domain, contextual, topic, intent, response
               │
               ▼
-[Formatted Prompt Envelope] ──► [LLM API (Gemini / OpenAI / Groq)]
-                                              │
-                                              ▼
-                             [Safe, Contextual, Multilingual Advisory]
+[Gemini API (`gemini-3.6-flash` / `gemini-3.5-flash`)]
+  └── Generates conversational understanding & structured JSON response
+              │
+              ▼
+[Deterministic Post-Validation & Safety Guardrails]
+  ├── 1. Non-Agriculture Isolation: Forces contextual=false, hides farm telemetry
+  ├── 2. Rain & Spray Safety: Forecast >=50% rain triggers mandatory spray warning
+  ├── 3. Healthy Plant Protection: Blocks curative chemical prescriptions on healthy leaves
+  ├── 4. Secret Sanitization: Strips API keys/secrets from output text
+  └── 5. Contextual Fallback Engine: Seamless takeover if API limit (429) or offline
+              │
+              ▼
+[Structured Response to Client UI]
 ```
 
 ---
@@ -344,4 +353,4 @@ sequenceDiagram
    - Connection pooling enabled (`connection_limit = 10`) for optimal throughput.
 4. **Resilience & Fallbacks:**
    - If the Weather API fails or times out, the system defaults to seasonal averages with a non-blocking UI alert.
-   - If image confidence is below $50\%$, the system displays an **Ambiguous Foliage Warning** advising the farmer to retake the picture closer to the leaf surface in better lighting.
+   - If image confidence is in the `LOW` tier ($< 45\%$), the system displays an **Ambiguous / Low-Confidence Foliage Warning** with actionable 5-step capture guidance without claiming false diagnostic certainty.

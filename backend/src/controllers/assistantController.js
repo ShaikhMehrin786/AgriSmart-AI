@@ -119,9 +119,11 @@ const chat = async (req, res) => {
       }
     }
 
-    // 4. Call Grounded GenAI Service
+    // 4. Call Grounded GenAI Service with Conversation History & State
+    const history = Array.isArray(req.body.history) ? req.body.history : (Array.isArray(req.body.conversationHistory) ? req.body.conversationHistory : []);
     const result = await answerFarmerQuery({
       question: userMessage.trim(),
+      history,
       diagnosisContext,
       weatherContext,
       irrigationContext,
@@ -134,13 +136,16 @@ const chat = async (req, res) => {
       success: true,
       data: {
         ...result,
-        reply: result.reply,
-        source: result.source || 'gemini',
-        contextual: result.contextual !== undefined ? result.contextual : Boolean(diagnosisContext || weatherContext),
-        diagnosisContext: diagnosisContext ? {
-          crop: diagnosisContext.crop,
-          disease: diagnosisContext.disease,
-          confidence: diagnosisContext.confidence
+        reply: result.answer || result.reply,
+        answer: result.answer || result.reply,
+        source: result.modelUsed || result.source || 'gemini',
+        contextual: Boolean(result.contextual && result.groundedContext),
+        groundedContext: result.groundedContext || null,
+        conversationState: result.conversationState || null,
+        diagnosisContext: (result.contextual && result.groundedContext?.disease) ? {
+          crop: result.groundedContext?.crop || diagnosisContext?.crop,
+          disease: result.groundedContext?.disease || diagnosisContext?.disease,
+          confidence: diagnosisContext?.confidence
         } : null
       }
     });

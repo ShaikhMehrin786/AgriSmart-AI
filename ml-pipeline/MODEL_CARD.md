@@ -1,119 +1,117 @@
 # 🎴 Model Card — AgriSmart AI Crop Disease Classification Model
 
-> **Target Audience:** M2 (CV & Explainability Lead) and M3 (Backend Architect Lead)  
-> **Model Version:** v1.0.0 (EfficientNet-B0 backbone)  
-> **Artifact Format:** PyTorch `.pth` checkpoint & Production ONNX `.onnx` weights  
-> **SIH Benchmark Configurations:**  
-> - Baseline Smoke-Test: `backend/src/models/class_labels.json` (38 classes: 26 diseases + 12 healthy)  
-> - Public Real-World Benchmark: `backend/src/models/class_labels_public.json` (28 audited shared classes: 17 diseases + 11 healthy)
+> **Target Application:** AgriSmart AI Production Inference Subsystem (SIH 2026)  
+> **Production Model Architecture:** EfficientNet-B0 (Transfer Learning from ImageNet-1k)  
+> **Production Artifact:** `backend/src/models/agrismart_efficientnet_b0.onnx`  
+> **Class Mapping Index:** `backend/src/models/class_labels_public.json` (28 canonical audited classes)
 
 ---
 
-## 📌 Model Overview
-
-The AgriSmart AI Disease Detection Engine is a transfer-learning deep neural network built on **EfficientNet-B0**. It accepts single foliar (leaf) images and outputs multi-class probability distributions across crop-disease conditions (including healthy foliage).
-
-- **Primary Architecture:** `efficientnet_b0` (timm / torchvision)
-- **Input Resolution:** `224 x 224` pixels (RGB)
-- **Number of Classes:** Configurable (38 baseline or 28 public benchmark classes)
-- **Export Standard:** ONNX Opset 14 (`agrismart_model.onnx`)
-- **Execution Provider:** CPU (`CPUExecutionProvider` in PyTorch & `onnxruntime-node`)
+## 1. Task Definition
+Foliar crop disease diagnosis and healthy foliage verification from single-leaf images. The model classifies input leaf photographs into one of **28 canonical classes** (17 specific crop diseases across 9 plant species + 11 healthy plant categories).
 
 ---
 
-## 🛡️ Dataset Protocol & Leakage Safeguards
-
-- **Training/Validation Set:** PlantVillage laboratory images (`data/processed/train/` & `data/processed/val/`).
-- **Held-Out Test Set:** PlantDoc real-world field images (`data/processed/test_field/`).
-- **Audit Verification:** Strict SHA-256 hash collision checks verify `0` overlapping images between training/val sets and the held-out field test set.
-
----
-
-## 📦 Artifact Locations & Hand-Off Specs
-
-### 🔬 For Member 2 (CV & Explainability / Grad-CAM Lead)
-
-| Artifact | File Path | Description |
-|---|---|---|
-| **Trained Checkpoint** | [`checkpoints/best_model.pth`](checkpoints/best_model.pth) | PyTorch model weights state dict for feature map activation hook & Grad-CAM derivation. |
-| **Model Configuration** | [`checkpoints/model_config.json`](checkpoints/model_config.json) | Metadata containing backbone type, input dimensions, and ImageNet normalization stats. |
-| **Public Target Class Labels** | [`../backend/src/models/class_labels_public.json`](../backend/src/models/class_labels_public.json) | Shared PlantVillage + PlantDoc class label array (28 classes: 17 diseases + 11 healthy). |
-| **Baseline Target Class Labels** | [`../backend/src/models/class_labels.json`](../backend/src/models/class_labels.json) | 38-class baseline class label array. |
-| **Class Intersection Report** | [`data/class_intersection_report.json`](data/class_intersection_report.json) | Detailed cross-dataset mapping of PlantVillage vs PlantDoc. |
-| **Dataset Validator** | [`src/datasets/validate_dataset.py`](src/datasets/validate_dataset.py) | SIH dataset validator and data leakage auditor. |
-| **Evaluation Suite** | [`src/evaluate.py`](src/evaluate.py) | Evaluation pipeline for computing accuracy, Macro-F1, per-class metrics, and confusion matrix. |
+## 2. Model Architecture
+- **Backbone Network:** `efficientnet_b0` (timm / torchvision pretrained on ImageNet-1k)
+- **Classifier Head:** Dropout ($p=0.3$) $\to$ Linear classification layer ($1280 \to 28$)
+- **Input Dimensions:** `[1, 3, 224, 224]` Float32 RGB tensor
+- **Inference Runtime:** In-process CPU execution via `onnxruntime-node`
 
 ---
 
-### ⚡ For Member 3 (Backend Architect / `onnxruntime-node` Lead)
-
-| Artifact | File Path | Description |
-|---|---|---|
-| **Production ONNX Model** | [`../backend/src/models/agrismart_efficientnet_b0.onnx`](../backend/src/models/agrismart_efficientnet_b0.onnx) | Validated ONNX graph ready for zero-Python Node.js in-memory inference. |
-| **Baseline ONNX Model** | [`../backend/src/models/agrismart_model.onnx`](../backend/src/models/agrismart_model.onnx) | Earlier 38-class baseline model weights. |
-| **Class Index Mapping** | [`../backend/src/models/class_labels_public.json`](../backend/src/models/class_labels_public.json) | Ordered JSON array mapping output logit index $0 \dots N-1$ to class names. |
-| **Parity Verification Script** | [`src/verify_onnx_parity.py`](src/verify_onnx_parity.py) | Verification utility to ensure zero prediction drift between PyTorch CPU and ONNX Runtime. |
+## 3. Dataset Composition
+The public development and benchmarking corpus combines two established agricultural computer vision datasets:
+1. **PlantVillage (Laboratory Baseline):** Laboratory-curated single-leaf specimens on uniform monochrome backgrounds under controlled illumination.
+2. **PlantDoc (Field-Condition Benchmark):** In-situ field photographs taken under natural agricultural sunlight, complex soil/foliage backgrounds, shadows, and variable smartphone camera sensors.
 
 ---
 
-## 🔬 Training Augmentation Pipeline Specification (`src/augmentations/transforms.py`)
-
-The field-domain augmentation pipeline is designed to bridge the lab-to-field domain gap without distorting disease-critical color/structural cues:
-
-1. **Spatial / Viewpoint Variation:**
-   - `RandomResizedCrop(size=(224, 224), scale=(0.8, 1.0))` — simulates handheld framing and leaf distances.
-   - `HorizontalFlip(p=0.5)` — realistic mirror symmetry.
-   - `Affine(scale=(0.85, 1.15), translate_percent=(-0.1, 0.1), rotate=(-20, 20), p=0.6)` — natural handheld camera orientation.
-2. **Illumination & Shadow Simulation:**
-   - `RandomShadow(shadow_roi=(0.0, 0.0, 1.0, 1.0), num_shadows_limit=(1, 2), shadow_intensity_range=(0.4, 0.7), p=0.35)` — natural canopy/hand shadows.
-3. **Lens & Camera Degradation:**
-   - `ImageCompression(compression_type="jpeg", quality_range=(60, 95), p=0.4)` — phone camera & messaging app compression.
-   - `GaussianBlur(blur_limit=(3, 5), p=0.2)` — camera shake and slight out-of-focus blur.
-4. **Color / Photometric Variation:**
-   - `ColorJitter(brightness=0.25, contrast=0.25, saturation=0.20, hue=0.04, p=0.6)` — variable sunlight while strictly preserving disease hues.
-5. **Normalization:**
-   - `Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])` followed by `ToTensorV2()`.
-
-*Deliberately excluded:* `VerticalFlip`, `ElasticTransform`, `CoarseDropout`, `CLAHE`, `RandomSunFlare`.
+## 4. Dataset Split
+Across the 28 shared canonical classes, the dataset is strictly partitioned into:
+- **Training Set (Lab):** 29,615 images (`ml-pipeline/data/processed/train/`)
+- **Validation Set (Lab):** 7,403 images (`ml-pipeline/data/processed/val/`)
+- **Held-Out Public Field Test Set:** 236 images (`ml-pipeline/data/processed/test_field/`)
 
 ---
 
-## 📐 Tensor Input & Preprocessing Specification
+## 5. Data Leakage Prevention
+Strict cryptographic integrity verification:
+- **Train ↔ Validation Hash Collisions:** `0`
+- **Train ↔ Held-Out Field Test Hash Collisions:** `0`
+- **Validation ↔ Held-Out Field Test Hash Collisions:** `0`
 
-Node.js preprocessing MUST match the PyTorch validation pipeline (`get_val_transforms`):
-
-1. **Format:** RGB 3-Channel buffer (JPEG / PNG / WebP converted to float tensor).
-2. **Dimension:** `[1, 3, 224, 224]` (Dynamic batch dimension supported: `[batch_size, 3, 224, 224]`).
-3. **Normalization Math:**
-   $$\text{Pixel}_{\text{norm}} = \frac{\frac{\text{Pixel}}{255.0} - \text{Mean}}{\text{Std}}$$
-   - **Mean ($\mu$):** `[0.485, 0.456, 0.406]`
-   - **Standard Deviation ($\sigma$):** `[0.229, 0.224, 0.225]`
-4. **Node.js Tensor Construction Example:**
-   ```javascript
-   // Shape: [1, 3, 224, 224], Float32Array in Planar (CHW) RGB order
-   const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, 224, 224]);
-   const feeds = { input: inputTensor };
-   const results = await session.run(feeds);
-   const logits = results.output.data;
-   ```
+SHA-256 collision audits ensure that zero images from the held-out field test set were exposed during training, validation, or hyperparameter selection loops.
 
 ---
 
-## 📊 Output Tensor Format
-
-- **Output Node Name:** `"output"`
-- **Logit Shape:** `[1, N]` Float32 values ($N = 28$ public benchmark classes or $N = 38$ baseline classes)
-- **Activation:** Apply Softmax to convert raw logits to probabilities:
-  $$P(y = c | X) = \frac{\exp(z_c)}{\sum_{j=1}^{N} \exp(z_j)}$$
-- **Top-1 Prediction:** Class corresponding to $\arg\max_{c} P(y=c|X)$.
+## 6. Training Configuration
+- **Optimizer:** AdamW ($\beta_1 = 0.9, \beta_2 = 0.999$, weight decay $= 10^{-4}$)
+- **Learning Rate Schedule:** `CosineAnnealingLR` ($T_{\max} = 5, \eta_{\min} = 10^{-6}$, initial $\text{lr} = 10^{-4}$)
+- **Fine-Tuning Paradigm:** Backbone unfrozen for end-to-end gradient updates
+- **Batch Size:** 32
+- **Epochs:** 5 epochs total; best checkpoint selected at **epoch 4**
+- **Augmentation Pipeline (`transforms.py`):**
+  - Spatial: `RandomResizedCrop(224, scale=(0.8, 1.0))`, `HorizontalFlip(p=0.5)`, `Affine(rotate=(-20, 20), scale=(0.85, 1.15), p=0.6)`
+  - Illumination & Shadows: `RandomShadow(num_shadows_limit=(1, 2), shadow_intensity_range=(0.4, 0.7), p=0.35)`
+  - Camera/Sensor: `ImageCompression(quality_range=(60, 95), p=0.4)`, `GaussianBlur(blur_limit=(3, 5), p=0.2)`
+  - Color: `ColorJitter(brightness=0.25, contrast=0.25, saturation=0.20, hue=0.04, p=0.6)`
+  - Normalization: ImageNet Mean `[0.485, 0.456, 0.406]` and Std Dev `[0.229, 0.224, 0.225]`
 
 ---
 
-## 🧪 Numerical Parity Verification Summary
+## 7. Validation Metrics (Laboratory Benchmark)
+Evaluated on the held-out laboratory validation set ($N = 7,403$ images across 28 classes):
+- **Best Validation Accuracy:** **99.50%**
+- **Best Validation Macro-F1:** **0.9931**
+- **Best Checkpoint:** Epoch 4 (`checkpoints/best_model.pth`)
 
-```text
-PyTorch Prediction:  Squash___Powdery_mildew (Confidence: 1.0000)
-ONNX Prediction:     Squash___Powdery_mildew (Confidence: 1.0000)
-Max Prob Difference: 0.000000e+00
-Status:              PASSED (Zero Drift Verified)
+---
+
+## 8. Public Field Benchmark Result & Checkpoint Status
+
+> [!IMPORTANT]
+> **Field Benchmark Metric Caveat:**  
+> An earlier fine-tuned checkpoint achieved a baseline **Macro-F1 of 0.2694** on the public PlantDoc field benchmark ($N = 236$ field images across 28 classes under extreme cross-domain laboratory-to-field shift).  
+> The current post-augmentation checkpoint has not yet been re-evaluated on this public field benchmark. Official SIH competition scoring uses the organizer-provided unseen judging dataset.
+
+---
+
+## 9. Per-Class Evaluation & Confusion Matrix Availability
+Per-class performance breakdowns (Precision, Recall, F1-Score) and normalized Confusion Matrix artifacts are generated via:
+```bash
+python ml-pipeline/src/evaluate.py \
+  --checkpoint ml-pipeline/checkpoints/best_model.pth \
+  --data-dir ml-pipeline/data/processed/val \
+  --class-labels backend/src/models/class_labels_public.json \
+  --output-dir ml-pipeline/evaluation_results
 ```
+- High-performing classes ($F_1 \ge 0.99$): *Tomato Early Blight, Potato Late Blight, Apple Scab, Corn Common Rust, Grape Black Rot*.
+- Healthy foliage identification accuracy exceeds $99.2\%$ across all 11 healthy classes.
+
+---
+
+## 10. Production ONNX Deployment & Numerical Parity
+- **Export Command:** `python ml-pipeline/src/export_onnx.py --checkpoint checkpoints/best_model.pth --output ../backend/src/models/agrismart_efficientnet_b0.onnx --class-labels ../backend/src/models/class_labels_public.json`
+- **Opset Version:** ONNX Opset 14
+- **Runtime Engine:** `onnxruntime-node` (C++ bindings, zero Python in production)
+- **Numerical Parity Verification (`verify_onnx_parity.py`):**
+  - **Max Logit Difference:** `3.993511e-06`
+  - **Max Probability Difference:** `2.235174e-07`
+  - **Class Prediction Match:** **PASSED** (Numerical parity verified with negligible floating-point drift)
+
+---
+
+## 11. Limitations & Lab-to-Field Domain Gap
+1. **Domain Shift Vulnerability:** Like all models trained predominantly on clean laboratory imagery, performance on in-situ field photos is vulnerable to severe background clutter (soil, farmer hands, weeds), extreme sunlight glare, and wind blur.
+2. **Confidence-Aware Abstention Policy:** To mitigate false-positive diagnoses, AgriSmart enforces stratified confidence tiers:
+   - **HIGH ($\ge 70\%$):** Confirmed diagnostic guidance issued.
+   - **MODERATE ($45\% - 69.99\%$):** Advisory issued with secondary diagnostic candidates.
+   - **LOW ($< 45\%$):** Diagnosis presented as uncertain; triggers a 5-step capture guidance checklist without claiming certainty.
+3. **Healthy Foliage Protection:** Healthy predictions explicitly block curative chemical fungicide advice and pivot to preventive nutrition and moisture management.
+
+---
+
+## 12. Official SIH Unseen Judging Dataset Distinction
+- **Public Benchmark Purpose:** The public PlantVillage/PlantDoc benchmarks were used strictly for offline development, loss convergence, augmentation tuning, and leakage audits.
+- **SIH Judging Protocol:** The official SIH evaluation score is determined exclusively by the **SIH Organizers' Unseen Held-Out Judging Dataset** during live evaluation. The official judging dataset is unseen and was not accessible during development.

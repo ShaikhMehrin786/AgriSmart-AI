@@ -81,8 +81,8 @@ def main():
     parser = argparse.ArgumentParser(description="Export PyTorch model to ONNX for Node.js production inference")
     parser.add_argument("--model", type=str, default="efficientnet_b0")
     parser.add_argument("--checkpoint", type=str, default="ml-pipeline/checkpoints/best_model.pth")
-    parser.add_argument("--output", type=str, default="backend/src/models/agrismart_model.onnx")
-    parser.add_argument("--class-labels", type=str, default="backend/src/models/class_labels.json")
+    parser.add_argument("--output", type=str, default="backend/src/models/agrismart_efficientnet_b0.onnx")
+    parser.add_argument("--class-labels", type=str, default="backend/src/models/class_labels_public.json")
     parser.add_argument("--image-size", type=int, default=224)
     args = parser.parse_args()
 

@@ -24,7 +24,7 @@ const AIAssistant = () => {
         ? `Hello! I see you recently diagnosed ${stateContext.crop || 'your crop'} with "${stateContext.disease}". How can I help you with treatment plans, spraying safety, or organic remedies today?`
         : 'Hello! I am your AgriSmart AI agronomist, powered by Gemini AI and grounded in your real-time field scans and weather forecasts. Ask me anything in English, Hindi, or Hinglish.',
       source: 'gemini',
-      contextual: true,
+      contextual: Boolean(stateContext.disease),
       time: new Date(),
     },
   ]);
@@ -47,8 +47,16 @@ const AIAssistant = () => {
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
+    const recentHistory = messages.slice(-10).map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content
+    }));
+
     try {
-      const res = await api.post('/assistant/chat', { message: msg });
+      const res = await api.post('/assistant/chat', {
+        message: msg,
+        history: recentHistory
+      });
       const data = res.data?.data || {};
       const reply = data.reply || data.answer || 'Sorry, I couldn\'t get a response.';
       setMessages(prev => [...prev, {
@@ -79,7 +87,7 @@ const AIAssistant = () => {
       role: 'assistant',
       content: 'Chat cleared. How can I help you today with your crops?',
       source: 'gemini',
-      contextual: true,
+      contextual: false,
       time: new Date(),
     }]);
   };
@@ -161,7 +169,7 @@ const AIAssistant = () => {
                   {msg.content}
 
                   {/* Grounded Context Badge */}
-                  {msg.data?.groundedContext && (
+                  {msg.data?.groundedContext && msg.contextual && (
                     <div style={{
                       marginTop: 8,
                       padding: '6px 10px',
@@ -175,7 +183,9 @@ const AIAssistant = () => {
                         🌱 Grounded Agronomic Telemetry
                       </div>
                       <div>
-                        Crop: <strong>{msg.data.groundedContext.crop}</strong> · Weather: {msg.data.groundedContext.temperature}, {msg.data.groundedContext.humidity} · Irrigation: <strong>{msg.data.groundedContext.irrigationDecision}</strong>
+                        {msg.data.groundedContext.crop && <span>Crop: <strong>{msg.data.groundedContext.crop}</strong> · </span>}
+                        {msg.data.groundedContext.weather && <span>Weather: {msg.data.groundedContext.weather.temperature ?? msg.data.groundedContext.temperature}°C, {msg.data.groundedContext.weather.humidity ?? msg.data.groundedContext.humidity}% · </span>}
+                        {msg.data.groundedContext.irrigationDecision && <span>Irrigation: <strong>{msg.data.groundedContext.irrigationDecision}</strong></span>}
                       </div>
                     </div>
                   )}
@@ -197,14 +207,19 @@ const AIAssistant = () => {
                       <Sparkles size={11} /> Powered by Gemini AI
                     </span>
                   )}
-                  {!isUser && msg.source === 'fallback' && (
+                  {!isUser && msg.source === 'fallback' && msg.contextual && msg.data?.groundedContext && (
                     <span style={{ color: '#16a34a', display: 'flex', alignItems: 'center', gap: 3 }}>
                       <ShieldCheck size={11} /> Grounded Agronomy Engine
                     </span>
                   )}
-                  {!isUser && msg.contextual && (
+                  {!isUser && msg.source === 'fallback' && (!msg.contextual || !msg.data?.groundedContext) && (
+                    <span style={{ color: '#16a34a', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <ShieldCheck size={11} /> AgriSmart Assistant
+                    </span>
+                  )}
+                  {!isUser && msg.contextual && msg.data?.groundedContext && (
                     <span style={{ color: 'var(--text-muted)' }}>
-                      • Grounded in recent scan
+                      • {msg.data.groundedContext.disease ? 'Grounded in recent scan' : 'Grounded in live telemetry'}
                     </span>
                   )}
                 </div>

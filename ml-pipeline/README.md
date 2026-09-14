@@ -192,7 +192,7 @@ Export validated PyTorch checkpoint weights to production ONNX format:
 ```bash
 python src/export_onnx.py \
   --checkpoint ./checkpoints/best_model.pth \
-  --output ../backend/src/models/agrismart_model.onnx \
+  --output ../backend/src/models/agrismart_efficientnet_b0.onnx \
   --class-labels ../backend/src/models/class_labels_public.json
 ```
 
@@ -205,6 +205,6 @@ Verify that PyTorch CPU inference and ONNX Runtime CPU inference produce identic
 ```bash
 python src/verify_onnx_parity.py \
   --checkpoint ./checkpoints/best_model.pth \
-  --onnx-model ../backend/src/models/agrismart_model.onnx \
+  --onnx-model ../backend/src/models/agrismart_efficientnet_b0.onnx \
   --class-labels ../backend/src/models/class_labels_public.json
 ```
