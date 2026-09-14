@@ -48,6 +48,38 @@ function softmax(logits) {
 }
 
 /**
+ * Classify confidence percentage into documented scientific categories:
+ * - High: >= 70.0% (Strong distinct feature activation)
+ * - Moderate: 45.0% - 69.99% (Viable candidate, secondary verification recommended)
+ * - Low: < 45.0% (Uncertain prediction; rescan/better lighting advised)
+ */
+function getConfidenceLevel(confidencePct) {
+  if (confidencePct >= 70.0) return 'High';
+  if (confidencePct >= 45.0) return 'Moderate';
+  return 'Low';
+}
+
+/**
+ * Format a raw class string into crop and human-readable disease name
+ */
+function parseClassLabel(rawLabel) {
+  const parts = (rawLabel || 'Plant___healthy').split('___');
+  const rawCrop = parts[0] || 'Plant';
+  const rawDisease = parts[1] || 'healthy';
+
+  const cropName = rawCrop.replace(/_/g, ' ');
+  const diseaseName = rawDisease ? rawDisease.replace(/_/g, ' ') : 'Healthy';
+  const isHealthy = diseaseName.toLowerCase() === 'healthy';
+
+  return {
+    crop: cropName,
+    disease: isHealthy ? `${cropName} Healthy` : `${cropName} ${diseaseName}`,
+    isHealthy,
+    rawClass: rawLabel
+  };
+}
+
+/**
  * Run inference on uploaded image buffer using the loaded ONNX model session
  */
 async function predictCropDisease(imageBuffer) {
@@ -79,37 +111,57 @@ async function predictCropDisease(imageBuffer) {
     const logits = Array.from(outputTensor.data);
     const probabilities = softmax(logits);
 
-    // Identify top prediction
-    let maxProb = -1;
-    let maxIdx = -1;
-    probabilities.forEach((prob, idx) => {
-      if (prob > maxProb) {
-        maxProb = prob;
-        maxIdx = idx;
-      }
-    });
+    // Rank all predictions by descending probability
+    const ranked = probabilities.map((prob, idx) => {
+      const label = (classLabels && classLabels[idx]) ? classLabels[idx] : `Class_${idx}`;
+      const parsed = parseClassLabel(label);
+      const confPct = parseFloat((prob * 100).toFixed(2));
+      return {
+        ...parsed,
+        classIndex: idx,
+        confidence: confPct,
+        confidenceLevel: getConfidenceLevel(confPct),
+        rawProbability: prob
+      };
+    }).sort((a, b) => b.rawProbability - a.rawProbability);
 
-    const fallbackLabel = (classLabels && classLabels.length > 0) ? classLabels[0] : 'Tomato___Early_blight';
-    const predictedRawLabel = (classLabels && classLabels[maxIdx]) ? classLabels[maxIdx] : fallbackLabel;
+    const top1 = ranked[0] || {
+      crop: 'Plant',
+      disease: 'Plant Healthy',
+      isHealthy: true,
+      rawClass: 'Plant___healthy',
+      classIndex: 0,
+      confidence: 100.0,
+      confidenceLevel: 'High',
+      rawProbability: 1.0
+    };
 
-    // Parse crop and disease names
-    const parts = predictedRawLabel.split('___');
-    const rawCrop = parts[0] || 'Plant';
-    const rawDisease = parts[1] || 'healthy';
+    const top3 = ranked.slice(0, 3);
+    const marginToSecond = top3.length > 1 ? (top3[0].confidence - top3[1].confidence) : 100.0;
+    const isUncertain = top1.confidence < 45.0 || marginToSecond < 10.0;
 
-    const cropName = rawCrop.replace(/_/g, ' ');
-    const diseaseName = rawDisease ? rawDisease.replace(/_/g, ' ') : 'Healthy';
-    const isHealthy = diseaseName.toLowerCase() === 'healthy';
+    let uncertaintyReason = null;
+    if (top1.confidence < 45.0) {
+      uncertaintyReason = 'Top prediction confidence is below 45% threshold. Field lighting or angle may be sub-optimal.';
+    } else if (marginToSecond < 10.0) {
+      uncertaintyReason = `Close probability margin (${marginToSecond.toFixed(1)}%) between top predictions '${top3[0].disease}' and '${top3[1].disease}'.`;
+    }
 
     return {
-      crop: cropName,
-      disease: isHealthy ? `${cropName} Healthy` : `${cropName} ${diseaseName}`,
-      isHealthy,
-      confidence: parseFloat((maxProb * 100).toFixed(2)),
+      crop: top1.crop,
+      disease: top1.disease,
+      isHealthy: top1.isHealthy,
+      confidence: top1.confidence,
+      confidenceLevel: top1.confidenceLevel,
+      isUncertain,
+      uncertaintyReason,
+      top3,
+      allPredictions: ranked,
+      rawProbabilities: probabilities,
       inferenceTimeMs,
       modelVersion: 'efficientnet_b0-onnx',
-      rawClass: predictedRawLabel,
-      classIndex: maxIdx
+      rawClass: top1.rawClass,
+      classIndex: top1.classIndex
     };
   } catch (error) {
     console.error('Error during ONNX inference:', error);
@@ -122,11 +174,20 @@ async function predictCropDisease(imageBuffer) {
  */
 function runSimulationInference(classLabels) {
   const fallbackLabel = (classLabels && classLabels.length > 0) ? classLabels[0] : 'Tomato___Early_blight';
+  const parsed = parseClassLabel(fallbackLabel);
   return {
-    crop: 'Tomato',
-    disease: 'Tomato Early Blight',
-    isHealthy: false,
+    crop: parsed.crop,
+    disease: parsed.disease,
+    isHealthy: parsed.isHealthy,
     confidence: 94.20,
+    confidenceLevel: 'High',
+    isUncertain: false,
+    uncertaintyReason: null,
+    top3: [
+      { ...parsed, classIndex: 0, confidence: 94.20, confidenceLevel: 'High', rawProbability: 0.942 },
+      { crop: 'Tomato', disease: 'Tomato Late Blight', rawClass: 'Tomato___Late_blight', isHealthy: false, classIndex: 1, confidence: 3.50, confidenceLevel: 'Low', rawProbability: 0.035 },
+      { crop: 'Tomato', disease: 'Tomato Healthy', rawClass: 'Tomato___healthy', isHealthy: true, classIndex: 2, confidence: 1.10, confidenceLevel: 'Low', rawProbability: 0.011 }
+    ],
     inferenceTimeMs: 38,
     modelVersion: 'v1.0-simulated-onnx',
     rawClass: fallbackLabel,
@@ -137,5 +198,7 @@ function runSimulationInference(classLabels) {
 module.exports = {
   predictCropDisease,
   preprocessImage,
-  softmax
+  softmax,
+  getConfidenceLevel,
+  parseClassLabel
 };

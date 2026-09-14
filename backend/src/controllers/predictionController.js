@@ -1,5 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { predictDisease } = require('../services/mlInferenceService');
+const { getDiseaseKnowledge, SAFETY_DISCLAIMER } = require('../data/diseaseKnowledgeBase');
+const { generateRecommendations } = require('../services/recommendationService');
 const prisma = new PrismaClient();
 
 const createPrediction = async (req, res) => {
@@ -21,7 +23,46 @@ const createPrediction = async (req, res) => {
       }
     });
 
-    res.status(201).json({ success: true, prediction });
+    // Retrieve rich agronomic advisory for the predicted condition
+    const advisory = getDiseaseKnowledge(result.rawClass || result.disease);
+
+    // Generate integrated recommendations if coordinates are available or default
+    let recommendations = null;
+    try {
+      recommendations = await generateRecommendations({
+        crop: result.crop,
+        disease: result.disease,
+        lat: req.body?.lat || req.query?.lat || null,
+        lon: req.body?.lon || req.query?.lon || null
+      });
+    } catch (recErr) {
+      console.warn('Integrated recommendation generation skipped:', recErr.message);
+    }
+
+    const enrichedPrediction = {
+      ...prediction,
+      confidenceLevel: result.confidenceLevel || 'Moderate',
+      isUncertain: result.isUncertain || false,
+      uncertaintyReason: result.uncertaintyReason || null,
+      top3: result.top3 || [],
+      rawClass: result.rawClass,
+      inferenceTimeMs: result.inferenceTimeMs,
+      advisory,
+      recommendations,
+      safetyDisclaimer: SAFETY_DISCLAIMER
+    };
+
+    res.status(201).json({
+      success: true,
+      prediction: enrichedPrediction,
+      top3: result.top3 || [],
+      confidenceLevel: result.confidenceLevel || 'Moderate',
+      isUncertain: result.isUncertain || false,
+      uncertaintyReason: result.uncertaintyReason || null,
+      advisory,
+      recommendations,
+      safetyDisclaimer: SAFETY_DISCLAIMER
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -45,7 +86,24 @@ const getPredictionById = async (req, res) => {
       where: { id: req.params.id, userId: req.user.id }
     });
     if (!prediction) return res.status(404).json({ success: false, message: 'Prediction not found' });
-    res.json({ success: true, prediction });
+
+    const advisory = getDiseaseKnowledge(prediction.disease);
+    const confidenceLevel = prediction.confidence >= 70 ? 'High' : prediction.confidence >= 45 ? 'Moderate' : 'Low';
+    const isUncertain = prediction.confidence < 45;
+
+    res.json({
+      success: true,
+      prediction: {
+        ...prediction,
+        confidenceLevel,
+        isUncertain,
+        advisory,
+        safetyDisclaimer: SAFETY_DISCLAIMER
+      },
+      advisory,
+      confidenceLevel,
+      isUncertain
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

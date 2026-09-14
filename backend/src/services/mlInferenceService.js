@@ -48,6 +48,11 @@ const predictDisease = async (imageInput) => {
     return {
       disease: prediction.disease,
       confidence: prediction.confidence,
+      confidenceLevel: prediction.confidenceLevel || 'Moderate',
+      isUncertain: prediction.isUncertain || false,
+      uncertaintyReason: prediction.uncertaintyReason || null,
+      top3: prediction.top3 || [],
+      allPredictions: prediction.allPredictions || [],
       crop: prediction.crop,
       severity,
       heatmapPath: heatmapPath || imagePath,

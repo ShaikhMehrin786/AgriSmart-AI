@@ -123,7 +123,6 @@ const getRecommendations = async (req, res) => {
       data: recommendations
     });
   } catch (error) {
-    console.error('Error in getRecommendations controller:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to generate recommendations',
@@ -132,4 +131,26 @@ const getRecommendations = async (req, res) => {
   }
 };
 
-module.exports = { getWeather, getIrrigation, getSustainability, getRecommendations };
+const { getDiseaseKnowledge, SAFETY_DISCLAIMER } = require('../data/diseaseKnowledgeBase');
+
+const getDiseaseAdvisory = async (req, res) => {
+  try {
+    const query = req.params.className || req.query.disease || req.query.rawClass || 'Tomato___Early_blight';
+    const entry = getDiseaseKnowledge(query);
+    res.json({
+      success: true,
+      data: {
+        ...entry,
+        safetyDisclaimer: SAFETY_DISCLAIMER
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve disease advisory',
+      error: error.message
+    });
+  }
+};
+
+module.exports = { getWeather, getIrrigation, getSustainability, getRecommendations, getDiseaseAdvisory };

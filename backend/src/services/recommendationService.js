@@ -2,6 +2,7 @@
 // Fulfills "SEE -> UNDERSTAND -> ACT" core paradigm
 const { getWeatherData, calculatePathogenRisk } = require('./weatherService');
 const { evaluateIrrigation } = require('./irrigationService');
+const { getDiseaseKnowledge, SAFETY_DISCLAIMER } = require('../data/diseaseKnowledgeBase');
 
 /**
  * Generate integrated agronomic recommendations combining:
@@ -172,11 +173,27 @@ async function generateRecommendations(input = {}) {
     riskLevel = 'MEDIUM';
   }
 
+  const diseaseKnowledge = disease ? getDiseaseKnowledge(disease) : null;
+
   return {
     riskLevel,
     crop,
     disease: disease || 'Not Specified',
     summary: `${riskLevel} agricultural risk level identified for ${crop}. ${recommendations[0]?.title || 'Maintain regular farm routine.'}`,
+    agronomicAdvisory: diseaseKnowledge ? {
+      crop: diseaseKnowledge.crop,
+      disease: diseaseKnowledge.disease,
+      isHealthy: diseaseKnowledge.isHealthy,
+      pathogenType: diseaseKnowledge.pathogenType,
+      description: diseaseKnowledge.description,
+      visualSymptoms: diseaseKnowledge.visualSymptoms,
+      immediateActions: diseaseKnowledge.immediateActions || [],
+      organicManagement: diseaseKnowledge.organicManagement || diseaseKnowledge.preventiveCropCare || [],
+      chemicalManagement: diseaseKnowledge.chemicalManagement || [],
+      prevention: diseaseKnowledge.prevention || diseaseKnowledge.preventiveCropCare || [],
+      irrigationConsiderations: diseaseKnowledge.irrigationConsiderations || diseaseKnowledge.irrigationGuidance || '',
+      safetyDisclaimer: SAFETY_DISCLAIMER
+    } : null,
     pathogenRisk: pathogenRisk ? {
       riskScore: pathogenRisk.riskScore,
       riskLevel: pathogenRisk.riskLevel,

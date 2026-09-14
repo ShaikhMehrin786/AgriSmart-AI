@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Trash2, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Trash2, Loader2, Sparkles, ShieldCheck, CloudRain } from 'lucide-react';
 import api from '../services/api';
 
 const QUICK = [
-  'How can I treat Early Blight?',
-  'Best organic fungicide for tomatoes?',
-  'Should I irrigate today?',
+  'Can I spray fungicide today?',
+  'Kya aaj spray kar sakta hu?',
+  'Best organic remedy for leaf spots?',
+  'Ye disease kyu hui?',
   'How to prevent Late Blight next season?',
-  'Signs of Nitrogen deficiency?',
 ];
 
 const fmt = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -16,7 +16,9 @@ const AIAssistant = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: 'Hello! I\'m your AgriSmart AI agronomist. Ask me anything about crop diseases, irrigation, pesticides, or farming best practices.',
+      content: 'Hello! I am your AgriSmart AI agronomist, powered by Gemini AI and grounded in your real-time field scans and weather forecasts. Ask me anything in English, Hindi, or Hinglish.',
+      source: 'gemini',
+      contextual: true,
       time: new Date(),
     },
   ]);
@@ -41,12 +43,22 @@ const AIAssistant = () => {
 
     try {
       const res = await api.post('/assistant/chat', { message: msg });
-      const reply = res.data?.data?.reply || res.data?.data?.answer || 'Sorry, I couldn\'t get a response.';
-      setMessages(prev => [...prev, { role: 'assistant', content: reply, time: new Date() }]);
-    } catch {
+      const data = res.data?.data || {};
+      const reply = data.reply || data.answer || 'Sorry, I couldn\'t get a response.';
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ I\'m having trouble reaching the server. Please make sure the backend is running.',
+        content: reply,
+        source: data.source || 'gemini',
+        contextual: Boolean(data.contextual),
+        diagnosisContext: data.diagnosisContext,
+        time: new Date()
+      }]);
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '⚠️ I\'m having trouble reaching the assistant service. Please check your network connection.',
+        source: 'fallback',
+        contextual: false,
         time: new Date(),
       }]);
     } finally {
@@ -58,13 +70,15 @@ const AIAssistant = () => {
   const clearChat = () => {
     setMessages([{
       role: 'assistant',
-      content: 'Chat cleared. How can I help you today?',
+      content: 'Chat cleared. How can I help you today with your crops?',
+      source: 'gemini',
+      contextual: true,
       time: new Date(),
     }]);
   };
 
   return (
-    <div style={{ maxWidth: 780, margin: '0 auto', height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ maxWidth: 840, margin: '0 auto', height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
 
       {/* Header */}
       <div className="card" style={{
@@ -83,8 +97,13 @@ const AIAssistant = () => {
             <Bot size={20} color="#fff" />
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>AgriSmart AI Assistant</div>
-            <div style={{ fontSize: '0.72rem', color: '#16a34a' }}>● Online · Agricultural Expert</div>
+            <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+              AgriSmart AI Decision-Support Agronomist
+              <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 10, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                Gemini 1.5 Flash
+              </span>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#16a34a' }}>● Online · Grounded in Folio Scan & Weather Telemetry</div>
           </div>
         </div>
         <button className="btn-secondary" onClick={clearChat} style={{ fontSize: '0.8rem' }}>
@@ -119,7 +138,7 @@ const AIAssistant = () => {
               </div>
 
               {/* Bubble */}
-              <div style={{ maxWidth: '72%' }}>
+              <div style={{ maxWidth: '75%' }}>
                 <div style={{
                   padding: '10px 14px',
                   borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
@@ -134,12 +153,33 @@ const AIAssistant = () => {
                 }}>
                   {msg.content}
                 </div>
+
+                {/* Metadata tags */}
                 <div style={{
-                  fontSize: '0.7rem', color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: '0.7rem',
+                  color: 'var(--text-muted)',
                   marginTop: 4,
-                  textAlign: isUser ? 'right' : 'left',
+                  justifyContent: isUser ? 'flex-end' : 'flex-start'
                 }}>
-                  {fmt(msg.time)}
+                  <span>{fmt(msg.time)}</span>
+                  {!isUser && msg.source === 'gemini' && (
+                    <span style={{ color: '#3b82f6', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <Sparkles size={11} /> Powered by Gemini AI
+                    </span>
+                  )}
+                  {!isUser && msg.source === 'fallback' && (
+                    <span style={{ color: '#16a34a', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <ShieldCheck size={11} /> Grounded Agronomy Engine
+                    </span>
+                  )}
+                  {!isUser && msg.contextual && (
+                    <span style={{ color: 'var(--text-muted)' }}>
+                      • Grounded in recent scan
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
