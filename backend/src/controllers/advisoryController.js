@@ -268,6 +268,88 @@ const getDiseaseAdvisory = async (req, res) => {
   }
 };
 
+const { recommendCrops } = require('../services/cropRecommendationService');
+
+const getCropRecommendations = async (req, res) => {
+  try {
+    const params = req.method === 'POST' ? req.body : req.query;
+    const result = recommendCrops(params);
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error generating crop recommendations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate crop recommendations',
+      error: error.message
+    });
+  }
+};
+
+const { generateSimulatedTelemetry, ingestSensorTelemetry, getRecentTelemetry } = require('../services/iotService');
+
+const getIotTelemetry = async (req, res) => {
+  try {
+    const { sensorId, crop, zone } = req.query;
+    const telemetry = generateSimulatedTelemetry({ sensorId, crop, fieldZone: zone });
+    const history = getRecentTelemetry(10);
+    res.json({
+      success: true,
+      data: {
+        current: telemetry,
+        recentBuffer: history
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching IoT telemetry:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch IoT telemetry',
+      error: error.message
+    });
+  }
+};
+
+const postIotTelemetry = async (req, res) => {
+  try {
+    const packet = ingestSensorTelemetry(req.body);
+    res.status(201).json({
+      success: true,
+      message: 'Sensor telemetry ingested successfully',
+      data: packet
+    });
+  } catch (error) {
+    console.error('Error ingesting IoT telemetry:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to ingest IoT telemetry',
+      error: error.message
+    });
+  }
+};
+
+const { runAutonomousAdvisoryCycle } = require('../services/agenticAdvisorService');
+
+const getAgenticCycle = async (req, res) => {
+  try {
+    const input = req.method === 'POST' ? req.body : req.query;
+    const result = await runAutonomousAdvisoryCycle(input);
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error running agentic autonomous cycle:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to execute autonomous advisory cycle',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getWeather,
   getIrrigation,
@@ -275,5 +357,9 @@ module.exports = {
   getRecommendations,
   getDiseases,
   getDiseaseByName,
-  getDiseaseAdvisory
+  getDiseaseAdvisory,
+  getCropRecommendations,
+  getIotTelemetry,
+  postIotTelemetry,
+  getAgenticCycle
 };

@@ -180,6 +180,50 @@ async function runApiTests() {
       assert(res.data.data.warnings.length > 0);
     });
 
+    // SIH Bonus Module A Test: Crop Recommendation
+    await test('POST /api/advisory/crop-recommendation returns ranked suitable crops', async () => {
+      const res = await request('POST', '/api/advisory/crop-recommendation', {
+        soilType: 'Loamy',
+        pH: 6.5,
+        temperature: 24,
+        humidity: 65,
+        rainfall: 150,
+        waterAvailability: 'Moderate',
+        season: 'Rabi',
+        previousCrop: 'Rice'
+      }, authHeaders);
+      assert.strictEqual(res.status, 200);
+      assert(res.data.success);
+      assert(Array.isArray(res.data.data.recommendations));
+      assert(res.data.data.topRecommendation);
+      assert(res.data.data.dataSource.includes('ICAR'));
+    });
+
+    // SIH Bonus Module F Test: IoT Telemetry
+    await test('GET /api/advisory/iot/telemetry returns simulated sensor feed', async () => {
+      const res = await request('GET', '/api/advisory/iot/telemetry?crop=Tomato', null, authHeaders);
+      assert.strictEqual(res.status, 200);
+      assert(res.data.success);
+      assert(res.data.data.current.telemetry.soilMoisture);
+      assert.strictEqual(res.data.data.current.hardwareStatus.nodeStatus, 'ONLINE');
+    });
+
+    // SIH Bonus Module G Test: Agentic Autonomous Advisory Loop
+    await test('POST /api/advisory/agentic/autonomous-cycle executes sense-reason-decide loop', async () => {
+      const res = await request('POST', '/api/advisory/agentic/autonomous-cycle', {
+        crop: 'Tomato',
+        disease: 'Tomato Early Blight',
+        confidence: 0.91
+      }, authHeaders);
+      assert.strictEqual(res.status, 200);
+      assert(res.data.success);
+      assert(res.data.data.executionLoop.step1_Perceive);
+      assert(res.data.data.executionLoop.step2_Analyze);
+      assert(res.data.data.executionLoop.step3_Reason);
+      assert(res.data.data.executionLoop.step4_Decide);
+      assert(res.data.data.executionLoop.step5_Notify);
+    });
+
   } finally {
     server.close();
   }
